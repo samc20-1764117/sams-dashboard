@@ -655,8 +655,6 @@ body.dark .wkc-day-sel .wkc-dd{color:#1a1a1e}
 .wkc-goals-toggle{background:none;border:none;cursor:pointer;font-size:9px;line-height:1;padding:3px 4px;color:var(--muted);opacity:.45;transition:opacity .15s;font-family:inherit;flex-shrink:0}
 .wkc-goals-toggle:hover{opacity:.9}
 .wkc-goals-toggle-sun{position:absolute;right:1px;top:50%;transform:translateY(-50%);font-size:17px;padding:3px 2px 3px 6px}
-.wkc-reset-sort{position:absolute;left:2px;top:2px;background:none;border:none;cursor:pointer;font-size:9px;line-height:1;padding:2px;color:var(--muted);opacity:.4;transition:opacity .15s;font-family:inherit}
-.wkc-reset-sort:hover{opacity:.9}
 .wkc-head.wkc-goals-collapsed,.wkc-cols.wkc-goals-collapsed{grid-template-columns:repeat(7,1fr)}
 .wkc-head.wkc-goals-collapsed .wkc-goals-h,.wkc-cols.wkc-goals-collapsed .wkc-goals-col{display:none}
 .wo-modal{width:min(96vw,1000px);padding:16px 14px 14px;display:flex;flex-direction:column}

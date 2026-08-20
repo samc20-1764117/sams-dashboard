@@ -16,14 +16,14 @@
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
 <title>Sam's Dashboard</title>
 <script>
-window._BUILD='20260820a';var BUILD=window._BUILD;
+window._BUILD='20260820b';var BUILD=window._BUILD;
 if(sessionStorage._mReloaded===BUILD);else{
   fetch('/version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(d.v&&d.v!==BUILD){sessionStorage._mReloaded=d.v;location.reload();}
   }).catch(function(){});
 }
 </script>
-<link rel="stylesheet" href="styles.css?v=20260820a">
+<link rel="stylesheet" href="styles.css?v=20260820b">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');var d=document.documentElement;if(s.cfg&&s.cfg.dark)d.classList.add('init-dark');if(s.sb!==false)d.classList.add('init-sb');}catch(e){}})();</script>
 </head>
 <body class="preload">
@@ -113,7 +113,6 @@ if(sessionStorage._mReloaded===BUILD);else{
           <span style="font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px" id="ovTitle">Thursday, March 12</span>
           <span id="headerDot" style="display:none">·</span>
           <span style="display:none" id="liveClock"></span>
-          <button class="btn btn-ghost btn-xs" id="todResetSortBtn" style="display:none" title="Reset sort order for this day" onclick="_resetDayOrder(this.dataset.ds)">↺</button>
         </div>
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
           <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
@@ -178,6 +177,7 @@ if(sessionStorage._mReloaded===BUILD);else{
             <button onclick="toggleVidOvMenu()" title="Open videos"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>
             <span>Videos</span>
           </div>
+          <button class="btn btn-ghost btn-xs" id="todResetSortBtn" style="display:none" title="Reset sort order for this day" onclick="_resetDayOrder(this.dataset.ds)">↺</button>
           <button class="btn btn-ghost btn-xs" id="todTbExpandBtn" onclick="_toggleTodTbCollapse(event)" title="Expand timeblock" style="display:flex;align-items:center;gap:4px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>Timeblock</button>
         </div>
       </div>
@@ -900,9 +900,9 @@ if(sessionStorage._mReloaded===BUILD);else{
 </div>
 
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260820a"></script>
-<script src="overview.js?v=20260820a"></script>
-<script src="features.js?v=20260820a"></script>
+<script src="core.js?v=20260820b"></script>
+<script src="overview.js?v=20260820b"></script>
+<script src="features.js?v=20260820b"></script>
 <script src="pup-skills.js?v=20260608b"></script>
 <script src="videos.js?v=20260608b"></script>
 

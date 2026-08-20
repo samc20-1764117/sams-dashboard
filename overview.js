@@ -380,6 +380,7 @@ function renderTodDonut(done,total){
   const pEl=document.getElementById('_donutPct');
   const fEl=document.getElementById('_donutFrac');
   const pct=done/total;
+  wrap.title=Math.round(pct*100)+'% complete';
   _donutTickPct(Math.round(pct*100),_donutInited?450:900);
   if(fEl)fEl.textContent=`${done}/${total}`;
   const lbEl=document.getElementById('_donutLabel');
@@ -856,18 +857,22 @@ function _manualTieBreak(a,b,ds,naturalFn){
 }
 function _hardTierNatural(a,b){
   if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
-  const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
-  if(aO&&!bO)return -1;if(!aO&&bO)return 1;
   const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
   if(aI&&!bI)return -1;if(!aI&&bI)return 1;
   return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
 }
+// Travel/birthday/holiday/overdue are hard tiers a manual reorder can never cross (see
+// AskUserQuestion 2026-08-20/21) — overdue in particular must stay pinned to the top until the
+// task is moved to today or completed, at which point it drops into the manual-order pool like
+// anything else. Everything below that (done/important/timeblock-time) is manual-order-overridable.
 function sortByTypeOrder(tasks,ds){
   return[...tasks].sort((a,b)=>{
     const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aB=a._type==='birthday'||a._type==='holiday',bB=b._type==='birthday'||b._type==='holiday';
     if(aB&&!bB)return -1;if(!aB&&bB)return 1;
+    const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
+    if(aO&&!bO)return -1;if(!aO&&bO)return 1;
     return _manualTieBreak(a,b,ds,()=>_hardTierNatural(a,b));
   });
 }
@@ -892,6 +897,8 @@ function sortTasksForDay(tasks,ds){
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
     const aB=a._type==='birthday'||a._type==='holiday',bB=b._type==='birthday'||b._type==='holiday';
     if(aB&&!bB)return -1;if(!aB&&bB)return 1;
+    const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
+    if(aO&&!bO)return -1;if(!aO&&bO)return 1;
     return _manualTieBreak(a,b,ds,()=>{
       const aSm=tbSm(a),bSm=tbSm(b);
       if(aSm!==null&&bSm===null)return -1;
@@ -1220,9 +1227,6 @@ function renderWkCal(){
     h.addEventListener('dblclick',e=>{e.stopPropagation();if(_wkcHClk){clearTimeout(_wkcHClk);_wkcHClk=null;}openQA('wkc',null,ds);});
     if(_wkGoalsCollapsed&&d===dates[6]){
       h.innerHTML+=`<button class="wkc-goals-toggle wkc-goals-toggle-sun" onclick="_toggleWkGoalsCollapse(event)" title="Expand objectives">‹</button>`;
-    }
-    if((_dayOrder()[ds]||[]).length){
-      h.innerHTML+=`<button class="wkc-reset-sort" onclick="event.stopPropagation();_resetDayOrder('${ds}')" title="Reset sort order for this day">↺</button>`;
     }
     head.appendChild(h);
   });
@@ -4056,13 +4060,17 @@ function _todListKeyNav(e){
     return true;
   }
 
-  // Arrow Up/Down: navigate selection
+  // Arrow Up/Down: navigate selection — hitting the top/bottom edge (no shift) advances to the
+  // previous/next day instead of stopping dead, so the whole week is reachable by keyboard alone.
   if(e.key==='ArrowUp'||e.key==='ArrowDown'){
     e.preventDefault();
+    const dir=e.key==='ArrowUp'?-1:1;
     const lastSel=todSel[todSel.length-1];
     const curIdx=rowIds.indexOf(lastSel);
-    const newIdx=e.key==='ArrowUp'?Math.max(0,curIdx-1):Math.min(rowIds.length-1,curIdx+1);
-    const newId=rowIds[newIdx];
+    const newIdx=curIdx+dir;
+    if(!e.shiftKey&&(newIdx<0||newIdx>=rowIds.length)){_todAdvanceDay(dir);return true;}
+    const clamped=Math.max(0,Math.min(rowIds.length-1,newIdx));
+    const newId=rowIds[clamped];
     if(e.shiftKey){selectedTasks.add(newId);lastSelectedId=newId;}
     else{selectedTasks.clear();selectedTasks.add(newId);lastSelectedId=newId;}
     applySelHighlight();
@@ -4079,6 +4087,26 @@ function _todListKeyNav(e){
   }
 
   return false;
+}
+// Advances the Today list's viewed day (shiftDay already syncs wkOff/wrRecOff across week
+// boundaries) and lands selection on the first/last item of the next non-empty day, skipping
+// empty days — bounded so a long empty stretch can't hang the keypress.
+function _todAdvanceDay(dir){
+  let tries=0;
+  while(tries<60){
+    shiftDay(dir);
+    const container=document.getElementById('todList');
+    const rows=container?[...container.querySelectorAll('.ti[id^="ti-"]')]:[];
+    if(rows.length){
+      const targetEl=dir<0?rows[rows.length-1]:rows[0];
+      const targetId=targetEl.id.slice(3);
+      selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
+      applySelHighlight();
+      const el=document.getElementById('ti-'+targetId);if(el)_shopScrollTo(container,el);
+      return;
+    }
+    tries++;
+  }
 }
 // Weekly-cal keyboard nav — same system as _todListKeyNav (Arrow select, Shift+Arrow extend,
 // Cmd+Arrow reorder, Delete/Backspace), scoped to whichever day column the last click landed in.
@@ -4122,13 +4150,17 @@ function _wkcColKeyNav(e){
     return true;
   }
 
-  // Arrow Up/Down: navigate selection within the column
+  // Arrow Up/Down: navigate selection within the column — hitting the top/bottom edge (no shift)
+  // advances into the next/prev day's column, crossing into next/prev week via shiftWk if needed.
   if(e.key==='ArrowUp'||e.key==='ArrowDown'){
     e.preventDefault();
+    const dir=e.key==='ArrowUp'?-1:1;
     const lastSel=colSel[colSel.length-1];
     const curIdx=rowIds.indexOf(lastSel);
-    const newIdx=e.key==='ArrowUp'?Math.max(0,curIdx-1):Math.min(rowIds.length-1,curIdx+1);
-    const newId=rowIds[newIdx];
+    const newIdx=curIdx+dir;
+    if(!e.shiftKey&&(newIdx<0||newIdx>=rowIds.length)){_wkcAdvanceDay(dir,ds);return true;}
+    const clamped=Math.max(0,Math.min(rowIds.length-1,newIdx));
+    const newId=rowIds[clamped];
     if(e.shiftKey){selectedTasks.add(newId);lastSelectedId=newId;}
     else{selectedTasks.clear();selectedTasks.add(newId);lastSelectedId=newId;}
     applySelHighlight();
@@ -4143,6 +4175,34 @@ function _wkcColKeyNav(e){
   }
 
   return false;
+}
+// Advances the weekly-cal focused day column left/right (crossing into next/prev week via
+// shiftWk when it runs past Monday/Sunday) and lands selection on the first/last chip of the
+// next non-empty day, skipping empty days — bounded so a long empty stretch can't hang the
+// keypress. Works in date-space rather than DOM indices since shiftWk fully re-renders #wkcCols.
+function _wkcAdvanceDay(dir,ds){
+  let cur=new Date(ds+'T00:00:00');
+  let tries=0;
+  while(tries<60){
+    cur=new Date(cur.getTime()+dir*86400000);
+    const newDs=d2s(cur);
+    const newWkKey=dsToWkKey(newDs);
+    const curWkKey=getWkKey(wkOff);
+    if(newWkKey!==curWkKey){
+      const newWkOff=Math.round((new Date(newWkKey+'T00:00:00')-new Date(getWkKey(0)+'T00:00:00'))/(7*86400000));
+      shiftWk(newWkOff-wkOff);
+    }
+    const col=[...document.querySelectorAll('#wkcCols .wkc-col')].find(c=>c.dataset.ds===newDs);
+    const chips=col?[...col.querySelectorAll('.chip[data-tid]')]:[];
+    if(chips.length){
+      const targetChip=dir<0?chips[chips.length-1]:chips[0];
+      const targetId=targetChip.dataset.tid;
+      selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
+      applySelHighlight();
+      return;
+    }
+    tries++;
+  }
 }
 // Deletes a mixed-type set of Today-list selections in one shot. Recurring/WR items are handed
 // off to the existing _wrBulkDelete (already a single-combined-undo bulk delete for those two
@@ -6217,10 +6277,18 @@ function _shopScrollTo(container,el){
   else if(er.bottom>ct.bottom)container.scrollTop+=er.bottom-ct.bottom;
 }
 function _shopOvKeyNav(e){
-  // Only handle when shop items are selected
+  // Only handle when the selection anchor's own row actually lives in #shopOv — a shopping item
+  // due today also renders inside #todList with the same 'shop-cal-' id, and without this check
+  // selecting/reordering it there would get silently hijacked into reordering the #shopOv widget
+  // instead (wrong container entirely, and it'd only touch the shop-prefixed ids out of a
+  // mixed-type Today-list multi-select, dropping the rest). Whichever list was last clicked owns
+  // the keystroke — same pattern as _wkcColKeyNav vs _todListKeyNav.
+  if(!lastSelectedId||!lastSelectedId.startsWith('shop-cal-'))return false;
+  const container=document.getElementById('shopOv');if(!container)return false;
+  const anchorRow=document.getElementById('ti-'+lastSelectedId);
+  if(!anchorRow||!container.contains(anchorRow))return false;
   const shopSel=[...selectedTasks].filter(s=>s.startsWith('shop-cal-'));
   if(!shopSel.length)return false;
-  const container=document.getElementById('shopOv');if(!container)return false;
   const rows=[...container.querySelectorAll('.ti')];if(!rows.length)return false;
   const _typing=document.activeElement?.tagName==='INPUT'||document.activeElement?.tagName==='TEXTAREA'||document.activeElement?.tagName==='SELECT'||document.activeElement?.isContentEditable;
   if(_typing)return false;
@@ -7419,7 +7487,8 @@ function renderTBSum(ds){
   const dayMins=(HOURS[HOURS.length-1]-HOURS[0]+1)*60;
   const free=Math.max(0,dayMins-tot);
   const freeStr=free>=60?`${Math.floor(free/60)}h${free%60?` ${free%60}m`:''}`:` ${free}m`;
-  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="wkc-goals-toggle" id="todTbToggleBtn" onclick="_toggleTodTbCollapse(event)" title="Collapse timeblock">✕</button><button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="openAutoTBManager()" title="Manage auto blocks" style="margin-left:auto;font-size:8px;flex-shrink:0">Auto</button><button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="font-size:8px;flex-shrink:0;padding:3px 5px;display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>`;
+  const _rsHtml=(_dayOrder()[ds]||[]).length?`<button class="btn btn-ghost btn-xs" onclick="_resetDayOrder('${ds}')" title="Reset sort order for this day" style="margin-left:auto;font-size:8px;flex-shrink:0">↺</button>`:'';
+  document.getElementById('tbSum').innerHTML=`<div class="si"><span>Blocked:</span><span class="sv">${Math.floor(tot/60)}h ${tot%60}m</span><span class="tb-free">(${freeStr} free)</span></div><button class="wkc-goals-toggle" id="todTbToggleBtn" onclick="_toggleTodTbCollapse(event)" title="Collapse timeblock">✕</button>${_rsHtml}<button class="btn btn-ghost btn-xs" id="autoTBToggle" onclick="openAutoTBManager()" title="Manage auto blocks" style="${_rsHtml?'':'margin-left:auto;'}font-size:8px;flex-shrink:0">Auto</button><button class="btn btn-ghost btn-xs" onclick="toggleVidOvMenu()" title="Videos" style="font-size:8px;flex-shrink:0;padding:3px 5px;display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>`;
 }
 // ── Auto Timeblocks ────────────────────────────────────────────────────────────
 function getAutoTBForDate(ds){
