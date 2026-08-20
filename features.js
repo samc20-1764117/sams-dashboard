@@ -1099,6 +1099,8 @@ function jumpMoYear(yr){
 }
 function shiftMo(n){moOff+=n;renderMoCal();}
 function renderMoCal(){
+  const _mgridEl=document.querySelector('#mModal .mgrid');
+  const _mgridScrollY=_mgridEl?_mgridEl.scrollTop:0;
   const today=tod();
   const todayDate=new Date(today);
   const curYr=todayDate.getFullYear();
@@ -1335,6 +1337,7 @@ function renderMoCal(){
     el.innerHTML=`<span class="udot" style="background:${s.d}"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(t.name)}</span>`;
     mual.appendChild(el);
   });
+  if(_mgridEl)_mgridEl.scrollTop=_mgridScrollY;
 }
 function scrollMoToday(){
   const mgrid=document.querySelector('#mModal .mgrid');
