@@ -1015,11 +1015,49 @@ let _moExpandedCells=new Set();
 // monthly view opens, to give the day columns more horizontal room by default.
 let _moGoalsExpanded=false;
 let _moUAExpanded=false;
+let _moFilterExpanded=false;
+const MO_FILTER_TYPES=[
+  {key:'home',label:'Home'},
+  {key:'my work',label:'My Work'},
+  {key:'work',label:'Work'},
+  {key:'social+travel',label:'Social+Travel'},
+  {key:'long term',label:'Long Term'},
+  {key:'recurring',label:'Recurring'},
+  {key:'weekly_reset',label:'Weekly Reset'},
+  {key:'travel',label:'Travel'},
+  {key:'videos',label:'Videos'},
+  {key:'pup',label:'Pup Skills'},
+  {key:'birthday',label:'Birthdays'},
+  {key:'holiday',label:'Holidays'},
+  {key:'shopping',label:'Shopping'},
+];
+function _moFilterState(){try{return JSON.parse(localStorage._moTypeFilter||'{}');}catch(e){return{};}}
+function _moFilterKey(t){
+  if(t._type==='travel')return'travel';
+  if(t._type==='shop')return'shopping';
+  if(t._type==='pup')return'pup';
+  if(t._type==='vid'||t._type==='vidstep')return'videos';
+  if(t._type==='birthday')return'birthday';
+  if(t._type==='holiday')return'holiday';
+  if(t._isWrec||t._isWrRule)return'weekly_reset';
+  return(t.category||'').toLowerCase();
+}
+function _moTypeVisible(t){const s=_moFilterState();const k=_moFilterKey(t);return s[k]!==false;}
+function _toggleMoFilterType(key,checked){const s=_moFilterState();s[key]=checked;localStorage._moTypeFilter=JSON.stringify(s);renderMoCal();}
+function _renderMoFilterPanel(){
+  const wrap=document.getElementById('mFilterList');if(!wrap)return;
+  const s=_moFilterState();
+  wrap.innerHTML=MO_FILTER_TYPES.map(ft=>{
+    const checked=s[ft.key]!==false;
+    return`<label class="mo-filter-row"><input type="checkbox" class="chk" ${checked?'checked':''} onchange="_toggleMoFilterType('${ft.key}',this.checked)"><span>${ft.label}</span></label>`;
+  }).join('');
+}
 function toggleMoGoals(){_moGoalsExpanded=!_moGoalsExpanded;renderMoCal();}
 function toggleMoUA(){_moUAExpanded=!_moUAExpanded;renderMoCal();}
+function toggleMoFilter(){_moFilterExpanded=!_moFilterExpanded;renderMoCal();}
 function openMModal(){
   _moNavYear=new Date().getFullYear();
-  _moGoalsExpanded=false;_moUAExpanded=false;
+  _moGoalsExpanded=false;_moUAExpanded=false;_moFilterExpanded=false;
   const inp=document.getElementById('moYearSel');if(inp)inp.value=String(_moNavYear);
   const modal=document.getElementById('mModal');
   const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.add('orbs-paused');
@@ -1125,8 +1163,12 @@ function renderMoCal(){
   const modalEl=document.getElementById('mModal');
   modalEl.classList.toggle('mo-goals-exp',_moGoalsExpanded);
   modalEl.classList.toggle('mo-ua-exp',_moUAExpanded);
+  modalEl.classList.toggle('mo-filter-exp',_moFilterExpanded);
   const _moGoalsBtn=document.getElementById('moGoalsToggleBtn');
   if(_moGoalsBtn){_moGoalsBtn.textContent=(_moGoalsExpanded?'− ':'+ ')+'Objectives';_moGoalsBtn.classList.toggle('active',_moGoalsExpanded);}
+  const _moFilterBtn=document.getElementById('moFilterToggleBtn');
+  if(_moFilterBtn)_moFilterBtn.classList.toggle('active',_moFilterExpanded);
+  _renderMoFilterPanel();
   const dowEl=document.getElementById('mDow');
   if(!dowEl.children.length){
     ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(dn=>{const el=document.createElement('div');el.className='mdowl';el.textContent=dn;dowEl.appendChild(el);});
@@ -1183,7 +1225,7 @@ function renderMoCal(){
       let _blockMoDrag=false;
       chip.addEventListener('dragstart',e=>{if(_blockMoDrag){e.preventDefault();e.stopPropagation();return;}e.stopPropagation();dragId='wkgoal-mo::'+t.id+'::'+wkMonDs;chip.style.opacity='.4';document.body.classList.add('body-dragging');});
       chip.addEventListener('dragend',()=>{chip.style.opacity='1';document.body.classList.remove('body-dragging');dragId=null;});
-      const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.style.cssText='width:8px;height:8px;pointer-events:auto';chk.checked=t.done;
+      const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.style.cssText='width:7px;height:7px;pointer-events:auto';chk.checked=t.done;
       chk.addEventListener('click',function(e){e.stopPropagation();toggleTask(t.id,this.checked,'week');renderMoCal();});
       const nm=document.createElement('span');nm.style.cssText='flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';nm.textContent=t.name;
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';dx.addEventListener('click',e2=>{e2.stopPropagation();delTask(t.id,e2);});
@@ -1323,7 +1365,7 @@ function mkMCell(date,om,today){
   const vidStepOnDayDone=(_moVidStepMap[ds]&&_moVidStepMap[ds].done)||[];
   const undone=[...travelOnDay,...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay,...recOnDay,...finCancelOnDay,...wrRulesOnDay,...pupSessOnDay,...vidOnDay,...vidStepOnDay];
   const done=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),...shopOnDayDone,...wrRulesOnDayDone,...pupSessOnDayDone,...vidStepOnDayDone];
-  const tasks=typeof sortByTypeOrder==='function'?sortByTypeOrder([...undone,...done]):[...undone,...done];
+  const tasks=(typeof sortByTypeOrder==='function'?sortByTypeOrder([...undone,...done]):[...undone,...done]).filter(_moTypeVisible);
   const _cellH=Math.max(70,(window.innerHeight*0.98-86)/5-4);
   const _availH=_cellH-20;
   const _maxVis=tasks.length<=Math.floor(_availH/19)?tasks.length:Math.max(1,Math.floor((_availH-10)/19));
@@ -1382,7 +1424,7 @@ function mkMCell(date,om,today){
       if(!isTravel&&!isBday&&!isHoliday){
         const _cw=document.createElement('label');_cw.className='chk-wrap';_cw.style.cssText='padding:2px 3px;margin:-2px -1px;flex-shrink:0';
         _cw.addEventListener('click',e=>e.stopPropagation());
-        const _ck=document.createElement('input');_ck.type='checkbox';_ck.className='chk';_ck.style.cssText='width:8px;height:8px';_ck.checked=!!t.done;
+        const _ck=document.createElement('input');_ck.type='checkbox';_ck.className='chk';_ck.style.cssText='width:7px;height:7px';_ck.checked=!!t.done;
         _ck.addEventListener('change',function(){
           if(t._isWrRule)togWrRule(String(t._ruleId),this.checked,t._wkKey||dsToWkKey(ds));
           else if(t._isWrec)togRec(t._recId,this.checked);

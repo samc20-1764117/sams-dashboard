@@ -675,6 +675,7 @@ if(sessionStorage._mReloaded===BUILD);else{
         <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
           <button id="moUAToggleBtn" class="btn btn-ghost btn-xs mo-side-toggle" onclick="toggleMoUA()" title="Unassigned tasks"><span id="mheadUACount">0</span> Unassigned</button>
           <button id="moGoalsToggleBtn" class="btn btn-ghost btn-xs mo-side-toggle" onclick="toggleMoGoals()" title="Weekly objectives">+ Objectives</button>
+          <button id="moFilterToggleBtn" class="btn btn-ghost btn-xs mo-side-toggle" onclick="toggleMoFilter()" title="Filter task types">Filter</button>
         </div>
         <button class="btn btn-ghost btn-xs" onclick="moGoToday()">This Week</button>
         <button class="btn btn-ghost btn-xs" onclick="closeMod('mModal')" style="opacity:.55">✕</button>
@@ -684,6 +685,10 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div class="mua-side">
       <div class="muah" style="display:flex;align-items:center;justify-content:space-between"><span>Unassigned Tasks</span><button class="btn btn-ghost btn-xs" onclick="closeMod('mModal')" style="opacity:.55">✕</button></div>
       <div class="mual" id="mUAList"></div>
+    </div>
+    <div class="mfilter-side">
+      <div class="muah" style="display:flex;align-items:center;justify-content:space-between"><span>Filter Task Types</span><button class="btn btn-ghost btn-xs" onclick="toggleMoFilter()" style="opacity:.55">✕</button></div>
+      <div class="mual" id="mFilterList"></div>
     </div>
   </div>
 </div>
