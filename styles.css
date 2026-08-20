@@ -1706,12 +1706,17 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
 .fin-details-pop .fin-tbl td{padding:5px 8px;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}
 .fin-details-pop .fin-tbl th{padding:4px 8px;font-size:10px;font-weight:600;color:var(--muted)}
 .fin-details-pop .fin-tbl td:last-child{width:24px;padding:4px 4px!important;position:relative}
+.fin-ph-tbl{table-layout:fixed}
+.fin-ph-tbl col.fin-ph-c-date{width:34%}
+.fin-ph-tbl col.fin-ph-c-amt{width:28%}
+.fin-ph-tbl col.fin-ph-c-cum{width:28%}
+.fin-ph-tbl col.fin-ph-c-del{width:24px}
 .fin-ph-icon-btn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;padding:0!important;line-height:1}
 .fin-ph-close-btn{font-size:10px}
 .fin-ph-col-date{padding-left:16px!important;font-variant-numeric:tabular-nums}
 .fin-ph-col-amt{padding-right:12px!important}
 .fin-ph-col-cum{padding-right:22px!important}
-.fin-details-pop .fin-tbl .delbtn{margin-right:16px}
+.fin-details-pop .fin-tbl .delbtn{transform:translateX(17px)}
 .fin-details-pop .fin-tbl tr.fin-ph-editing td{padding-top:2px!important;padding-bottom:2px!important}
 .fin-ph-date-input,.fin-ph-amt-input{width:100%;height:20px;box-sizing:border-box;font-size:12px;font-family:inherit;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 5px;color:var(--text);background:transparent;font-variant-numeric:tabular-nums}
 .fin-ph-amt-input{text-align:right}
