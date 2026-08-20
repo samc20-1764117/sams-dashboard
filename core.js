@@ -55,6 +55,10 @@ let dayOff=0,wkOff=0,moOff=0,wrRecOff=0,sbOpen=true,activePg='overview';
 let _wkGoalsCollapsed=localStorage.getItem('_wkGoalsCollapsed')==='1';
 let _todTbCollapsed=localStorage.getItem('_todTbCollapsed')==='1';
 let dragId=null,resizing=null,tMode='add',tId=null,tPreDate=null;
+// Set by a delegated dragstart listener on #todList (see renderToday) to the dragged row's own
+// .id (e.g. 'wrrule-virt-45') whenever the drag source is a row already inside the Today list —
+// distinguishes an internal same-day reorder drop from a cross-day/other drop in dropOnTodayList.
+let _todDragRowId=null;
 let qaCtx='today',qaDsTarget=null,qaKCat='';
 let tbWD=0,tbWT=null,wkcWD=0,wkcWT=null;
 let selAtbId=null,selAtbDs=null;
@@ -1021,7 +1025,9 @@ function _stateSnap(){
     // Video day/step scheduling lives in localStorage, not `st` — redo's generic state restore
     // would otherwise silently skip it, leaving a moved video (or video step) stuck undone.
     _vidStepDayMap:typeof _vidStepDayMap==='function'?_vidStepDayMap():null,
-    _vidDayMap:typeof _vidDayMap==='function'?_vidDayMap():null
+    _vidDayMap:typeof _vidDayMap==='function'?_vidDayMap():null,
+    // Manual Today-list/weekly-cal day order (drag-reorder) — also localStorage, same reasoning.
+    _dayOrder:typeof _dayOrder==='function'?_dayOrder():null
   };
 }
 
@@ -1041,6 +1047,7 @@ function _stateRestore(snap){
   if(snap.videos)st.videos=snap.videos;
   if(snap._vidStepDayMap&&typeof _vidStepDayMapSet==='function')_vidStepDayMapSet(snap._vidStepDayMap);
   if(snap._vidDayMap&&typeof _vidDayMapSet==='function')_vidDayMapSet(snap._vidDayMap);
+  if(snap._dayOrder&&typeof _dayOrderSet==='function')_dayOrderSet(snap._dayOrder);
   save();
   renderAll();
   renderPupSkillsHighlight();

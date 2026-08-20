@@ -63,9 +63,11 @@ Three sort functions (`sortByTypeOrder`, `sortTasksForDay`, `sortByTBWeek`) all 
 **Tier 3 — `taskTypePri` category order:**
 birthday/holiday(1) → home(2) → my work(3) → work(4) → social/other(5) → vid(5.5) → vidstep(5.6) → non-WR recurring(6) → fin-cancel(6.5) → shopping(7) → pup(8) → weekly reset(9)
 
-**Tier 4 — Alphabetical** by name (tiebreaker).
+**Tier 4 — Manual day order, else alphabetical** (`_manualTieBreak(a,b,ds)`, overview.js): if the day has a saved manual order (`_dayOrder()[ds]`, localStorage, drag-reordered — see below), items present in it sort by their index there; items never dragged sort after all placed ones, in category+name order, so a freshly-added task doesn't jump to an arbitrary spot. `sortByTBWeek` doesn't pass `ds` (it's the whole-week "This Week" summary list, not a specific day) so it always falls back to plain category+name — manual order is Today-list/weekly-cal-day-column only.
 
-Mobile `_mTaskTypePri` and `mSortToday` mirror this exactly.
+Mobile `_mTaskTypePri` and `mSortToday` mirror this exactly (manual order not yet ported to mobile).
+
+**Manual day-order drag-reorder** (`_dayOrder`/`_dayOrderSet`, overview.js; `_todDragRowId`, core.js): dragging a Today-list row onto another spot in the SAME list reorders Tier 4 only — hard tiers 1-3 above are never affected by it (a dragged item can't leave its tier). A delegated `dragstart`/`dragend` pair on `#todList` (set up once in `renderToday`, guarded by `_todListEl._reorderSetup`) tracks `_todDragRowId` = the dragged row's own `.id` whenever the drag source is a row already inside `#todList`, letting `dropOnTodayList` tell an internal reorder apart from a cross-day/other drop (which it still handles exactly as before — internal reorder is checked first and returns early via `_dropReorderToday`, un-touching the rest of the function). No live placeholder — it snaps into place on drop, relative to whichever row is under the cursor. Persists a **fresh full array** rebuilt from the current rendered order (not a delta), same "recompute the whole thing" pattern as the shopping list's Cmd+↑/↓. Because `sortTasksForDay` also drives the weekly cal's day columns (`renderWkCal` calls it directly per day), a Today-list reorder shows up there too with no separate wiring. `_dayOrder` is localStorage, not `st.*` — it's included in `_stateSnap`/`_stateRestore` (core.js) alongside `_vidDayMap`/`_vidStepDayMap` so redo covers it; don't forget that pairing if this ever moves to a DB column.
 
 ## Task Modals
 - **`#tModal`**: add (`openTModal(cat='')`) + edit (`openEditTask(id)`). Save: `saveTModal()`.

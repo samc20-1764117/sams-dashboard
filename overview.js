@@ -233,7 +233,16 @@ function renderToday(){
     if(!t._virtual)return st.blocks.some(b=>(b.ds===_todDs||isOvToday)&&String(b.taskId)===String(t.id));
     return true;
   }
-  document.getElementById('todList').innerHTML=sorted.map(t=>{
+  const _todListEl=document.getElementById('todList');
+  // One-time delegated drag tracking for in-list reorder — the container element survives across
+  // renders (only its innerHTML is replaced below), so this only needs attaching once, like
+  // #shopOv's own drag setup. See _todDragRowId / dropOnTodayList for the actual reorder logic.
+  if(_todListEl&&!_todListEl._reorderSetup){
+    _todListEl._reorderSetup=true;
+    _todListEl.addEventListener('dragstart',e=>{const row=e.target.closest('.ti[id^="ti-"]');_todDragRowId=row?row.id.slice(3):null;});
+    _todListEl.addEventListener('dragend',()=>{_todDragRowId=null;});
+  }
+  _todListEl.innerHTML=sorted.map(t=>{
     const arr=!t.done&&!_hasTBToday(t);
     return t._type==='travel'||t._type==='birthday'||t._type==='holiday'?tRowExtra(t):t._type==='vid'?tRowVidVirt(t,arr):t._type==='vidstep'?tRowVidStepVirt(t,arr):t._type==='fin-cancel'?tRowFinCancel(t,arr):t._type==='shop'?tRowShopVirt(t,true,arr,true):t._type==='pup'?tRowPupSess(t,true,arr):t._virtual?tRowTodayVirt(t,arr,true):tRow(t,{cat:true,catDot:true,drag:true,noDate:true,tbArrow:arr,noColor:true});
   }).join('');
@@ -814,7 +823,22 @@ function taskTypePri(t){
   if(t._virtual)return 6; // non-WR recurring
   return 5; // other regular tasks
 }
-function sortByTypeOrder(tasks){
+// Manual per-day order is the final tie-break, replacing plain type/name — only reached once the
+// hard tiers above (travel/birthday/done/overdue/important) and, in sortTasksForDay, the
+// timeblock-time comparison have all failed to distinguish a and b. Items never dragged sort
+// after ones that have been, in natural type/name order, so a freshly-added task doesn't jump to
+// an arbitrary spot — it just appears at the end of its tier until manually placed.
+function _manualTieBreak(a,b,ds){
+  const natural=()=>taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
+  const order=ds?_dayOrder()[ds]:null;
+  if(!order||!order.length)return natural();
+  const ai=order.indexOf(a.id),bi=order.indexOf(b.id);
+  if(ai<0&&bi<0)return natural();
+  if(ai<0)return 1;
+  if(bi<0)return -1;
+  return ai-bi;
+}
+function sortByTypeOrder(tasks,ds){
   return[...tasks].sort((a,b)=>{
     const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
@@ -825,14 +849,14 @@ function sortByTypeOrder(tasks){
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
     const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
     if(aI&&!bI)return -1;if(!aI&&bI)return 1;
-    return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
+    return _manualTieBreak(a,b,ds);
   });
 }
 // Sort for a specific day: blocked tasks first by start time, unblocked by type; fallback to type-only if no blocks
 let _tiClickTimer;
 function sortTasksForDay(tasks,ds){
   const blks=st.blocks.filter(b=>b.ds===ds);
-  if(!blks.length)return sortByTypeOrder(tasks);
+  if(!blks.length)return sortByTypeOrder(tasks,ds);
   function tbSm(t){
     let b=null;
     if(t._type==='pup'&&t._pupSessId)b=blks.find(x=>String(x._pupSessId)===String(t._pupSessId));
@@ -858,7 +882,7 @@ function sortTasksForDay(tasks,ds){
     if(aSm!==null&&bSm===null)return -1;
     if(aSm===null&&bSm!==null)return 1;
     if(aSm!==null&&bSm!==null)return aSm-bSm;
-    return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
+    return _manualTieBreak(a,b,ds);
   });
 }
 function sortTasksToday(tasks){return sortTasksForDay(tasks,d2s(getDayDate(dayOff)));}
@@ -3880,7 +3904,44 @@ function closeUnMenu(){
 }
 
 // ── Drop on Today List ─────────────────────────────────────────────────────────
+// In-list manual reorder — takes priority over the cross-day/other-container logic below whenever
+// the drag started on a row already inside #todList (see the dragstart listener in renderToday).
+// Drops relative to whichever row is under the cursor (above/below its vertical midpoint); no live
+// placeholder preview, it just snaps into place on drop. Persists a fresh full-day order array
+// (_dayOrder) built from the CURRENT rendered order, which sortTasksForDay's tie-break reads —
+// shared with the weekly cal day columns, so both stay in sync automatically.
+function _dropReorderToday(e){
+  e.preventDefault();
+  const container=document.getElementById('todList');
+  container.classList.remove('drop-here');
+  const draggedId=_todDragRowId;_todDragRowId=null;
+  const ds=d2s(getDayDate(dayOff));
+  const rows=[...container.querySelectorAll('.ti[id^="ti-"]')];
+  const currentIds=rows.map(r=>r.id.slice(3));
+  const fromIdx=currentIds.indexOf(draggedId);
+  if(fromIdx<0)return;
+  const targetRow=e.target.closest('.ti[id^="ti-"]');
+  if(targetRow&&targetRow.id==='ti-'+draggedId)return; // dropped back on itself — no-op
+  let toIdx;
+  if(targetRow){
+    const rect=targetRow.getBoundingClientRect();
+    const before=e.clientY<rect.top+rect.height/2;
+    const targetIdx=currentIds.indexOf(targetRow.id.slice(3));
+    toIdx=before?targetIdx:targetIdx+1;
+  } else {
+    toIdx=currentIds.length; // dropped below the last row
+  }
+  if(toIdx>fromIdx)toIdx--; // removing the dragged item first shifts everything after it left by one
+  const newOrder=currentIds.filter(id=>id!==draggedId);
+  newOrder.splice(toIdx,0,draggedId);
+  const m=_dayOrder();
+  const prevOrder=m[ds]?[...m[ds]]:null;
+  m[ds]=newOrder;_dayOrderSet(m);
+  renderAll();
+  pushUndo(()=>{const m2=_dayOrder();if(prevOrder)m2[ds]=prevOrder;else delete m2[ds];_dayOrderSet(m2);renderAll();},'Reordered today');
+}
 function dropOnTodayList(e){
+  if(_todDragRowId)return _dropReorderToday(e);
   if(!dragId)return;
   e.preventDefault();
   document.getElementById('todList').classList.remove('drop-here');
@@ -3951,6 +4012,10 @@ function _shopOvSort(arr){
   return[...arr].sort((x,y)=>(x.shop_order??9999)-(y.shop_order??9999));
 }
 // ── Videos on Overview ────────────────────────────────────────────────────────
+// Manual per-day task order (Today list drag-reorder, mirrored into the weekly cal day columns —
+// both render through sortTasksForDay). {ds:[id,...]}, localStorage-backed like _vidDayMap.
+function _dayOrder(){try{return JSON.parse(localStorage._dayOrder||'{}');}catch(e){return{};}}
+function _dayOrderSet(m){localStorage._dayOrder=JSON.stringify(m);}
 function _vidDayMap(){try{return JSON.parse(localStorage._vidDayMap||'{}');}catch(e){return{};}}
 function _vidDayMapSet(m){localStorage._vidDayMap=JSON.stringify(m);}
 // Video step → day map: key="vidId::stepName", value={ds,done}
