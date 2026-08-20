@@ -3295,22 +3295,17 @@ function _recSkippedThisWk(wkKey,off){
 // Skip overrides for weeks OTHER than the one openWrSkipped's main section already covers —
 // surfaces "Skip past week" entries (the scope-picker option, plus the WR container's own
 // pre-existing Move→Skip on a past-week miss) so they're visible and reversible instead of just
-// disappearing into the data with no way back. Same "genuinely occurs that week" verification as
-// _recSkippedThisWk for non-WR (excludes off-cycle skip artifacts); WR overrides don't need that
-// check since they're override-driven, not natural-cadence-driven.
+// disappearing into the data with no way back. Deliberately skips the "genuinely occurs that
+// week" verification _recSkippedThisWk uses (that check requires getRecurringWeekTasks to still
+// return the rule for that exact past week, which is the kind of edge case that was hiding
+// legitimate non-WR entries here) — every __skip__ in a past week is shown, full stop.
 function _recSkippedOtherWeeks(curWkKey){
-  const todayMon=getWkBounds(0).mon;
-  const wkOffFor=wk=>Math.round((new Date(wk+'T00:00:00')-todayMon)/(7*86400000));
   const out=[];
   st.recurring.filter(r=>!(r.is_weekly_reset===true||r.is_weekly_reset==='true')).forEach(r=>{
     if(!r._dateOverrides)return;
     Object.keys(r._dateOverrides).forEach(wk=>{
       if(wk===curWkKey||r._dateOverrides[wk]!=='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(wk))return;
-      const off=wkOffFor(wk);
-      const saved=r._dateOverrides[wk];delete r._dateOverrides[wk];
-      const occurs=getRecurringWeekTasks(off).some(v=>String(v._recId)===String(r.id));
-      r._dateOverrides[wk]=saved;
-      if(occurs)out.push({r,wkKey:wk});
+      out.push({r,wkKey:wk});
     });
   });
   return out;
