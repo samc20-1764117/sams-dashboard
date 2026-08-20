@@ -3082,13 +3082,13 @@ function renderRecOv(){
     row.appendChild(del);
     if(elReg)elReg.appendChild(row);
   });
-  // Update skipped button — this week's skips (both weekly-reset and plain weekly recurring,
-  // genuinely occurring that week) PLUS any "Skip past week" (or older Move→Skip) entries from
-  // other weeks, so the badge stays visible even when the CURRENTLY VIEWED week has none, until
-  // those are reviewed/restored via openWrSkipped's "SKIPPED OTHER WEEKS" section.
+  // Update skipped-this-week button (scoped to whatever week is currently viewed, wrRecOff —
+  // navigate the WR container's own week nav to see a different week's skips; there is no
+  // separate "other weeks" aggregate, that was tried and reverted, see rules/wr-system.md)
+  // Include both weekly-reset and plain weekly recurring tasks genuinely skipped this week (occurs that week)
   const _skippedWrecCount=_recSkippedThisWk(wkKey,wrRecOff).length;
   const _skippedWrRuleCount=st.wrOverrides.filter(o=>o.wk_key===wkKey&&o.override_type==='skip').length;
-  const _skCount=_skippedWrRuleCount+_skippedWrecCount+_wrSkippedOtherWeeks(wkKey).length+_recSkippedOtherWeeks(wkKey).length;
+  const _skCount=_skippedWrRuleCount+_skippedWrecCount;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
   requestAnimationFrame(()=>{
@@ -3292,65 +3292,25 @@ function _recSkippedThisWk(wkKey,off){
     return occurs;
   });
 }
-// Skip overrides for weeks OTHER than the one openWrSkipped's main section already covers —
-// surfaces "Skip past week" entries (the scope-picker option, plus the WR container's own
-// pre-existing Move→Skip on a past-week miss) so they're visible and reversible instead of just
-// disappearing into the data with no way back. Deliberately skips the "genuinely occurs that
-// week" verification _recSkippedThisWk uses (that check requires getRecurringWeekTasks to still
-// return the rule for that exact past week, which is the kind of edge case that was hiding
-// legitimate non-WR entries here) — every __skip__ in a past week is shown, full stop.
-function _recSkippedOtherWeeks(curWkKey){
-  const out=[];
-  st.recurring.filter(r=>!(r.is_weekly_reset===true||r.is_weekly_reset==='true')).forEach(r=>{
-    if(!r._dateOverrides)return;
-    Object.keys(r._dateOverrides).forEach(wk=>{
-      if(wk===curWkKey||r._dateOverrides[wk]!=='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(wk))return;
-      out.push({r,wkKey:wk});
-    });
-  });
-  return out;
-}
-function _wrSkippedOtherWeeks(curWkKey){
-  const out=[];
-  (st.wrOverrides||[]).filter(o=>o.override_type==='skip'&&o.wk_key!==curWkKey).forEach(o=>{
-    const r=st.wrRules.find(x=>String(x.id)===String(o.rule_id));
-    if(r)out.push({r,wkKey:o.wk_key});
-  });
-  return out;
-}
 function openWrSkipped(e){
   e.stopPropagation();
   const wkKey=getWkKey(wrRecOff);
   const skippedRules=st.wrRules.filter(r=>(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===wkKey&&o.override_type==='skip'));
   const skippedWrec=_recSkippedThisWk(wkKey,wrRecOff);
-  const otherRules=_wrSkippedOtherWeeks(wkKey);
-  const otherWrec=_recSkippedOtherWeeks(wkKey);
   const picker=document.getElementById('wrSkippedPicker');if(!picker)return;
   picker.innerHTML='';
-  if(!skippedRules.length&&!skippedWrec.length&&!otherRules.length&&!otherWrec.length){picker.style.display='none';return;}
-  const addHdr=text=>{const hdr=document.createElement('div');hdr.style.cssText='padding:4px 10px 4px;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.05em;border-bottom:1px solid rgba(210,205,228,.25);margin-bottom:2px';hdr.textContent=text;picker.appendChild(hdr);};
-  if(skippedRules.length||skippedWrec.length){
-    addHdr('SKIPPED THIS WEEK');
-    skippedRules.forEach(r=>{
-      const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+r.name;
-      itm.addEventListener('click',()=>{hideWrSkipped();unSkipWrRule(r.id,wkKey);});picker.appendChild(itm);
-    });
-    skippedWrec.forEach(r=>{
-      const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+r.name;
-      itm.addEventListener('click',()=>{hideWrSkipped();unSkipWRec(r.id,wkKey);});picker.appendChild(itm);
-    });
-  }
-  if(otherRules.length||otherWrec.length){
-    addHdr('SKIPPED OTHER WEEKS');
-    otherRules.forEach(({r,wkKey:wk})=>{
-      const itm=document.createElement('div');itm.className='ctx-item';itm.textContent=`↩  ${r.name} · ${fmtD(wk)}`;
-      itm.addEventListener('click',()=>{hideWrSkipped();unSkipWrRule(r.id,wk);});picker.appendChild(itm);
-    });
-    otherWrec.forEach(({r,wkKey:wk})=>{
-      const itm=document.createElement('div');itm.className='ctx-item';itm.textContent=`↩  ${r.name} · ${fmtD(wk)}`;
-      itm.addEventListener('click',()=>{hideWrSkipped();unSkipWRec(r.id,wk);});picker.appendChild(itm);
-    });
-  }
+  if(!skippedRules.length&&!skippedWrec.length){picker.style.display='none';return;}
+  const hdr=document.createElement('div');
+  hdr.style.cssText='padding:4px 10px 4px;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.05em;border-bottom:1px solid rgba(210,205,228,.25);margin-bottom:2px';
+  hdr.textContent='SKIPPED THIS WEEK';picker.appendChild(hdr);
+  skippedRules.forEach(r=>{
+    const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+r.name;
+    itm.addEventListener('click',()=>{hideWrSkipped();unSkipWrRule(r.id,wkKey);});picker.appendChild(itm);
+  });
+  skippedWrec.forEach(r=>{
+    const itm=document.createElement('div');itm.className='ctx-item';itm.textContent='↩  '+r.name;
+    itm.addEventListener('click',()=>{hideWrSkipped();unSkipWRec(r.id,wkKey);});picker.appendChild(itm);
+  });
   const rect=e.currentTarget.getBoundingClientRect();
   picker.style.left=Math.min(rect.left,window.innerWidth-200)+'px';
   picker.style.top='-9999px';picker.style.display='block';
