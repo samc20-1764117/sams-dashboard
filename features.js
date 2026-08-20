@@ -1381,7 +1381,7 @@ function mkMCell(date,om,today){
   const undone=[...travelOnDay,...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&!t.done&&t.category!=='Weekly Goals'),...extras.filter(t=>t._type!=='travel'),...shopOnDay,...wrecOnDay,...recOnDay,...finCancelOnDay,...wrRulesOnDay,...pupSessOnDay,...vidOnDay,...vidStepOnDay];
   const done=[...st.tasks.filter(t=>t.due_date&&t.due_date.split('T')[0]===ds&&t.done&&t.category!=='Weekly Goals'),...shopOnDayDone,...wrRulesOnDayDone,...pupSessOnDayDone,...vidStepOnDayDone];
   const tasks=(typeof sortByTypeOrder==='function'?sortByTypeOrder([...undone,...done]):[...undone,...done]).filter(_moTypeVisible);
-  const _cellH=Math.max(70,(window.innerHeight*0.98-86)/5-4);
+  const _cellH=Math.max(70,(window.innerHeight*0.94-86)/5-4);
   const _availH=_cellH-20;
   const _maxVis=tasks.length<=Math.floor(_availH/19)?tasks.length:Math.max(1,Math.floor((_availH-10)/19));
   const _isExp=_moExpandedCells.has(ds);
