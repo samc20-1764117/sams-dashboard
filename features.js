@@ -1044,12 +1044,17 @@ function _moFilterKey(t){
 }
 function _moTypeVisible(t){const s=_moFilterState();const k=_moFilterKey(t);return s[k]!==false;}
 function _toggleMoFilterType(key,checked){const s=_moFilterState();s[key]=checked;localStorage._moTypeFilter=JSON.stringify(s);renderMoCal();}
+function _moFilterRowStyle(key){
+  if(key==='pup'&&typeof _pupSessStyle==='function')return _pupSessStyle();
+  return gc(key);
+}
 function _renderMoFilterPanel(){
   const wrap=document.getElementById('mFilterList');if(!wrap)return;
   const s=_moFilterState();
   wrap.innerHTML=MO_FILTER_TYPES.map(ft=>{
     const checked=s[ft.key]!==false;
-    return`<label class="mo-filter-row"><input type="checkbox" class="chk" ${checked?'checked':''} onchange="_toggleMoFilterType('${ft.key}',this.checked)"><span>${ft.label}</span></label>`;
+    const cs=_moFilterRowStyle(ft.key);
+    return`<label class="mo-filter-row" style="background:${cs.bg};border:1px solid ${cs.b};color:${cs.t}"><input type="checkbox" class="chk" style="--fc-bg:${cs.bg};--fc-b:${cs.b||cs.t}" ${checked?'checked':''} onchange="_toggleMoFilterType('${ft.key}',this.checked)"><span>${ft.label}</span></label>`;
   }).join('');
 }
 function toggleMoGoals(){_moGoalsExpanded=!_moGoalsExpanded;renderMoCal();}
