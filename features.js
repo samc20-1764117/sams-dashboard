@@ -1026,18 +1026,18 @@ let _moGoalsExpanded=false;
 let _moUAExpanded=false;
 let _moFilterExpanded=false;
 const MO_FILTER_TYPES=[
+  {key:'travel',label:'Travel'},
   {key:'home',label:'Home'},
   {key:'my work',label:'My Work'},
+  {key:'videos',label:'Videos'},
   {key:'work',label:'Work'},
   {key:'social',label:'Social'},
   {key:'recurring',label:'Recurring'},
   {key:'weekly_reset',label:'Weekly Reset'},
-  {key:'travel',label:'Travel'},
-  {key:'videos',label:'Videos'},
-  {key:'pup',label:'Pup Skills'},
   {key:'birthday',label:'Birthdays'},
   {key:'holiday',label:'Holidays'},
   {key:'shopping',label:'Shopping'},
+  {key:'pup',label:'Pup Skills'},
 ];
 function _moFilterState(){try{return JSON.parse(localStorage._moTypeFilter||'{}');}catch(e){return{};}}
 function _moFilterKey(t){
@@ -1055,6 +1055,7 @@ function _moTypeVisible(t){const s=_moFilterState();const k=_moFilterKey(t);retu
 function _toggleMoFilterType(key,checked){const s=_moFilterState();s[key]=checked;localStorage._moTypeFilter=JSON.stringify(s);renderMoCal();}
 function _moFilterRowStyle(key){
   if(key==='pup'&&typeof _pupSessStyle==='function')return _pupSessStyle();
+  if(key==='shopping')return gc('birthday');
   return gc(key);
 }
 function _renderMoFilterPanel(){
@@ -1063,7 +1064,7 @@ function _renderMoFilterPanel(){
   wrap.innerHTML=MO_FILTER_TYPES.map(ft=>{
     const checked=s[ft.key]!==false;
     const cs=_moFilterRowStyle(ft.key);
-    return`<label class="mo-filter-row" style="background:${cs.bg};border:1px solid ${cs.b};color:${cs.t}"><input type="checkbox" class="chk" style="--fc-bg:${cs.bg};--fc-b:${cs.b||cs.t}" ${checked?'checked':''} onchange="_toggleMoFilterType('${ft.key}',this.checked)"><span>${ft.label}</span></label>`;
+    return`<label class="mo-filter-row" style="background:${cs.bg};border:1px solid ${cs.b};color:${cs.t}"><input type="checkbox" class="chk" style="--fc-b:${cs.b||cs.t};--fc-d:${cs.d||cs.t}" ${checked?'checked':''} onchange="_toggleMoFilterType('${ft.key}',this.checked)"><span>${ft.label}</span></label>`;
   }).join('');
 }
 function toggleMoGoals(){_moGoalsExpanded=!_moGoalsExpanded;renderMoCal();}
