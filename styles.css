@@ -412,14 +412,7 @@ body.dark .chip.sel-row{outline-color:color-mix(in srgb,var(--sel-d) 55%,transpa
 .chk::after{content:'';position:absolute;top:0;left:0;width:12px;height:12px;border-radius:50%;border:none;background:rgba(255,255,255,.8);box-sizing:border-box;box-shadow:inset 0 0 0 1.25px rgba(180,170,210,.42);transition:all .2s;transform:translateZ(0)}
 /* green checkbox option: #a3c41a */
 .chk:checked::after{background:rgba(200,195,210,.35);box-shadow:inset 0 0 0 1px rgba(200,195,210,.35);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-position:center}
-/* line-height:1 alone wasn't enough: DM Sans (like most fonts) has more space above the
-   cap-height than below the baseline, so even a tight, geometrically-centered line box still
-   reads as sitting visibly higher than a true circle (the checkbox) centered the same way.
-   translateY nudges the glyphs down to their OPTICAL center instead of their box's geometric
-   center — em-based so it scales with whatever font-size .tn is given (12px base, 14px in the
-   collapsed Today-list). Verified against both a no-descender word ("Journal") and one with
-   descenders ("Felt so things...") — same nudge reads correctly centered for both. */
-.tn{flex:1;font-size:12px;line-height:1;transform:translateY(.14em);font-weight:500;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;letter-spacing:-.01em}
+.tn{flex:1;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;letter-spacing:-.01em}
 .tn:hover{color:var(--accent)}
 .cpill{font-size:9px;font-weight:600;padding:2px 7px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,0.6);white-space:nowrap;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.7)}
 .cat-dot{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;overflow:visible;transition:opacity .1s}
@@ -531,7 +524,12 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tod-tb-body.tb-list-only .tod-list-row #todList .ti{padding-top:5px;padding-bottom:5px;gap:11px}
 .tod-tb-body.tb-list-only .tod-list-row #todList .chk-wrap{padding:9px 8px;margin:-9px -8px}
 .tod-tb-body.tb-list-only .tod-list-row #todList .chk,.tod-tb-body.tb-list-only .tod-list-row #todList .chk::after{width:16px;height:16px;min-width:16px;min-height:16px;max-width:16px;max-height:16px}
-.tod-tb-body.tb-list-only .tod-list-row #todList .tn{font-size:14px}
+/* Scoped to just this enlarged-checkbox context, NOT the base .tn — applying this nudge
+   app-wide broke Weekly Reset/Shopping rows, which were already correctly aligned at their
+   smaller sizes without it. line-height:1 + translateY together correct DM Sans's cap-height-vs-
+   baseline asymmetry (more space above cap-height than below baseline) specifically at this
+   font-size/checkbox-size pairing; recalibrated live after the first pass overshot by ~1px. */
+.tod-tb-body.tb-list-only .tod-list-row #todList .tn{font-size:14px;line-height:1;transform:translateY(.08em)}
 .tod-tb-body.tb-list-only .tod-list-row #todList .cat-dot{width:12px;height:12px}
 .tod-tb-body.tb-list-only .tod-list-row #todList .dlbl.ov{right:11px}
 .tod-tb-body.tb-list-only .tod-list-row #todList .heb-cnt,.tod-tb-body.tb-list-only .tod-list-row #todList .pup-link-badge{top:2px}
