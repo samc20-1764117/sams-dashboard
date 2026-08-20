@@ -5628,12 +5628,22 @@ function toggleKanban(){
 // ── Selection System ─────────────────────────────────────────────────────────
 const selectedTasks=new Set(); // set of task id strings
 let lastSelectedId=null; // for shift-click range
+// Which list container the current selection was actually clicked into — 'todList'/'shopOv'/
+// 'wkcCol'. Needed because the SAME shopping item can render in more than one of these at once
+// (e.g. a shop item due today appears in both #todList and #shopOv with the same row id), so
+// "does an element with this id exist in container X" is not a reliable ownership test — only
+// "where did the click happen" is. Set once per click in selTask; keyboard-only navigation
+// (arrow/Cmd+arrow) never changes which surface owns the keystroke, so it doesn't need to touch
+// this. _shopOvKeyNav/_todListKeyNav/_wkcColKeyNav each gate on this before doing anything else.
+let _lastSelSurface=null;
 let _lastTBRbRange=null; // {selTop,selBot} last rubber-band range in tb-col coordinates, for 'a' key
 
 function selTask(e,id){
   if(e.target.closest('.chk')||e.target.closest('.delbtn')||e.target.closest('.dlbl'))return;
   e.stopPropagation();
   const sid=String(id);
+  const _surfEl=e.currentTarget.closest('#todList,#shopOv,.wkc-col');
+  _lastSelSurface=_surfEl?(_surfEl.id==='todList'?'todList':_surfEl.id==='shopOv'?'shopOv':_surfEl.classList.contains('wkc-col')?'wkcCol':null):null;
   if(e.metaKey||e.ctrlKey){
     if(selectedTasks.has(sid)){selectedTasks.delete(sid);}
     else{selectedTasks.add(sid);}

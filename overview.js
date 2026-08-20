@@ -380,7 +380,12 @@ function renderTodDonut(done,total){
   const pEl=document.getElementById('_donutPct');
   const fEl=document.getElementById('_donutFrac');
   const pct=done/total;
-  wrap.dataset.tip=Math.round(pct*100)+'% complete';
+  // Deliberately NOT data-tip — that attribute name is watched by the global cursor-following
+  // tooltip (core.js "UI Tooltip"), which would show a SECOND tooltip alongside this one's own
+  // fixed-position ::after below. data-donut-tip keeps this one exclusive to the CSS rule below.
+  wrap.dataset.donutTip=Math.round(pct*100)+'% complete';
+  const _svgEl=wrap.querySelector('svg');
+  if(_svgEl)wrap.style.setProperty('--tip-left',(_svgEl.offsetLeft+_svgEl.offsetWidth/2)+'px');
   _donutTickPct(Math.round(pct*100),_donutInited?450:900);
   if(fEl)fEl.textContent=`${done}/${total}`;
   const lbEl=document.getElementById('_donutLabel');
@@ -1881,6 +1886,11 @@ function renderWkCal(){
         const sid=chip.dataset.tid||String(t.id);
         if(!sid)return;
         e.stopPropagation();
+        // Weekly-cal has its own hand-rolled selection here rather than calling selTask() — set
+        // the surface flag directly so _wkcColKeyNav/_shopOvKeyNav/_todListKeyNav know this click
+        // (not a click in #todList or #shopOv) owns the next keystroke, even when the same
+        // underlying item's id also renders in one of those (e.g. a shop item due today).
+        _lastSelSurface='wkcCol';
         if(e.metaKey||e.ctrlKey){
           if(selectedTasks.has(sid))selectedTasks.delete(sid);else selectedTasks.add(sid);
           lastSelectedId=sid;
@@ -4026,6 +4036,10 @@ function _dropReorderToday(e){
 // Cmd+Arrow reorder multi-select-aware, Delete/Backspace multi-delete) but adapted for the Today
 // list's mixed item types (task/shop/wrrule/rec/pup/vid all in one list, not a single type).
 function _todListKeyNav(e){
+  // A shopping item due today (or a WR rule pinned to today) can render in #todList AND another
+  // widget at once with the same id — _lastSelSurface (set per-click in selTask) is what actually
+  // tells us this keystroke belongs here, not just "is a matching id currently in #todList".
+  if(_lastSelSurface!=='todList')return false;
   const container=document.getElementById('todList');if(!container)return false;
   const rows=[...container.querySelectorAll('.ti[id^="ti-"]')];if(!rows.length)return false;
   const rowIds=rows.map(r=>r.id.slice(3));
@@ -4115,6 +4129,7 @@ function _todAdvanceDay(dir){
 // (e.g. a task due today shows in both #todList and today's wkc-col) — whichever list the user
 // last clicked into owns the keyboard from then on.
 function _wkcColKeyNav(e){
+  if(_lastSelSurface!=='wkcCol')return false;
   if(!lastSelectedId)return false;
   const anchorChip=document.querySelector('#wkcCols .chip[data-tid="'+CSS.escape(lastSelectedId)+'"]');
   if(!anchorChip)return false;
@@ -6277,19 +6292,14 @@ function _shopScrollTo(container,el){
   else if(er.bottom>ct.bottom)container.scrollTop+=er.bottom-ct.bottom;
 }
 function _shopOvKeyNav(e){
-  // Only handle when the selection anchor's own row actually lives in #shopOv — a shopping item
-  // due today also renders inside #todList with the same 'shop-cal-' id, and without this check
-  // selecting/reordering it there would get silently hijacked into reordering the #shopOv widget
-  // instead (wrong container entirely, and it'd only touch the shop-prefixed ids out of a
-  // mixed-type Today-list multi-select, dropping the rest). Whichever list was last clicked owns
-  // the keystroke — same pattern as _wkcColKeyNav vs _todListKeyNav.
+  // #shopOv shows EVERY undone shopping item (not date-filtered), so a shop item due today has a
+  // row with the identical id in #shopOv AND #todList at the same time — "does this id exist in
+  // #shopOv" is true almost always and can't tell us where the click actually happened. Only
+  // _lastSelSurface (set once per click in selTask) can. Whichever list was last clicked owns the
+  // keystroke — same pattern as _wkcColKeyNav vs _todListKeyNav.
+  if(_lastSelSurface!=='shopOv')return false;
   if(!lastSelectedId||!lastSelectedId.startsWith('shop-cal-'))return false;
   const container=document.getElementById('shopOv');if(!container)return false;
-  // The same shopping item due today also renders in #todList with the SAME row id — a bare
-  // document.getElementById would always resolve to whichever container happens to come first in
-  // the DOM (regardless of which one was actually clicked), so this must be scoped to #shopOv.
-  const anchorRow=container.querySelector('[id="ti-'+CSS.escape(lastSelectedId)+'"]');
-  if(!anchorRow)return false;
   const shopSel=[...selectedTasks].filter(s=>s.startsWith('shop-cal-'));
   if(!shopSel.length)return false;
   const rows=[...container.querySelectorAll('.ti')];if(!rows.length)return false;
@@ -6545,7 +6555,7 @@ function tRowExtra(t){
   const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
   const _bdDone=isBd&&t.done;
   const _pastGrey=(isBd&&!_bdDone&&t.due_date&&t.due_date<tod())||(isHd&&t.due_date&&t.due_date<tod());
-  return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${_bdDone||_pastGrey?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
+  return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${isTv?`;border-color:${s.b}`:''}${_bdDone||_pastGrey?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
     ${isTv?`<button class="pack-icon-btn pack-seg" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list">${_PACK_SVG}</button>`:''}
     <span class="tn" style="color:${s.t}${_bdDone||_pastGrey?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
     ${isTv||isBd||isHd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
