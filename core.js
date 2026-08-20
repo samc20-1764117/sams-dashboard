@@ -35,7 +35,7 @@ const CATS_DARK={
   'recurring':{bg:'rgba(20,184,166,.12)',t:'#5eead4',d:'#2a9db5',dot:'#5eead4',b:'rgba(20,184,166,.18)'},
   'weekly_reset':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',dot:'#93c5fd',b:'rgba(59,130,246,.18)'},
   'buy':{bg:'rgba(234,179,8,.12)',t:'#fde68a',d:'#eab308',dot:'#fde68a',b:'rgba(234,179,8,.18)'},
-  'travel':{bg:'rgba(20,184,166,.12)',t:'#5eead4',d:'#38bdf8',dot:'#5eead4',b:'rgba(20,184,166,.18)'},
+  'travel':{bg:'rgba(56,189,248,.12)',t:'#7dd3fc',d:'#38bdf8',dot:'#7dd3fc',b:'rgba(56,189,248,.18)'},
   'birthday':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#f97316',dot:'#fdba74',b:'rgba(249,115,22,.18)'},
   'holiday':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#f97316',dot:'#fdba74',b:'rgba(249,115,22,.18)'},
   'shopping':{bg:'rgba(249,115,22,.12)',t:'#fdba74',d:'#ea580c',dot:'#fdba74',b:'rgba(249,115,22,.18)'},

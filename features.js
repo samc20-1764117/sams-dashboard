@@ -1027,13 +1027,13 @@ let _moUAExpanded=false;
 let _moFilterExpanded=false;
 const MO_FILTER_TYPES=[
   {key:'travel',label:'Travel'},
-  {key:'home',label:'Home'},
   {key:'my work',label:'My Work'},
   {key:'videos',label:'Videos'},
   {key:'work',label:'Work'},
   {key:'social',label:'Social'},
-  {key:'recurring',label:'Recurring'},
+  {key:'home',label:'Home'},
   {key:'weekly_reset',label:'Weekly Reset'},
+  {key:'recurring',label:'Recurring'},
   {key:'birthday',label:'Birthdays'},
   {key:'holiday',label:'Holidays'},
   {key:'shopping',label:'Shopping'},
@@ -1053,6 +1053,8 @@ function _moFilterKey(t){
 }
 function _moTypeVisible(t){const s=_moFilterState();const k=_moFilterKey(t);return s[k]!==false;}
 function _toggleMoFilterType(key,checked){const s=_moFilterState();s[key]=checked;localStorage._moTypeFilter=JSON.stringify(s);renderMoCal();}
+function _moFilterSelectAll(){const s={};MO_FILTER_TYPES.forEach(ft=>s[ft.key]=true);localStorage._moTypeFilter=JSON.stringify(s);renderMoCal();}
+function _moFilterClearAll(){const s={};MO_FILTER_TYPES.forEach(ft=>s[ft.key]=false);localStorage._moTypeFilter=JSON.stringify(s);renderMoCal();}
 function _moFilterRowStyle(key){
   if(key==='pup'&&typeof _pupSessStyle==='function')return _pupSessStyle();
   if(key==='shopping')return gc('birthday');
@@ -1061,11 +1063,12 @@ function _moFilterRowStyle(key){
 function _renderMoFilterPanel(){
   const wrap=document.getElementById('mFilterList');if(!wrap)return;
   const s=_moFilterState();
-  wrap.innerHTML=MO_FILTER_TYPES.map(ft=>{
+  const rows=MO_FILTER_TYPES.map(ft=>{
     const checked=s[ft.key]!==false;
     const cs=_moFilterRowStyle(ft.key);
     return`<label class="mo-filter-row" style="background:${cs.bg};border:1px solid ${cs.b};color:${cs.t}"><input type="checkbox" class="chk" style="--fc-b:${cs.b||cs.t};--fc-d:${cs.d||cs.t}" ${checked?'checked':''} onchange="_toggleMoFilterType('${ft.key}',this.checked)"><span>${ft.label}</span></label>`;
   }).join('');
+  wrap.innerHTML=`<button class="btn btn-ghost btn-xs mo-filter-all" onclick="_moFilterSelectAll()">All</button>${rows}<button class="btn btn-ghost btn-xs mo-filter-all" onclick="_moFilterClearAll()">Clear</button>`;
 }
 function toggleMoGoals(){_moGoalsExpanded=!_moGoalsExpanded;renderMoCal();}
 function toggleMoUA(){_moUAExpanded=!_moUAExpanded;renderMoCal();}
@@ -1398,7 +1401,7 @@ function mkMCell(date,om,today){
     // light mode's solid #e0f2fe), so give the bridge chips a solid dark fill instead.
     // Past chips get pre-dimmed solid colors here (instead of via the opacity:.35 below)
     // so the dimming doesn't re-introduce the double-stacked seam on the solid fill.
-    if(isTravel&&_dk())s={...s,bg:isPast?'#122223':'#0d3d3a',t:isPast?'#2e5f59':s.t};
+    if(isTravel&&_dk())s={...s,bg:isPast?'#151b20':'#182832',t:isPast?'#395767':s.t};
     const chip=document.createElement('div');chip.className='mcell-t';chip.draggable=!t.done&&!isBday&&!isHoliday;
     // Travel: compute visual span position to extend chip across cell gaps
     let travelSpanStyle='';
