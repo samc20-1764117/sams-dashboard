@@ -1107,7 +1107,7 @@ function renderMoCal(){
     const _oldCells=_mgridEl.querySelectorAll('.mcell[data-ds]');
     for(const _c of _oldCells){
       const _r=_c.getBoundingClientRect();
-      if(_r.bottom>_mgRect.top){_mgridAnchorDs=_c.dataset.ds;_mgridAnchorOffset=_r.top-_mgRect.top;break;}
+      if(_r.bottom>_mgRect.top+4){_mgridAnchorDs=_c.dataset.ds;_mgridAnchorOffset=_r.top-_mgRect.top;break;}
     }
   }
   const today=tod();
@@ -1351,7 +1351,7 @@ function renderMoCal(){
     if(_newCell){
       const _mgRect2=_mgridEl.getBoundingClientRect();
       const _newRect=_newCell.getBoundingClientRect();
-      _mgridEl.scrollTop+=(_newRect.top-_mgRect2.top)-_mgridAnchorOffset;
+      _mgridEl.scrollTop=Math.round(_mgridEl.scrollTop+(_newRect.top-_mgRect2.top)-_mgridAnchorOffset);
     }else{
       _mgridEl.scrollTop=_mgridScrollY;
     }
