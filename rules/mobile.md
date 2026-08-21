@@ -168,15 +168,21 @@ Persisted to `localStorage._mLastTab`; init restores it (refresh keeps current t
 ### Header (shared across all tabs)
 ```html
 #mHeader
-  h1#mHeaderTitle + #mDateLbl        ← title/date, left
-  #mTodayTBBtn (today only)          ← Timeblock icon button
-  #mProgress (today only)            ← done/total badge, yellow until 100% then green (.m-prog-complete)
-  #mShopHeaderBtns (shop only)       ← 🍽 Meals icon + red "HEB" List badge
-  #mGoTodayBtn (all tabs but today)  ← jumps to Today tab; on month tab, calls mGoToday() which
-                                        instead re-runs mOpenMonth() to reset the calendar's scroll
-                                        back to today rather than navigating away
-  .m-reload-btn                      ← always last, far right
+  #mHeaderTitleWrap (hidden on month) ← h1#mHeaderTitle + #mDateLbl, left
+  #mMonthHeaderControls (month only)  ← month/year dropdown triggers, see Month section
+  #mMonthTodayNav (month only)        ← centered Today/‹/› group, see Month section
+  #mTodayTBBtn (today only)           ← clock-face icon → opens Timeblock (mShowTab('tb'))
+  #mProgress (today only)             ← done/total badge, yellow until 100% then green (.m-prog-complete)
+  #mShopHeaderBtns (shop only)        ← 🍽 Meals icon + red "HEB" List badge
+  #mMonthAddBtn (month only)          ← "+" opens full-add sheet for the selected day (mMonthAddTask)
+  #mGoTodayBtn (week only)            ← jumps to Today tab; gone from Shop/More/Month (Month has its
+                                         own dedicated Today button, see below). On Week, mGoToday()
+                                         re-runs mRenderWeek(true) to scroll back to today WITHOUT
+                                         navigating away (it used to call mShowTab('today'), which
+                                         was a bug — you're already looking at Week)
+  .m-reload-btn                       ← always last, far right
 ```
+`mShowTab(tab)` toggles `#mHeaderTitleWrap` vs `#mMonthHeaderControls`/`#mMonthTodayNav`/`#mMonthAddBtn` based on `tab==='month'`, and `#mGoTodayBtn` based on `tab==='week'` — single source of truth for all of the above, see Month section for the controls themselves.
 
 ### Bottom nav
 ```html
@@ -209,8 +215,14 @@ Fixed at bottom, `height: calc(52px + env(safe-area-inset-bottom))`, icons verti
 - Pup session: checkbox → `togPupSessionDone(sessId, checked)`
 - Travel/birthday: no checkbox (📅 icon), no swipe
 
-### Move-to-Today (`.m-mv-today` button, overdue rows only)
-`_mMoveToTodayArgs(t)` picks `[id, type, extra]` per task type; `mMoveToToday(id, type, extra)` dispatches. Covers ALL overdue-capable types (parity with desktop's bulk `rolloverOverdue()`, just scoped to one row): `task`, `shop`, `pup` (`pup_skill_sessions.day_date`), `vid` (`_mVidDayMap`/`_mVidDayMapSet`), `vidstep` (`extra` = `step::day`; moves any block on that day + the daymap primary/extraDay entry via `_mVidStepMap`/`_mVidStepMapSet`), `rec`/`wrec` (`st.recurring`, `extra`=wkKey, PATCH `wr_recurring_rules`), `wrrule` (`st.wrRules`, `extra`=wkKey). Every branch is undoable via `pushUndo`. **`_mVidDayMapSet`/`_mVidStepMap`/`_mVidStepMapSet` are mobile's own localStorage-direct implementations** — the desktop equivalents (`_vidDayMapSet`, `_vidStepDayMap`, `_vidStepDayMapSet`) live in `overview.js`, which mobile never loads.
+### Move-to-Today (`.m-mv-today` button, overdue rows only) — styled red (`#ef4444`/`#fff0f0`, matches desktop's `OV` color)
+`_mMoveToTodayArgs(t)` picks `[id, type, extra]` per task type. For `rec`/`wrec`/`wrrule`, `mTaskRow`'s button routes through `_mOvRowMoveClick(kind, id, wkKey)` instead of calling `mMoveToToday` directly (see below); every other type (`task`, `shop`, `pup`, `vid`, `vidstep`) still calls `mMoveToToday(id, type, extra)` directly, unchanged. Covers ALL overdue-capable types (parity with desktop's bulk `rolloverOverdue()`, just scoped to one row): `task`, `shop`, `pup` (`pup_skill_sessions.day_date`), `vid` (`_mVidDayMap`/`_mVidDayMapSet`), `vidstep` (`extra` = `step::day`; moves any block on that day + the daymap primary/extraDay entry via `_mVidStepMap`/`_mVidStepMapSet`), `rec`/`wrec` (`st.recurring`, `extra`=wkKey, PATCH `wr_recurring_rules`), `wrrule` (`st.wrRules`, `extra`=wkKey). Every branch is undoable via `pushUndo`. **`_mVidDayMapSet`/`_mVidStepMap`/`_mVidStepMapSet` are mobile's own localStorage-direct implementations** — the desktop equivalents (`_vidDayMapSet`, `_vidStepDayMap`, `_vidStepDayMapSet`) live in `overview.js`, which mobile never loads.
+
+### Past-week recurring/WR miss prompt (`_mOvRowMoveClick`, mirrors desktop's `_ovRowMoveClick`/`rolloverOverdue` scope picker — see `rules/tasks-ui.md` Overdue Logic)
+A recurring/WR miss from the CURRENT week is just a same-week nudge — `_mOvRowMoveClick` computes `pastWeek = wkKey && wkKey !== getWkKey(0)`; when false it delegates straight to the existing `mMoveToToday(id, kind, wkKey)` (silent direct pin, unchanged). When `pastWeek` is true it's a real schedule decision, so it opens a singleton bottom sheet (`#mWrScopeSheet`/`#mWrScopeBackdrop`, same slide-up/backdrop idiom as `#mEditSheet` — NOT desktop's cursor-positioned `#wrScopePicker` popup) via `mOpenWrScopeSheet(name, wkKey, onSkip, onThisTime, onSameDay, onChangeDay)`, four full-width rows in desktop's order: Skip past week / This time only / Same day / Change day to today. Mobile has no bulk overdue banner, so this is always a queue of exactly one — never port desktop's sequential `_rolloverPromptQueue`.
+- `wrrule` kind → `writeWrOverride`-style skip / `_mWrMoveToThisWeek(id,wkKey,false/true,false/true)` for the other 3 (ported from desktop's `wrMoveToThisWeek`, overview.js — not loaded on mobile).
+- `rec`/`wrec` kind → `_recSkipPastWeek`/`_recMoveThisOccToToday` (features.js, shared — called directly, confirmed mobile-safe: only touch `save/renderAll/sbReqSilent/pushUndo`) for skip/this-time, `_mRecMoveAllFuture(rec,wkKey,tod(),true/false)` for same-day/change-day (ported from desktop's `_recMoveAllFuture`, overview.js).
+- Ports (`_mWriteWrOverride`, `_mWrMoveToThisWeek`, `_mRecMoveAllFuture`, `_mWrSnapshotSchedule`, `_mNthWeekdayOfMonth`, `_mWeeksAgoLabel`) are near-verbatim copies of their overview.js originals with desktop-only render calls (`renderRecOv`/`renderWkCal`/`renderWeeklyPage`/`renderDayTB`) swapped for `renderAll()`, and `_wrClearPastOrphanPins` (a permanent no-op on desktop too) omitted entirely.
 
 ### Swipe-to-delete
 - Event delegation on `#mTodayList` (persists through innerHTML replacement)
@@ -230,11 +242,14 @@ Fixed at bottom, `height: calc(52px + env(safe-area-inset-bottom))`, icons verti
 - Flag resets to off after each add
 
 ### Full add sheet (`#mFullAddSheet`)
-- Opened by "+" button in Today section header
-- Fields: name, due_date, then ONE row with category picker (`'fulladd'`) + important flag button (`.m-flag-btn`/`#mFullAddImpBtn`, same ⚑ icon treatment as the bottom add bar's `#mAddFlagBtn` — NOT the old separate on/off text toggle)
+- Opened by "+" button in Today section header (also reused by Month's header "+" via `mMonthAddTask()`, and by the Month drag-to-create-travel gesture — see Month section)
+- Fields: name, then `#mFullAddDestField`/`#mFullAddEndField`/`#mFullAddModeField` (Travel-only, hidden by default), due_date (`#mFullAddDue`, relabeled "Start date" in Travel mode), then ONE row with category picker (`'fulladd'`) + important flag button (`.m-flag-btn`/`#mFullAddImpBtn`, same ⚑ icon treatment as the bottom add bar's `#mAddFlagBtn` — NOT the old separate on/off text toggle)
 - `mOpenFullAdd()` / `mCloseFullAdd()` / `mSaveFullAdd()` / `mToggleFullAddImp()`
 - Pre-fills due_date to today
 - `#mFullAddDue` (and `#mEditDue`, `#mShopEditDue`) need `-webkit-appearance:none;appearance:none;max-width:100%` — iOS Safari's native date-input chrome otherwise ignores the author width and can render past the sheet's edge
+
+### Travel task creation (Today's `#mAddBar` + `#mFullAddSheet`)
+`M_CATS_TRAVEL = [...M_CATS, 'Travel']` — Travel is added ONLY to the `'add'` (bottom bar) and `'fulladd'` (full-add sheet) category pickers via `_mBuildOpts(elId, which, cats)`'s optional `cats` param; edit/block/wkadd pickers stay plain `M_CATS` (no travel behavior there). Picking Travel in `#mFullAddSheet` calls `_mFullAddSyncTravelFields(cat)` (mobile port of desktop's `_tModalSyncTravelFields`, features.js) from `mSelectCat('fulladd', cat)` — shows the destination/end-date/mode fields, relabels due date, renames the save button "Add Trip". Both entry points funnel into `_mAddTravel(name, dest, start, end, mode)`: pushes to `st.travel`, `save()`, `renderAll()`, `sbReq POST travel`, `pushUndo` — mirrors desktop's `saveTModal` Travel branch (features.js) minus `renderTravelPage()` (desktop-only; `renderAll()` is mobile's substitute). The bottom bar (`mAddTask()`) always creates a single-day trip due "today" (no room for a date range in that compact bar) — use the full-add sheet for a date range.
 
 ### Edit task sheet (`#mEditSheet`)
 - `mOpenEdit(id)` / `mCloseEdit()` / `mSaveEditTask()` / `mDeleteEditTask()`
@@ -422,14 +437,19 @@ Continuous scroll of weeks across multiple months (like iOS Calendar's list view
 ### Layout
 ```
 #mMonthPage
-  #mMonthNav       ← ‹ "August 2026 ▾" › — title is a button, tap → mToggleYearView()
-  #mYearView       ← 12-month grid picker, hidden unless year view is open
   #mMonthDayHdr    ← M T W T F S S (Monday-start, matching the rest of the app — NOT Sunday-start like iOS)
   #mMonthScroll    ← the scrolling region (see height sync below)
     #mMonthWeeks   ← one .m-mo-week grid row per week — TWO partial rows when a week
                       crosses a month boundary (see below), month-name divider before each
   #mMonthDetail    ← tap-a-day detail list, elevated card, pinned below the scroll region
 ```
+The month/year nav controls do NOT live inside `#mMonthPage` any more — they live in the shared `#mHeader` (see Header section) so "it's all in the header": `#mMonthHeaderControls` (month name + year, top-left) and `#mMonthTodayNav` (centered Today/‹/› group), both toggled visible by `mShowTab` only when `_mCurTab==='month'`. The old `#mMonthNav`/`#mYearView` (single "August 2026 ▾" title + 12-month grid picker) are retired.
+
+### Header controls (`#mMonthHeaderControls` / `#mMonthTodayNav`, in `#mHeader`)
+- `#mMonthTitle` (month name, e.g. "August") and `#mMonthYearBtn` (year, e.g. "2026") are two INDEPENDENT dropdown triggers — `mToggleMonthDrop()`/`mToggleYearDrop()` open `#mMonthMonthDrop` (Jan–Dec list, current month marked `.is-current`) / `#mMonthYearDrop` (current year ±5), absolute-positioned popovers under their trigger (same idiom as the `.m-cpick-opts` category picker), closed on outside-tap via the same document click listener `mInitPickers()` already registers (extended to also check `#mMonthHeaderControls`).
+- `mPickMonth(mi)` / `mPickYear(yr)` resolve the OTHER value from `_mMonthDisplayedMo`/`_mMonthDisplayedYr` (tracked by `_mUpdateMonthTitle` from whichever row is docked at the top) so picking just a month keeps the current year and vice versa, then call `mMonthJumpToOffset(offset)` (unchanged, reused verbatim).
+- `#mMonthTodayBtn` (in `#mMonthTodayNav`, alongside the pre-existing `mMonthJump(-1)`/`mMonthJump(1)` ‹/› buttons) calls `mOpenMonth()` directly — this replaces the old shared `#mGoTodayBtn`'s job on this tab (that button is Week-only now, see Header section).
+- `#mMonthAddBtn` (in the header's right-side icon-button cluster, month-only) → `mMonthAddTask()`: opens `#mFullAddSheet` pre-filled to `_mMonthSelectedDs` (or today if unset) — same day-scoping idea as Week's `mWkAddTask(ds)`.
 
 ### Explicit height sync (`_mSyncMonthScrollHeight`) — CRITICAL
 `#mMonthScroll` does NOT rely on the `flex:1`/`min-height:0` chain alone to stay bounded — that was tried first and failed on-device (content taller than the screen, whole page trying to grow instead of the calendar scrolling internally, which also fed wrong reference points into the ‹/› month-jump logic). Instead: `window.innerHeight - header.getBoundingClientRect().bottom - navHeight - dayHdrHeight - detailHeight - 12`, computed from real viewport measurements, applied as `scroller.style.height` (with `flex:'none'` to stop it fighting with the CSS `flex:1` fallback). Called: on `mOpenMonth()` (next rAF), on `window resize` (guarded to `_mCurTab==='month'`), and after every `mMonthSelectDay()` (detail panel's height varies with its task count up to its own `max-height:26vh` cap).
@@ -444,10 +464,10 @@ Continuous scroll of weeks across multiple months (like iOS Calendar's list view
 - `mInitMonthScroll()` — scroll listener, rAF-throttled (batches title update + load-more threshold checks into one tick — was previously running on every raw scroll event, which is real layout-thrashing jank on a real device)
 - `_mUpdateMonthTitle()` — tracks which month is docked at the top via **one `elementFromPoint()` hit-test**, NOT iterating every rendered row with `getBoundingClientRect()` (that was the layout-thrashing bug: 13+ rows × `getBoundingClientRect()` on every scroll frame)
 - `_mRenderMonthWeeks(reset)` — `reset=true` only on explicit tab-open/`mGoToday()`; background sync re-renders (`reset=false`, from `renderAll()`) preserve `scroller.scrollTop` so a 30s sync can't yank the view while browsing other months
-- `mMonthJump(dir)` / `mMonthJumpToOffset(monthOffset)` — ‹/› buttons; in year-view mode the same buttons page `_mYearOffset` instead (`mToggleYearView()`/`_mRenderYear()`/`mYearSelectMonth(mo,yr)`)
+- `mMonthJump(dir)` / `mMonthJumpToOffset(monthOffset)` — ‹/› buttons (now in `#mMonthTodayNav`, see Header controls above)
 
-### Header "Today" button behavior on Month
-`mGoToday()` (header button, see Tab System) checks `_mCurTab`: on month, re-runs `mOpenMonth()` (reset range + scroll back to the current month's start) instead of navigating to the Today tab — you're already looking at a calendar, leaving it would be a non-sequitur.
+### Long-press-drag across days → create a travel task
+`mInitMonthDrag()` (called once from `mInit()`), delegated on `#mMonthWeeks` so it survives re-renders — same long-press idiom as `mInitBlockDrag`/`mInitWkDrag`: `touchstart` on `.m-mo-day[data-ds]` arms a 480ms timer (a plain tap before it fires still reaches `mMonthSelectDay`'s own `onclick` normally); on fire, locks `#mMonthScroll` `overflowY:hidden` and starts tracking; `touchmove` (dynamic `passive:false`) re-hit-tests via `elementFromPoint` (naturally skips `.m-mo-day-empty` placeholders — `pointer-events:none`) and highlights the inclusive date range with `.m-mo-day.drag-selected`; `touchend` restores scroll, clears highlights, and — only if the drag actually moved to a different day (`startDs !== endDs`; a same-cell long-press is not a drag) — opens `#mFullAddSheet` forced into Travel mode (`mSelectCat('fulladd','Travel')`) with `#mFullAddDue`/`#mFullAddEnd` pre-filled from the dragged range's min/max regardless of drag direction.
 
 ### Per-day color breakdown (`_mMonthDayBadge`, `_mMonthDotStyle`, `_mMonthCatKey`)
 - Built from `mGetDayTasks(ds, weekOff)` — **the exact same call the tap-to-detail panel uses** (`_mRenderMonthDetail`). This is load-bearing: an earlier version used a separate, narrower data source for the badge and it silently missed WR recurring/WR rules/pup sessions/travel/birthday/video-step items, and disagreed with the detail panel. If badge/detail ever look like they disagree again, check whether the badge is on `mGetDayTasks` or something else first.
@@ -514,6 +534,7 @@ async function mInit() {
   mInitBlockDrag();    // longpress-drag on #mTLCol
   mInitWeekSwipe();    // week-swipe on #mWeekPage
   mInitWkDrag();       // task drag on #mWeekList
+  mInitMonthDrag();    // longpress-drag on #mMonthWeeks → create travel task
   const authed = await checkAuth();
   if (!authed) return; // showLoginOverlay() called by core.js
   hideLoginOverlay();

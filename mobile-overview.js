@@ -259,6 +259,7 @@ async function togPupSessionDone(sessId, done) {
 
 // ── Category picker ───────────────────────────────────────────────────────────
 const M_CATS = ['Home', 'My work', 'Work', 'Social', 'Long term'];
+const M_CATS_TRAVEL = [...M_CATS, 'Travel'];
 let _mAddCat       = 'Home';
 let _mEditCat      = 'Home';
 let _mBlockCat     = 'Home';
@@ -275,10 +276,10 @@ function _mDotStyle(cat) {
   return `background:${s.bg};border:1.5px solid ${s.d}`;
 }
 
-function _mBuildOpts(elId, which) {
+function _mBuildOpts(elId, which, cats = M_CATS) {
   const el = document.getElementById(elId);
   if (!el) return;
-  el.innerHTML = M_CATS.map(cat => {
+  el.innerHTML = cats.map(cat => {
     const s = gc(cat);
     return `<div class="m-cpick-opt" onclick="mSelectCat('${which}','${escHtml(cat)}')">
       <span class="m-cpick-dot" style="background:${s.bg};border:1.5px solid ${s.d}"></span>
@@ -313,14 +314,15 @@ function mSelectCat(which, cat) {
   if (dotEl) dotEl.style.cssText = _mDotStyle(cat);
   if (lblEl) lblEl.textContent = cat;
   document.getElementById(optId)?.classList.remove('open');
+  if (which === 'fulladd') _mFullAddSyncTravelFields(cat);
 }
 
 function mInitPickers() {
-  _mBuildOpts('mAddPickOpts',     'add');
+  _mBuildOpts('mAddPickOpts',     'add',     M_CATS_TRAVEL);
   _mBuildOpts('mEditPickOpts',    'edit');
   _mBuildOpts('mBlockPickOpts',   'block');
   _mBuildOpts('mWkAddPickOpts',   'wkadd');
-  _mBuildOpts('mFullAddPickOpts', 'fulladd');
+  _mBuildOpts('mFullAddPickOpts', 'fulladd', M_CATS_TRAVEL);
   mSelectCat('add',     'Home');
   mSelectCat('block',   'Home');
   mSelectCat('wkadd',   'Home');
@@ -330,6 +332,10 @@ function mInitPickers() {
       ['mAddPickOpts','mEditPickOpts','mBlockPickOpts','mWkAddPickOpts','mFullAddPickOpts'].forEach(id => {
         document.getElementById(id)?.classList.remove('open');
       });
+    }
+    if (!e.target.closest('#mMonthHeaderControls')) {
+      document.getElementById('mMonthMonthDrop')?.classList.remove('open');
+      document.getElementById('mMonthYearDrop')?.classList.remove('open');
     }
   }, true);
 }
@@ -547,7 +553,15 @@ function mTaskRow(t) {
   // Overdue regular/shopping tasks get a one-tap reschedule to today
   const canMv = ov && (canEdit || t._type === 'shop' || t._type === 'vidstep' || t._type === 'vid' || t._type === 'pup' || t._isWrec || t._isWrRule || (t._virtual && t._recId));
   const mvArgs = canMv ? _mMoveToTodayArgs(t) : null;
-  const mvBtn = canMv ? `<button class="m-mv-today" onclick="event.stopPropagation();mMoveToToday('${mvArgs[0]}','${mvArgs[1]}'${mvArgs[2] !== undefined ? `,'${mvArgs[2]}'` : ''})">→ Today</button>` : '';
+  // rec/wrec/wrrule route through _mOvRowMoveClick first — a miss from a genuine past
+  // week is a schedule decision (4-option prompt), not a silent move; same-week misses
+  // still move directly (that dispatch lives inside _mOvRowMoveClick itself).
+  const _mvIsRecurring = mvArgs && (mvArgs[1] === 'wrrule' || mvArgs[1] === 'wrec' || mvArgs[1] === 'rec');
+  const mvBtn = canMv
+    ? (_mvIsRecurring
+        ? `<button class="m-mv-today" onclick="event.stopPropagation();_mOvRowMoveClick('${mvArgs[1]}','${mvArgs[0]}','${mvArgs[2]}')">→ Today</button>`
+        : `<button class="m-mv-today" onclick="event.stopPropagation();mMoveToToday('${mvArgs[0]}','${mvArgs[1]}'${mvArgs[2] !== undefined ? `,'${mvArgs[2]}'` : ''})">→ Today</button>`)
+    : '';
 
   const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${noCheck
@@ -593,6 +607,11 @@ async function mAddTask() {
   if (!n) return;
   const cat = _mAddCat;
   const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
+  if (cat === 'Travel') {
+    await _mAddTravel(n, null, ds, null, null);
+    inp.value = '';
+    return;
+  }
   const important = _mAddImportant;
   const t = {id: 'l-' + Date.now(), name: n, category: cat, due_date: ds, done: false, important};
   st.tasks.push(t);
@@ -606,6 +625,21 @@ async function mAddTask() {
     const i = st.tasks.findIndex(x => x.id === t.id);
     if (i > -1) st.tasks[i] = sv[0];
     save();
+  }
+}
+
+// Creates a trip in st.travel — shared by the bottom quick-add bar (single day, today)
+// and the full-add sheet's Travel mode (optional destination/end date/mode).
+async function _mAddTravel(name, destination, start, end, mode) {
+  const tv = {id: 'l-' + Date.now(), name, destination: destination || null, start_date: start, end_date: end || null, travel_mode: mode || null, notes: null};
+  st.travel.push(tv);
+  save();
+  renderAll();
+  pushUndo(() => { st.travel = st.travel.filter(x => x.id !== tv.id); save(); renderAll(); sbReq('DELETE', 'travel', null, `?id=eq.${tv.id}`); }, 'Added trip');
+  const sv = await sbReq('POST', 'travel', {name, destination: destination || null, start_date: start, end_date: end || null, travel_mode: mode || null, notes: null});
+  if (sv && sv[0]) {
+    const i = st.travel.findIndex(x => x.id === tv.id);
+    if (i > -1) { st.travel[i] = sv[0]; save(); renderAll(); }
   }
 }
 
@@ -754,6 +788,206 @@ function mMoveToToday(id, type, extra) {
   renderAll();
 }
 
+// ── Past-week recurring/WR "move to today" scope prompt ──────────────────────
+// Desktop (overview.js/features.js, NOT loaded on mobile) now treats a recurring/WR
+// miss from a genuine PAST week as a real schedule decision — instead of silently
+// moving it, it prompts Skip past week / This time only / Same day / Change day to
+// today. Same-week misses still move silently (no schedule implication). Mobile only
+// has the per-row arrow (no bulk overdue banner), so this is a singleton prompt, never
+// a sequential queue like desktop's _rolloverPromptQueue.
+//
+// _recSkipPastWeek and _recMoveThisOccToToday (features.js, shared) are called directly
+// below — confirmed mobile-safe, they only touch save/renderAll/sbReqSilent/pushUndo.
+// wrMoveToThisWeek/_recMoveAllFuture/writeWrOverride (overview.js) are ported here with
+// their desktop-only render calls swapped for renderAll().
+
+function _mWeeksAgoLabel(wkKey) {
+  const n = Math.round((new Date(getWkKey(0) + 'T12:00') - new Date(wkKey + 'T12:00')) / (7 * 86400000));
+  return n === 1 ? 'due last week' : `due ${n} weeks ago`;
+}
+
+function _mWrSnapshotSchedule(rule) {
+  if (!rule._dateOverrides) rule._dateOverrides = {};
+  const wk = getWkKey(0);
+  if (!rule._dateOverrides.__priorScheds__) rule._dateOverrides.__priorScheds__ = [];
+  if (rule._dateOverrides.__priorScheds__.some(s => s.before === wk)) return false;
+  rule._dateOverrides.__priorScheds__.push({starting_date: rule.starting_date, before: wk});
+  return true;
+}
+
+function _mNthWeekdayOfMonth(d) {
+  const day = d.getDate();
+  const nextOcc = new Date(d); nextOcc.setDate(day + 7);
+  if (nextOcc.getMonth() !== d.getMonth()) return -1;
+  return Math.min(Math.ceil(day / 7), 4);
+}
+
+// Port of desktop's writeWrOverride (overview.js) — identical logic, renders via renderAll().
+function _mWriteWrOverride(ruleId, wkKey, payload, {onDone, undoLabel = 'Changed WR task'} = {}) {
+  const full = {rule_id: ruleId, wk_key: wkKey, done: null, moved_to_wk_key: null, custom_name: null, custom_notes: null, ...payload};
+  const isSkip = payload.override_type === 'skip';
+  const _skipRule = isSkip ? st.wrRules.find(x => String(x.id) === String(ruleId)) : null;
+  const _pinnedDs = _skipRule?._dateOverrides?.[wkKey];
+  const linkedBlocks = isSkip && st.blocks ? st.blocks.filter(b => dsToWkKey(b.ds) === wkKey && (String(b.ruleId) === String(ruleId) || String(b.recId) === String(ruleId) || (!b.ruleId && !b.recId && _pinnedDs && b.ds === _pinnedDs && !b.taskId && !b.shopId && !b._vidStepVid && !b._vidId && !b._pupSessId && !b._finCancelSubId))) : [];
+  if (isSkip && linkedBlocks.length) { st.blocks = st.blocks.filter(b => !linkedBlocks.some(lb => lb.id === b.id)); linkedBlocks.forEach(b => sbDeleteBlock(b.id)); }
+  const _syncBlockDone = (isDone) => { if (st.blocks) st.blocks.filter(b => dsToWkKey(b.ds) === wkKey && (String(b.ruleId) === String(ruleId) || String(b.recId) === String(ruleId))).forEach(b => { b._done = isDone; }); };
+  const existing = st.wrOverrides.find(o => String(o.rule_id) === String(ruleId) && o.wk_key === wkKey);
+  if (existing) {
+    const prev = {...existing};
+    Object.assign(existing, full);
+    sbReqSilent('PATCH', 'wr_recurring_overrides', full, `?id=eq.${existing.id}`);
+    pushUndo(() => { Object.assign(existing, prev); if (isSkip) { linkedBlocks.forEach(b => { if (st.blocks) st.blocks.push(b); sbSaveBlock(b); }); } sbReqSilent('PATCH', 'wr_recurring_overrides', prev, `?id=eq.${existing.id}`); _syncBlockDone(prev.override_type === 'complete' && prev.done === true); renderAll(); }, undoLabel);
+    if (payload.override_type === 'complete') _syncBlockDone(payload.done === true);
+    save(); renderAll(); if (onDone) onDone(existing);
+  } else {
+    const tmpId = 'wrov-tmp-' + Date.now();
+    st.wrOverrides.push({...full, id: tmpId});
+    let realId = null;
+    sbReqSilent('POST', 'wr_recurring_overrides', full, '').then(res => {
+      if (res && res[0]) { realId = String(res[0].id); const idx = st.wrOverrides.findIndex(o => String(o.id) === tmpId); if (idx > -1) st.wrOverrides[idx] = res[0]; save(); if (onDone) onDone(res[0]); }
+    });
+    pushUndo(() => {
+      const id = realId || tmpId;
+      st.wrOverrides = st.wrOverrides.filter(o => String(o.id) !== id);
+      if (isSkip) { linkedBlocks.forEach(b => { if (st.blocks) st.blocks.push(b); sbSaveBlock(b); }); }
+      if (realId) sbReqSilent('DELETE', 'wr_recurring_overrides', null, `?id=eq.${realId}`);
+      _syncBlockDone(false); renderAll();
+    }, undoLabel);
+    if (payload.override_type === 'complete') _syncBlockDone(payload.done === true);
+    save(); renderAll();
+  }
+}
+
+// Port of desktop's wrMoveToThisWeek (overview.js) — re-homes an overdue WR rule into
+// the current week as unassigned. allFuture also re-anchors starting_date=tod(); setDow
+// (only meaningful with allFuture) also changes which day it recurs on to match today.
+function _mWrMoveToThisWeek(ruleId, srcWkKey, allFuture, setDow) {
+  const rule = st.wrRules.find(r => String(r.id) === String(ruleId)); if (!rule) return;
+  const curWkKey = getWkKey(0);
+  if (!rule._dateOverrides) rule._dateOverrides = {};
+  const prevStart = rule.starting_date;
+  const prevSrcPin = rule._dateOverrides[srcWkKey];
+  const prevDow = rule.day_of_week, prevMNth = rule.monthly_nth, prevMWd = rule.monthly_weekday, prevMDate = rule.monthly_date;
+  const _delKey = o => String(o.rule_id) === String(ruleId) && (o.wk_key === srcWkKey || (o.wk_key === curWkKey && o.override_type === 'skip'));
+  const _deleted = (st.wrOverrides || []).filter(_delKey).map(o => ({...o}));
+  if (prevSrcPin !== undefined) delete rule._dateOverrides[srcWkKey];
+  _deleted.forEach(o => { if (o.id && !String(o.id).startsWith('wrov-tmp-')) sbReqSilent('DELETE', 'wr_recurring_overrides', null, `?id=eq.${o.id}`); });
+  if (_deleted.length) st.wrOverrides = (st.wrOverrides || []).filter(o => !_delKey(o));
+  const _addedSnap = allFuture ? _mWrSnapshotSchedule(rule) : false;
+  if (allFuture) {
+    rule.starting_date = tod();
+    if (setDow) {
+      const now = new Date(tod() + 'T12:00');
+      if (rule.cadence === 'weekly' || rule.cadence === 'biweekly') {
+        rule.day_of_week = now.getDay();
+      } else if (rule.cadence === 'monthly') {
+        if (rule.monthly_rule_type === 'date_of_month') rule.monthly_date = now.getDate();
+        else if (rule.monthly_rule_type === 'nth_weekday') { rule.monthly_weekday = now.getDay(); rule.monthly_nth = _mNthWeekdayOfMonth(now); }
+      }
+    }
+  }
+  const naturallyDue = isWRRuleDueThisWeek(rule, 0);
+  const hasCur = (st.wrOverrides || []).some(o => String(o.rule_id) === String(ruleId) && ((o.wk_key === curWkKey && o.override_type !== 'skip') || (o.override_type === 'move' && o.moved_to_wk_key === curWkKey)));
+  let _addedHolder = null;
+  if (!naturallyDue && !hasCur) {
+    const _moveFull = {rule_id: ruleId, wk_key: srcWkKey, override_type: 'move', moved_to_wk_key: curWkKey, done: null, custom_name: null, custom_notes: null};
+    _addedHolder = {..._moveFull, id: 'wrov-tmp-' + Date.now()};
+    st.wrOverrides.push(_addedHolder);
+    sbReqSilent('POST', 'wr_recurring_overrides', _moveFull, '').then(res => { if (res && res[0]) Object.assign(_addedHolder, res[0]); });
+  }
+  sbReq('PATCH', 'wr_recurring_rules', {starting_date: rule.starting_date, day_of_week: rule.day_of_week, monthly_nth: rule.monthly_nth, monthly_weekday: rule.monthly_weekday, monthly_date: rule.monthly_date, date_overrides: rule._dateOverrides}, `?id=eq.${ruleId}`);
+  save(); renderAll();
+  pushUndo(() => {
+    rule.starting_date = prevStart;
+    rule.day_of_week = prevDow; rule.monthly_nth = prevMNth; rule.monthly_weekday = prevMWd; rule.monthly_date = prevMDate;
+    if (_addedSnap) rule._dateOverrides.__priorScheds__.pop();
+    if (prevSrcPin !== undefined) rule._dateOverrides[srcWkKey] = prevSrcPin; else delete rule._dateOverrides[srcWkKey];
+    if (_addedHolder) { if (_addedHolder.id && !String(_addedHolder.id).startsWith('wrov-tmp-')) sbReqSilent('DELETE', 'wr_recurring_overrides', null, `?id=eq.${_addedHolder.id}`); st.wrOverrides = st.wrOverrides.filter(o => o !== _addedHolder); }
+    _deleted.forEach(o => { const _h = {rule_id: o.rule_id, wk_key: o.wk_key, override_type: o.override_type, moved_to_wk_key: o.moved_to_wk_key || null, done: o.done || null, custom_name: o.custom_name || null, custom_notes: o.custom_notes || null, id: 'wrov-tmp-' + Date.now() + '-' + o.wk_key}; st.wrOverrides.push(_h); sbReqSilent('POST', 'wr_recurring_overrides', {rule_id: _h.rule_id, wk_key: _h.wk_key, override_type: _h.override_type, moved_to_wk_key: _h.moved_to_wk_key, done: _h.done, custom_name: _h.custom_name, custom_notes: _h.custom_notes}, '').then(res => { if (res && res[0]) Object.assign(_h, res[0]); }); });
+    sbReq('PATCH', 'wr_recurring_rules', {starting_date: prevStart, day_of_week: prevDow, monthly_nth: prevMNth, monthly_weekday: prevMWd, monthly_date: prevMDate, date_overrides: rule._dateOverrides}, `?id=eq.${ruleId}`);
+    save(); renderAll();
+  }, 'Moved WR task to this week');
+}
+
+// Port of desktop's _recMoveAllFuture (overview.js) — re-anchors a non-WR recurring rule
+// so the occurrence lands on `ds`; every future one follows. keepDay=true keeps the same
+// day-of-week; keepDay=false/undefined sets the new weekday matching `ds`.
+function _mRecMoveAllFuture(r, srcWkKey, ds, keepDay) {
+  const DAYS_AF = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const prevStart = r.starting_date; const prevAppears = r.appears_on_date;
+  if (!r._dateOverrides) r._dateOverrides = {};
+  const _prevSrcPin = r._dateOverrides[srcWkKey];
+  const newStart = ds;
+  const newAppears = keepDay ? r.appears_on_date : ((r.cadence === 'monthly') ? String(new Date(ds + 'T00:00:00').getDate()) : DAYS_AF[new Date(ds + 'T00:00:00').getDay()]);
+  if (_prevSrcPin !== undefined) delete r._dateOverrides[srcWkKey];
+  const _futPins = _recClearFuturePins(r);
+  r.starting_date = newStart; r.appears_on_date = newAppears;
+  // _wrClearPastOrphanPins is a permanent no-op on desktop too (overview.js) — omitted.
+  const _orphans = [];
+  const _curWk = getWkKey(0);
+  const tgtWkKey = dsToWkKey(ds);
+  if (_curWk !== tgtWkKey && _curWk !== srcWkKey && r._dateOverrides[_curWk] !== '__skip__') {
+    const _curOcc = getRecurringWeekTasks(0).find(t => String(t._recId) === String(r.id));
+    if (_curOcc && !_curOcc.done && _curOcc.due_date < tod()) { _orphans.push({wk: _curWk, val: r._dateOverrides[_curWk]}); r._dateOverrides[_curWk] = '__skip__'; }
+  }
+  save(); renderAll();
+  sbReq('PATCH', 'wr_recurring_rules', {starting_date: newStart, appears_on_date: newAppears, date_overrides: r._dateOverrides}, recQs(r.id));
+  pushUndo(() => {
+    r.starting_date = prevStart; r.appears_on_date = prevAppears;
+    if (_prevSrcPin !== undefined) r._dateOverrides[srcWkKey] = _prevSrcPin;
+    _orphans.forEach(o => { if (o.val === undefined) delete r._dateOverrides[o.wk]; else r._dateOverrides[o.wk] = o.val; });
+    _futPins.forEach(o => { r._dateOverrides[o.wk] = o.val; });
+    save(); renderAll();
+    sbReq('PATCH', 'wr_recurring_rules', {starting_date: prevStart, appears_on_date: prevAppears, date_overrides: r._dateOverrides}, recQs(r.id));
+  }, 'Moved recurring task all future');
+}
+
+// Singleton scope sheet — mobile only ever needs one at a time (no bulk overdue banner
+// to queue for), unlike desktop's sequential _rolloverPromptQueue.
+let _mWrScopeCbSkip = null, _mWrScopeCbThis = null, _mWrScopeCbSame = null, _mWrScopeCbChange = null;
+function mOpenWrScopeSheet(name, wkKey, onSkip, onThisTime, onSameDay, onChangeDay) {
+  _mWrScopeCbSkip = onSkip; _mWrScopeCbThis = onThisTime; _mWrScopeCbSame = onSameDay; _mWrScopeCbChange = onChangeDay;
+  const titleEl = document.getElementById('mWrScopeTitle');
+  if (titleEl) titleEl.textContent = name ? `${name} (recurring) ${_mWeeksAgoLabel(wkKey)}` : '';
+  document.getElementById('mWrScopeBackdrop')?.classList.add('open');
+  document.getElementById('mWrScopeSheet')?.classList.add('open');
+}
+function mCloseWrScopeSheet() {
+  document.getElementById('mWrScopeBackdrop')?.classList.remove('open');
+  document.getElementById('mWrScopeSheet')?.classList.remove('open');
+  _mWrScopeCbSkip = _mWrScopeCbThis = _mWrScopeCbSame = _mWrScopeCbChange = null;
+}
+function mWrScopeDoSkip()   { const cb = _mWrScopeCbSkip;   mCloseWrScopeSheet(); if (cb) cb(); }
+function mWrScopeDoThis()   { const cb = _mWrScopeCbThis;   mCloseWrScopeSheet(); if (cb) cb(); }
+function mWrScopeDoSame()   { const cb = _mWrScopeCbSame;   mCloseWrScopeSheet(); if (cb) cb(); }
+function mWrScopeDoChange() { const cb = _mWrScopeCbChange; mCloseWrScopeSheet(); if (cb) cb(); }
+
+// Entry point wired from mTaskRow's "→ Today" button for rec/wrec/wrrule types only.
+// Same-week misses move directly (unchanged mMoveToToday behavior); a genuine past-week
+// miss is a schedule decision, so it opens the 4-option sheet instead — mirrors desktop's
+// _ovRowMoveClick (overview.js).
+function _mOvRowMoveClick(kind, id, wkKey) {
+  const curWk = getWkKey(0);
+  const pastWeek = wkKey && wkKey !== curWk;
+  if (!pastWeek) { mMoveToToday(id, kind, wkKey); return; }
+  if (kind === 'wrrule') {
+    const rule = st.wrRules.find(r => String(r.id) === String(id)); if (!rule) return;
+    mOpenWrScopeSheet(rule.name, wkKey,
+      () => _mWriteWrOverride(id, wkKey, {override_type: 'skip'}, {undoLabel: 'Skipped WR task'}),
+      () => _mWrMoveToThisWeek(id, wkKey, false),
+      () => _mWrMoveToThisWeek(id, wkKey, true, false),
+      () => _mWrMoveToThisWeek(id, wkKey, true, true));
+  } else {
+    // kind === 'rec' or 'wrec' — both index st.recurring, same as mMoveToToday's own handling
+    const rec = st.recurring.find(x => String(x.id) === String(id)); if (!rec) return;
+    mOpenWrScopeSheet(rec.name, wkKey,
+      () => _recSkipPastWeek(rec, wkKey),
+      () => _recMoveThisOccToToday(rec, wkKey),
+      () => _mRecMoveAllFuture(rec, wkKey, tod(), true),
+      () => _mRecMoveAllFuture(rec, wkKey, tod(), false));
+  }
+}
+
 // ── Undo / redo (core.js stacks; shared toggles + instrumented mobile actions) ──
 function mUndo() {
   if (!undoStack.length) { showToast('Nothing to undo', '#6b6880', 1200); return; }
@@ -808,10 +1042,27 @@ function mToggleFullAddImp() {
   if (btn) btn.classList.toggle('flagged', _mFullAddImportant);
 }
 
+// Swaps the full-add sheet into "trip" mode when Travel is picked — mirrors desktop's
+// _tModalSyncTravelFields (features.js), adapted to this sheet's own field ids.
+function _mFullAddSyncTravelFields(cat) {
+  const isTv = cat === 'Travel';
+  const _sh = (id, show) => { const el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; };
+  _sh('mFullAddDestField', isTv);
+  _sh('mFullAddEndField', isTv);
+  _sh('mFullAddModeField', isTv);
+  const lbl = document.getElementById('mFullAddDueLbl');
+  if (lbl) lbl.textContent = isTv ? 'Start date' : 'Due date';
+  const btn = document.getElementById('mFullAddSave');
+  if (btn) btn.textContent = isTv ? 'Add Trip' : 'Add Task';
+}
+
 function mOpenFullAdd() {
   _mFullAddImportant = false;
   document.getElementById('mFullAddName').value = '';
   document.getElementById('mFullAddDue').value = d2s(getDayDate(0));
+  const destEl = document.getElementById('mFullAddDest'); if (destEl) destEl.value = '';
+  const endEl = document.getElementById('mFullAddEnd'); if (endEl) endEl.value = '';
+  const modeEl = document.getElementById('mFullAddMode'); if (modeEl) modeEl.value = '';
   mSelectCat('fulladd', 'Home');
   const btn = document.getElementById('mFullAddImpBtn');
   if (btn) btn.classList.remove('flagged');
@@ -831,6 +1082,14 @@ async function mSaveFullAdd() {
   if (!name) return;
   const category = _mFullAddCat;
   const due_date = document.getElementById('mFullAddDue').value || d2s(getDayDate(0));
+  if (category === 'Travel') {
+    const dest = document.getElementById('mFullAddDest')?.value.trim() || null;
+    const end = document.getElementById('mFullAddEnd')?.value || null;
+    const mode = document.getElementById('mFullAddMode')?.value || null;
+    mCloseFullAdd();
+    await _mAddTravel(name, dest, due_date, end, mode);
+    return;
+  }
   const important = _mFullAddImportant;
   const t = {id: 'l-' + Date.now(), name, category, due_date, done: false, important};
   st.tasks.push(t);
@@ -1051,8 +1310,23 @@ function mShowTab(tab) {
   if (progEl) progEl.style.display = isToday ? '' : 'none';
   const tbBtn = document.getElementById('mTodayTBBtn');
   if (tbBtn) tbBtn.style.display = isToday ? '' : 'none';
+  // Header's shared "go to today" icon is Week-tab-only now — Month has its own
+  // dedicated Today button (mMonthTodayBtn, below), and it made no sense on Shop/More.
   const goTodayBtn = document.getElementById('mGoTodayBtn');
-  if (goTodayBtn) goTodayBtn.style.display = isToday ? 'none' : '';
+  if (goTodayBtn) goTodayBtn.style.display = (tab === 'week') ? '' : 'none';
+  // Month tab replaces the plain title/date block with its own header controls
+  // (month/year dropdowns + centered Today/‹/› group) — "all in the header" redesign.
+  const isMonth = tab === 'month';
+  const titleWrap = document.getElementById('mHeaderTitleWrap');
+  if (titleWrap) titleWrap.style.display = isMonth ? 'none' : '';
+  const moControls = document.getElementById('mMonthHeaderControls');
+  if (moControls) moControls.style.display = isMonth ? '' : 'none';
+  const moNav = document.getElementById('mMonthTodayNav');
+  if (moNav) moNav.style.display = isMonth ? '' : 'none';
+  const moAddBtn = document.getElementById('mMonthAddBtn');
+  if (moAddBtn) moAddBtn.style.display = isMonth ? '' : 'none';
+  document.getElementById('mMonthMonthDrop')?.classList.remove('open');
+  document.getElementById('mMonthYearDrop')?.classList.remove('open');
   // Date subtitle always shows, same height everywhere. Today's own swipe (offset)
   // logic owns the text on the Today tab; every other tab always shows today's real date.
   const dateLbl = document.getElementById('mDateLbl');
@@ -2690,13 +2964,12 @@ let _mMoRenderedHi = 6;
 let _mMoScrollLock = false;
 let _mMoTitleRaf = false;
 
-// Header "Today" button: on Month, jump the calendar back to today's default scroll
-// position instead of navigating away — you're already looking at a calendar, leaving
-// it to open the Today list would be a non-sequitur. Every other tab still navigates
-// to the Today tab as expected.
+// Header "Today" button — visible only on the Week tab now (Month has its own
+// dedicated Today button in its header controls, see mMonthTodayBtn). Stays on Week
+// and scrolls back to today (mRenderWeek(true) resets the rendered range + re-scrolls)
+// instead of navigating away.
 function mGoToday() {
-  if (_mCurTab === 'month') mOpenMonth();
-  else mShowTab('today');
+  mRenderWeek(true);
 }
 
 function mOpenMonth() {
@@ -2729,12 +3002,8 @@ function _mSyncMonthScrollHeight() {
 }
 window.addEventListener('resize', () => { if (_mCurTab === 'month') _mSyncMonthScrollHeight(); });
 
-let _mYearViewOpen = false;
-let _mYearOffset = 0;
-
 // Jump one real month from whichever month is currently docked at the top of the scroll view
 function mMonthJump(dir) {
-  if (_mYearViewOpen) { _mYearOffset += dir; _mRenderYear(); return; }
   const scroller = document.getElementById('mMonthScroll');
   const rows = scroller ? [...scroller.querySelectorAll('.m-mo-week')] : [];
   const top = scroller ? scroller.getBoundingClientRect().top : 0;
@@ -2771,52 +3040,52 @@ function mMonthJumpToOffset(monthOffset) {
   });
 }
 
-function mToggleYearView() {
-  _mYearViewOpen = !_mYearViewOpen;
-  const yearEl = document.getElementById('mYearView');
-  const hdrEl = document.getElementById('mMonthDayHdr');
-  const scrollEl = document.getElementById('mMonthScroll');
-  const detailEl = document.getElementById('mMonthDetail');
-  if (_mYearViewOpen) {
-    _mYearOffset = 0;
-    yearEl.style.display = '';
-    hdrEl.style.display = 'none';
-    scrollEl.style.display = 'none';
-    detailEl.style.display = 'none';
-    _mRenderYear();
-  } else {
-    yearEl.style.display = 'none';
-    hdrEl.style.display = '';
-    scrollEl.style.display = '';
-    detailEl.style.display = '';
-    _mUpdateMonthTitle();
-  }
+// Tracks which month/year is currently docked at the top of the scroll view (set by
+// _mUpdateMonthTitle) so picking just a month (or just a year) from its own dropdown
+// keeps the OTHER value as-is, rather than resetting it.
+let _mMonthDisplayedMo = new Date().getMonth();
+let _mMonthDisplayedYr = new Date().getFullYear();
+const _M_MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function mToggleMonthDrop() {
+  document.getElementById('mMonthYearDrop')?.classList.remove('open');
+  const el = document.getElementById('mMonthMonthDrop');
+  if (!el) return;
+  if (el.classList.contains('open')) { el.classList.remove('open'); return; }
+  el.innerHTML = _M_MONTH_NAMES.map((name, mi) => `<div class="m-mo-hdr-drop-opt${mi === _mMonthDisplayedMo ? ' is-current' : ''}" onclick="mPickMonth(${mi})">${name}</div>`).join('');
+  el.classList.add('open');
 }
 
-function _mRenderYear() {
+function mPickMonth(mi) {
+  document.getElementById('mMonthMonthDrop')?.classList.remove('open');
   const now = new Date();
-  const yr = now.getFullYear() + _mYearOffset;
-  document.getElementById('mMonthTitle').innerHTML = `${yr}<span class="m-mo-title-caret">▴</span>`;
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const today = d2s(getDayDate(0));
-  const todayMo = new Date().getMonth();
-  const todayYr = new Date().getFullYear();
+  mMonthJumpToOffset((_mMonthDisplayedYr - now.getFullYear()) * 12 + (mi - now.getMonth()));
+}
+
+function mToggleYearDrop() {
+  document.getElementById('mMonthMonthDrop')?.classList.remove('open');
+  const el = document.getElementById('mMonthYearDrop');
+  if (!el) return;
+  if (el.classList.contains('open')) { el.classList.remove('open'); return; }
+  const nowYr = new Date().getFullYear();
   let html = '';
-  months.forEach((name, mi) => {
-    const isCurrent = yr === todayYr && mi === todayMo;
-    html += `<button class="m-yr-month${isCurrent ? ' is-current' : ''}" onclick="mYearSelectMonth(${mi}, ${yr})">${name}</button>`;
-  });
-  document.getElementById('mYearView').innerHTML = html;
+  for (let y = nowYr - 5; y <= nowYr + 5; y++) html += `<div class="m-mo-hdr-drop-opt${y === _mMonthDisplayedYr ? ' is-current' : ''}" onclick="mPickYear(${y})">${y}</div>`;
+  el.innerHTML = html;
+  el.classList.add('open');
 }
 
-function mYearSelectMonth(mo, yr) {
+function mPickYear(yr) {
+  document.getElementById('mMonthYearDrop')?.classList.remove('open');
   const now = new Date();
-  _mYearViewOpen = false;
-  document.getElementById('mYearView').style.display = 'none';
-  document.getElementById('mMonthDayHdr').style.display = '';
-  document.getElementById('mMonthScroll').style.display = '';
-  document.getElementById('mMonthDetail').style.display = '';
-  mMonthJumpToOffset((yr - now.getFullYear()) * 12 + (mo - now.getMonth()));
+  mMonthJumpToOffset((yr - now.getFullYear()) * 12 + (_mMonthDisplayedMo - now.getMonth()));
+}
+
+// "+" button in the month header — adds a task for the currently-selected day
+// (same day-scoping idea as Week's mWkAddTask(ds)), via the existing full-add sheet.
+function mMonthAddTask() {
+  mOpenFullAdd();
+  const dueEl = document.getElementById('mFullAddDue');
+  if (dueEl) dueEl.value = _mMonthSelectedDs || d2s(getDayDate(0));
 }
 
 // Category key exactly matching the detail panel below (_mRenderMonthDetail), so a
@@ -2993,6 +3262,85 @@ function _mMoLoadMore(direction) {
   setTimeout(() => { _mMoScrollLock = false; }, 200);
 }
 
+// Long-press-drag across day cells → create a multi-day travel task. Same idiom as
+// mInitBlockDrag/mInitWkDrag (480ms long-press arms the drag; a plain tap never gets
+// this far so mMonthSelectDay's onclick still fires normally). Delegated on
+// #mMonthWeeks so it survives re-renders (weeks are re-rendered often via infinite scroll).
+let _mMoDrag = null;
+function mInitMonthDrag() {
+  const wrap = document.getElementById('mMonthWeeks');
+  if (!wrap || wrap._moDragInited) return;
+  wrap._moDragInited = true;
+
+  let pressTimer = null;
+  let touchStartX = 0, touchStartY = 0;
+
+  wrap.addEventListener('touchstart', e => {
+    const dayEl = e.target.closest('.m-mo-day[data-ds]');
+    if (!dayEl) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      const startDs = dayEl.dataset.ds;
+      _mMoDrag = {startDs, endDs: startDs};
+      dayEl.classList.add('drag-selected');
+      const scroller = document.getElementById('mMonthScroll');
+      if (scroller) scroller.style.overflowY = 'hidden';
+      document.addEventListener('touchmove', _mMoDragMove, {passive: false});
+    }, 480);
+  }, {passive: true});
+
+  wrap.addEventListener('touchmove', e => {
+    if (!pressTimer) return;
+    if (Math.abs(e.touches[0].clientX - touchStartX) > 8 || Math.abs(e.touches[0].clientY - touchStartY) > 8) {
+      clearTimeout(pressTimer); pressTimer = null;
+    }
+  }, {passive: true});
+
+  wrap.addEventListener('touchend', () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; return; }
+    if (!_mMoDrag) return;
+    document.removeEventListener('touchmove', _mMoDragMove);
+    const {startDs, endDs} = _mMoDrag;
+    _mMoDrag = null;
+    document.querySelectorAll('#mMonthWeeks .m-mo-day.drag-selected').forEach(el => el.classList.remove('drag-selected'));
+    const scroller = document.getElementById('mMonthScroll');
+    if (scroller) scroller.style.overflowY = '';
+    // A long-press with no movement (startDs===endDs) is just a long-press, not a drag —
+    // the plain tap's own onclick (mMonthSelectDay) already handled day selection.
+    if (startDs && endDs && startDs !== endDs) {
+      const start = startDs <= endDs ? startDs : endDs;
+      const end = startDs <= endDs ? endDs : startDs;
+      mOpenFullAdd();
+      mSelectCat('fulladd', 'Travel');
+      document.getElementById('mFullAddDue').value = start;
+      const endEl = document.getElementById('mFullAddEnd');
+      if (endEl) endEl.value = end;
+    }
+  }, {passive: true});
+}
+
+function _mMoDragMove(e) {
+  if (!_mMoDrag) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  // elementFromPoint naturally skips .m-mo-day-empty placeholders (pointer-events:none),
+  // so a drag crossing a month-boundary split row just no-ops over those cells.
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const dayEl = el && el.closest('.m-mo-day[data-ds]');
+  if (!dayEl) return;
+  const ds = dayEl.dataset.ds;
+  if (ds === _mMoDrag.endDs) return;
+  _mMoDrag.endDs = ds;
+  const lo = _mMoDrag.startDs <= ds ? _mMoDrag.startDs : ds;
+  const hi = _mMoDrag.startDs <= ds ? ds : _mMoDrag.startDs;
+  document.querySelectorAll('#mMonthWeeks .m-mo-day[data-ds]').forEach(d => {
+    d.classList.toggle('drag-selected', d.dataset.ds >= lo && d.dataset.ds <= hi);
+  });
+}
+
 function mInitMonthScroll() {
   const scroller = document.getElementById('mMonthScroll');
   if (!scroller || scroller._moScrollInited) return;
@@ -3021,13 +3369,17 @@ function mInitMonthScroll() {
 function _mUpdateMonthTitle() {
   const scroller = document.getElementById('mMonthScroll');
   const titleEl = document.getElementById('mMonthTitle');
+  const yearEl = document.getElementById('mMonthYearBtn');
   if (!scroller || !titleEl) return;
   const rect = scroller.getBoundingClientRect();
   const el = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 4);
   const row = el && el.closest('.m-mo-week');
   if (!row) return;
   const d = new Date(row.dataset.mon + 'T12:00:00');
-  titleEl.innerHTML = `${d.toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}<span class="m-mo-title-caret">▾</span>`;
+  _mMonthDisplayedMo = d.getMonth();
+  _mMonthDisplayedYr = d.getFullYear();
+  titleEl.innerHTML = `${d.toLocaleDateString('en-US', {month: 'long'})}<span class="m-mo-title-caret">▾</span>`;
+  if (yearEl) yearEl.innerHTML = `${d.getFullYear()}<span class="m-mo-title-caret">▾</span>`;
 }
 
 // Default view is the START of the current month (day 1's row), not today's own row —
@@ -3116,6 +3468,7 @@ async function mInit() {
   mInitBlockDrag();
   mInitWeekScroll();
   mInitWkDrag();
+  mInitMonthDrag();
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
