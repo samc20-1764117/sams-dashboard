@@ -101,6 +101,7 @@ body.dark .wkc-nav{border-color:rgba(255,255,255,.06);}
 body.dark .wkc-col{border-color:rgba(255,255,255,.04);}
 body.dark .wkc-day-h{border-color:rgba(255,255,255,.04);}
 body.dark .wkc-more-badge{background:linear-gradient(transparent,rgba(24,24,28,.85) 40%);}
+body.dark .wkc-more-badge span{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1);}
 body.dark .chip{border-color:rgba(255,255,255,.06);box-shadow:none;}
 body.dark .wkc-goals-col .chip{box-shadow:none;}
 body.dark .wo-chip.sel-row,body.dark .wkc-goals-col .chip.sel-row{outline-color:rgba(255,255,255,.15)!important;box-shadow:0 3px 10px rgba(0,0,0,.3)!important;}
@@ -672,7 +673,9 @@ body.dark .wkc-day-sel .wkc-dd{color:#1a1a1e}
 .wk-list-edge-l{left:0;background:linear-gradient(to right,rgba(109,95,230,.15),transparent)}
 .wk-list-edge-r{right:0;background:linear-gradient(to left,rgba(109,95,230,.15),transparent)}
 .wkc-col{flex:1;min-width:0;border-left:1px solid rgba(210,205,228,.15);padding:2px 2px;overflow-x:hidden;overflow-y:auto;transition:background .1s;user-select:none;-webkit-user-select:none;scrollbar-width:none;position:relative;box-sizing:border-box}
-.wkc-more-badge{position:sticky;bottom:0;left:0;right:0;text-align:center;font-size:9px;font-weight:600;color:var(--muted);background:linear-gradient(transparent,rgba(255,255,255,.85) 40%);padding:8px 0 2px;pointer-events:none;z-index:1}
+.wkc-more-badge{position:sticky;bottom:0;left:0;right:0;display:flex;justify-content:center;background:linear-gradient(transparent,rgba(255,255,255,.85) 40%);padding:8px 0 4px;pointer-events:none;z-index:1}
+.wkc-more-badge span{pointer-events:auto;cursor:pointer;font-size:9px;font-weight:700;color:var(--muted);background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:9px;padding:2px 8px;transition:all .15s}
+.wkc-more-badge span:hover{color:var(--accent);border-color:var(--accent)}
 .wkc-col::-webkit-scrollbar{display:none}
 .wkc-col:first-child{border-left:none}
 .wkc-col.drop-here{background:rgba(109,95,230,.05)}

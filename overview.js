@@ -274,7 +274,10 @@ function _updateOverflowBadge(el){
   const bottom=el.scrollTop+el.clientHeight;
   items.forEach(c=>{if(c.offsetTop+c.offsetHeight/2>bottom)hidden++;});
   if(hidden<=0)return;
-  const badge=document.createElement('div');badge.className='wkc-more-badge';badge.textContent='+'+hidden+' more';
+  const badge=document.createElement('div');badge.className='wkc-more-badge';
+  const pill=document.createElement('span');pill.textContent='+'+hidden+' more';
+  pill.onclick=e=>{e.stopPropagation();el.scrollTo({top:el.scrollHeight,behavior:'smooth'});};
+  badge.appendChild(pill);
   el.appendChild(badge);
   if(!el._overflowBound){el._overflowBound=true;el.addEventListener('scroll',()=>_updateOverflowBadge(el));}
 }
@@ -846,14 +849,14 @@ function taskTypePri(t){
   if(t._virtual)return 6; // non-WR recurring
   return 5; // other regular tasks
 }
-// Manual per-day order is the tie-break used right after the hard travel/birthday/holiday tiers
-// (the only tiers a manual reorder can never cross — see AskUserQuestion 2026-08-20). When BOTH
-// items being compared have been placed in _dayOrder for this day, that placement wins outright,
-// overriding done/overdue/important/timeblock-time — so a manually-reordered selection always
-// moves as a whole, even if it mixes an overdue item with a regular one. `naturalFn` (the old
-// done→overdue→important[→timeblock-time]→type/name ordering) is only the FALLBACK, used when one
-// or both items have never been manually placed — so freshly-added/never-dragged items still land
-// in a sensible spot instead of a random one.
+// Manual per-day order is the tie-break used right after the hard travel/birthday/holiday/overdue/
+// done tiers (the only tiers a manual reorder can never cross — see AskUserQuestion 2026-08-20,
+// corrected 2026-08-21 to pull done back into the hard-tier list above). When BOTH items being
+// compared have been placed in _dayOrder for this day, that placement wins outright, overriding
+// important/timeblock-time — so a manually-reordered selection always moves as a whole. `naturalFn`
+// (the old important[→timeblock-time]→type/name ordering) is only the FALLBACK, used when one or
+// both items have never been manually placed — so freshly-added/never-dragged items still land in
+// a sensible spot instead of a random one.
 function _manualTieBreak(a,b,ds,naturalFn){
   const natural=naturalFn||(()=>taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||''));
   const order=ds?_dayOrder()[ds]:null;
@@ -865,15 +868,17 @@ function _manualTieBreak(a,b,ds,naturalFn){
   return ai-bi;
 }
 function _hardTierNatural(a,b){
-  if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
   const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
   if(aI&&!bI)return -1;if(!aI&&bI)return 1;
   return taskTypePri(a)-taskTypePri(b)||(a.name||'').localeCompare(b.name||'');
 }
-// Travel/birthday/holiday/overdue are hard tiers a manual reorder can never cross (see
-// AskUserQuestion 2026-08-20/21) — overdue in particular must stay pinned to the top until the
-// task is moved to today or completed, at which point it drops into the manual-order pool like
-// anything else. Everything below that (done/important/timeblock-time) is manual-order-overridable.
+// Hard tiers a manual reorder can never cross, checked in this order: travel > birthday/holiday >
+// overdue > done. Overdue floats up until it's moved to today or completed; done always sinks to
+// the bottom, even below a manually-placed item (added 2026-08-21 — the 2026-08-20 widening let
+// manual order override done too, which stranded checked-off tasks mid-list instead of sinking
+// them, so done was pulled back out into its own hard tier). Only once all four agree do we fall
+// to manual day-order (`_manualTieBreak`); its own fallback (important -> [timeblock,
+// sortTasksForDay only] -> taskTypePri -> name) is the true bottom rung.
 function sortByTypeOrder(tasks,ds){
   return[...tasks].sort((a,b)=>{
     const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
@@ -882,6 +887,7 @@ function sortByTypeOrder(tasks,ds){
     if(aB&&!bB)return -1;if(!aB&&bB)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
+    if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
     return _manualTieBreak(a,b,ds,()=>_hardTierNatural(a,b));
   });
 }
@@ -908,6 +914,7 @@ function sortTasksForDay(tasks,ds){
     if(aB&&!bB)return -1;if(!aB&&bB)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
+    if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
     return _manualTieBreak(a,b,ds,()=>{
       const aSm=tbSm(a),bSm=tbSm(b);
       if(aSm!==null&&bSm===null)return -1;
@@ -930,13 +937,13 @@ function sortByTBWeek(tasks){
   }
   if(!tasks.some(t=>tbSmAny(t)!==null))return sortByTypeOrder(tasks);
   return[...tasks].sort((a,b)=>{
-    const aB=a._type==='birthday'||a._type==='holiday',bB=b._type==='birthday'||b._type==='holiday';
-    if(aB&&!bB)return -1;if(!aB&&bB)return 1;
-    if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
     const aT=a._type==='travel'&&!a.done,bT=b._type==='travel'&&!b.done;
     if(aT&&!bT)return -1;if(!aT&&bT)return 1;
+    const aB=a._type==='birthday'||a._type==='holiday',bB=b._type==='birthday'||b._type==='holiday';
+    if(aB&&!bB)return -1;if(!aB&&bB)return 1;
     const aO=isOv(a.due_date)&&!a.done,bO=isOv(b.due_date)&&!b.done;
     if(aO&&!bO)return -1;if(!aO&&bO)return 1;
+    if(a.done&&!b.done)return 1;if(!a.done&&b.done)return -1;
     const aI=(a.important||a._type==='fin-cancel')&&!a.done,bI=(b.important||b._type==='fin-cancel')&&!b.done;
     if(aI&&!bI)return -1;if(!aI&&bI)return 1;
     const aSm=tbSmAny(a),bSm=tbSmAny(b);
