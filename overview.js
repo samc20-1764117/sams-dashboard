@@ -87,9 +87,6 @@ function _applyTodTbCollapse(){
   }
 }
 function renderOv(){
-  const n=new Date();
-  // ovTitle is updated by renderToday() to reflect the selected day
-  document.getElementById('sDate').textContent=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   renderToday();if(document.getElementById("tbGrid"))renderDayTB();renderWkSummary();renderWkCal();renderUnassigned();renderShopOv();renderRecOv();renderKanban();
   renderSummaryMetrics();
   _applyTodTbCollapse();

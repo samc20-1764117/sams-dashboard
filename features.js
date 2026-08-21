@@ -5287,6 +5287,11 @@ function renderGuidePage(){
   const now=new Date();document.querySelectorAll('#page-guide .topbar-date').forEach(e=>e.textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}));document.querySelectorAll('#page-guide .topbar-time').forEach(e=>e.textContent=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
 }
 
+function togglePicsMode(){
+  const off=document.body.classList.toggle('pics-off');
+  localStorage.setItem('_picsOff',off?'1':'0');
+  const lbl=document.getElementById('picsToggleLabel');if(lbl)lbl.textContent=off?'Pics: Off':'Pics: On';
+}
 function toggleNavGroup(id){
   const grp=document.getElementById('navGroup'+id);if(!grp)return;
   const open=grp.classList.toggle('open');
@@ -6812,6 +6817,8 @@ function initTheme(){
   applyTheme(key,true);
 }
 initTheme();
+if(localStorage.getItem('_picsOff')==='1')document.body.classList.add('pics-off');
+document.addEventListener('DOMContentLoaded',()=>{const _pl=document.getElementById('picsToggleLabel');if(_pl)_pl.textContent=document.body.classList.contains('pics-off')?'Pics: Off':'Pics: On';});
 document.addEventListener('DOMContentLoaded',()=>{
   const picker=document.getElementById('themePicker');if(!picker)return;
   const cur=localStorage._dashTheme||'peach';
