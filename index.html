@@ -70,8 +70,8 @@ if(sessionStorage._mReloaded===BUILD);else{
         <a class="nav-item nav-subitem" data-page="packing" href="#packing" onclick="event.preventDefault();showPage('packing')"><div class="ndot" style="background:#38bdf8"></div>Packing</a>
       </div>
     </div>
-    <a class="nav-item" data-page="recipes" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Recipes</a>
-    <a class="nav-item" data-page="pups" href="#pups" onclick="event.preventDefault();showPage('pups')"><svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="16.5" r="3.6"/><circle cx="5.2" cy="10.2" r="2.1"/><circle cx="9.6" cy="4.8" r="2.1"/><circle cx="14.4" cy="4.8" r="2.1"/><circle cx="18.8" cy="10.2" r="2.1"/></svg>Pups</a>
+    <a class="nav-item" data-page="recipes" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H11v17H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 4.5A1.5 1.5 0 0 0 18.5 3H13v17h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></svg>Recipes</a>
+    <a class="nav-item" data-page="pups" href="#pups" onclick="event.preventDefault();showPage('pups')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="17.3" r="3.3"/><circle cx="4.5" cy="10" r="1.8"/><circle cx="9.5" cy="4.7" r="1.8"/><circle cx="14.5" cy="4.7" r="1.8"/><circle cx="19.5" cy="10" r="1.8"/></svg>Pups</a>
     <a class="nav-item" data-page="cinema" href="#cinema" onclick="event.preventDefault();showPage('cinema')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>Cinema</a>
     <a class="nav-item" data-page="ideas" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.5.4.9 1.1.9 1.8v.5h6.2v-.5c0-.7.4-1.4.9-1.8A7 7 0 0 0 12 2z"/></svg>Ideas</a>
     <a class="nav-item" data-page="finance" href="#finance" onclick="event.preventDefault();showPage('finance')"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Finance</a>
@@ -227,7 +227,7 @@ if(sessionStorage._mReloaded===BUILD);else{
       <div class="ql-grid" style="flex:1;align-content:stretch;padding:8px;gap:6px">
         <a class="ql-btn" href="#videos" onclick="event.preventDefault();showPage('videos')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span>Videos</a>
         <a class="ql-btn" href="#finance" onclick="event.preventDefault();showPage('finance')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Finance</a>
-        <a class="ql-btn" href="#pups" onclick="event.preventDefault();showPage('pups')"><span class="ql-icon"><img class="ql-pic" src="./sunny_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover"><img class="ql-pic" src="./mochi_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover;margin-left:-2px"><svg class="ql-icon-fallback" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="16.5" r="3.6"/><circle cx="5.2" cy="10.2" r="2.1"/><circle cx="9.6" cy="4.8" r="2.1"/><circle cx="14.4" cy="4.8" r="2.1"/><circle cx="18.8" cy="10.2" r="2.1"/></svg></span>Pups</a>
+        <a class="ql-btn" href="#pups" onclick="event.preventDefault();showPage('pups')"><span class="ql-icon"><img class="ql-pic" src="./sunny_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover"><img class="ql-pic" src="./mochi_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover;margin-left:-2px"><svg class="ql-icon-fallback" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="17.3" r="3.3"/><circle cx="4.5" cy="10" r="1.8"/><circle cx="9.5" cy="4.7" r="1.8"/><circle cx="14.5" cy="4.7" r="1.8"/><circle cx="19.5" cy="10" r="1.8"/></svg></span>Pups</a>
         <a class="ql-btn" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><span class="ql-icon"><svg width="18" height="20" viewBox="2 4 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="5" y="14" width="14" height="8" rx="1"/><line x1="12" y1="10" x2="12" y2="22"/><path d="M12 10c-2-3-5-3-5-1s3 1 5 1"/><path d="M12 10c2-3 5-3 5-1s-3 1-5 1"/></svg></span>Birthdays</a>
         <a class="ql-btn" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></span>Ideas</a>
         <a class="ql-btn" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3"/><path d="M18 22V15"/></svg></span>Recipes</a>
@@ -1121,11 +1121,17 @@ init();
 <div id="unMenu" class="tlist" style="display:none;position:fixed;z-index:9997;width:300px;max-height:360px;overflow-y:auto;background:var(--gb);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:4px 0"></div>
 <div id="unMenuBack" onclick="closeUnMenu()" style="display:none;position:fixed;inset:0;z-index:9996"></div>
 <div class="settings-popup" id="settingsPopup">
-  <div class="settings-popup-item" onclick="toggleDark()">
-    <span id="darkToggleIcon">🌙</span><span id="darkToggleLabel">Night Mode</span>
-  </div>
-  <div class="settings-popup-item" onclick="togglePicsMode()">
-    <span>🖼️</span><span id="picsToggleLabel">Pics</span>
+  <div class="settings-popup-item" style="justify-content:space-between;cursor:default">
+    <span onclick="toggleDark()" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+      <span id="darkToggleIcon">🌙</span><span id="darkToggleLabel">Night Mode</span>
+    </span>
+    <span style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:10px;color:var(--muted)">Pics</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="picsToggleInput" onchange="togglePicsMode()">
+        <span class="toggle-slider"></span>
+      </label>
+    </span>
   </div>
   <div class="settings-popup-divider"></div>
   <div class="settings-popup-label">Theme</div>

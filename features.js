@@ -5288,9 +5288,10 @@ function renderGuidePage(){
 }
 
 function togglePicsMode(){
-  const off=document.body.classList.toggle('pics-off');
-  localStorage.setItem('_picsOff',off?'1':'0');
-  const lbl=document.getElementById('picsToggleLabel');if(lbl)lbl.textContent=off?'Pics: Off':'Pics: On';
+  const inp=document.getElementById('picsToggleInput');
+  const picsOn=inp?inp.checked:!document.body.classList.contains('pics-off');
+  document.body.classList.toggle('pics-off',!picsOn);
+  localStorage.setItem('_picsOff',picsOn?'0':'1');
 }
 function toggleNavGroup(id){
   const grp=document.getElementById('navGroup'+id);if(!grp)return;
@@ -6818,7 +6819,7 @@ function initTheme(){
 }
 initTheme();
 if(localStorage.getItem('_picsOff')==='1')document.body.classList.add('pics-off');
-document.addEventListener('DOMContentLoaded',()=>{const _pl=document.getElementById('picsToggleLabel');if(_pl)_pl.textContent=document.body.classList.contains('pics-off')?'Pics: Off':'Pics: On';});
+document.addEventListener('DOMContentLoaded',()=>{const _pi=document.getElementById('picsToggleInput');if(_pi)_pi.checked=!document.body.classList.contains('pics-off');});
 document.addEventListener('DOMContentLoaded',()=>{
   const picker=document.getElementById('themePicker');if(!picker)return;
   const cur=localStorage._dashTheme||'peach';
