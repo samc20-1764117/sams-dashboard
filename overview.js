@@ -2055,10 +2055,9 @@ function renderWkCal(){
           delete goalsCol.dataset.wkdir;
           if(dir!==0){
             const nd=new Date((t.due_date||d2s(dates[0]))+'T12:00');nd.setDate(nd.getDate()+dir*7);
-            const nDs=d2s(nd);const prevDs=t.due_date;t.due_date=nDs;save();
+            const nDs=d2s(nd);const prevDs=t.due_date;t.due_date=nDs;save();renderWkCal();renderWkSummary();
             pushUndo(()=>{t.due_date=prevDs;save();renderWkCal();renderWkSummary();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${t.id}`);},'Moved goal week');
             sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${t.id}`);
-            shiftWk(dir);
           }
         }else if(ph){const next=ph.nextSibling;ph.remove();goalsCol.insertBefore(chip,next);chip.style.opacity='';}
         else chip.style.opacity='';
@@ -2197,7 +2196,7 @@ function setupWkcEdgeDrop(){
         const prevTgt=rec._dateOverrides[tgtWkKey];
         if(curWkKey!==tgtWkKey&&prevCur!==undefined)delete rec._dateOverrides[curWkKey];
         rec._dateOverrides[tgtWkKey]=newDs;
-        dragId=null;shiftWk(dir);save();renderAll();
+        dragId=null;save();renderAll();
         sbReq('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},recQs(rec.id));
         pushUndo(()=>{if(curWkKey!==tgtWkKey&&prevCur!==undefined)rec._dateOverrides[curWkKey]=prevCur;if(prevTgt!==undefined)rec._dateOverrides[tgtWkKey]=prevTgt;else delete rec._dateOverrides[tgtWkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},recQs(rec.id));},'Moved to other week');
       }
@@ -2220,7 +2219,7 @@ function setupWkcEdgeDrop(){
           // source week and pin the (earlier) target week directly.
           if(dir>0){rec._dateOverrides[curWkKey]=newDs;}
           else{rec._dateOverrides[curWkKey]='__skip__';rec._dateOverrides[getWkKey(targetWkOff)]=newDs;}
-          shiftWk(dir);save();renderAll();
+          save();renderAll();
           sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
           pushUndo(()=>{
             rec._dateOverrides=_prevOvs;save();renderAll();
@@ -2229,7 +2228,7 @@ function setupWkcEdgeDrop(){
         };
         if(['monthly','quarterly','biannual','annual'].includes(rec.cadence)){
           dragId=null;
-          showWrScopePicker(e,'⊘  This time only','↻  All future',doThisTime,()=>{_recMoveAllFuture(rec,curWkKey,newDs);shiftWk(dir);});
+          showWrScopePicker(e,'⊘  This time only','↻  All future',doThisTime,()=>{_recMoveAllFuture(rec,curWkKey,newDs);});
         } else doThisTime();
       }
       dragId=null;return;
@@ -2237,15 +2236,15 @@ function setupWkcEdgeDrop(){
     if(dragId.startsWith('vid::')){
       const vidId=dragId.split('::')[1];
       _vidAssignToDay(vidId,newDs);
-      dragId=null;shiftWk(dir);return;
+      dragId=null;return;
     }
     if(dragId.startsWith('vidstep::')){
       const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
       if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
         st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}if(_eE3)_vidStepMoveDoneDay(_eE3,_eSD,newDs);_vidStepDayMapSet(_eM3);save();
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}if(_eE3)_vidStepMoveDoneDay(_eE3,_eSD,newDs);_vidStepDayMapSet(_eM3);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
       } else {_vidStepAssignToDay(_eV,_eS,newDs);}
-      dragId=null;shiftWk(dir);return;
+      dragId=null;return;
     }
     if(dragId.startsWith('travel::')){
       const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
@@ -2255,7 +2254,7 @@ function setupWkcEdgeDrop(){
         const dur=Math.round((new Date(tvEd+'T00:00:00')-new Date(tvSd+'T00:00:00'))/86400000);
         const newStart=newDs,newEnd=d2s(new Date(new Date(newDs+'T00:00:00').getTime()+dur*86400000));
         const prevStart=tv2.start_date,prevEnd=tv2.end_date;
-        tv2.start_date=newStart;tv2.end_date=newEnd;dragId=null;shiftWk(dir);save();renderAll();
+        tv2.start_date=newStart;tv2.end_date=newEnd;dragId=null;save();renderAll();
         sbReq('PATCH','travel',{start_date:newStart,end_date:newEnd},`?id=eq.${tvId}`);
         pushUndo(()=>{tv2.start_date=prevStart;tv2.end_date=prevEnd;save();renderAll();sbReq('PATCH','travel',{start_date:(prevStart||'').split('T')[0],end_date:(prevEnd||'').split('T')[0]},`?id=eq.${tvId}`);},'Moved trip');
       }
@@ -2265,7 +2264,7 @@ function setupWkcEdgeDrop(){
     if(dragId.startsWith('wkgoal::')){
       const tid=dragId.split('::')[1];
       const gt=st.tasks.find(x=>String(x.id)===tid);dragId=null;
-      if(gt){const prevDs=gt.due_date;const d=new Date((gt.due_date||d2s(new Date()))+'T12:00');d.setDate(d.getDate()+dir*7);const nDs=d2s(d);gt.due_date=nDs;shiftWk(dir);save();renderAll();pushUndo(()=>{gt.due_date=prevDs;save();renderAll();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);}
+      if(gt){const prevDs=gt.due_date;const d=new Date((gt.due_date||d2s(new Date()))+'T12:00');d.setDate(d.getDate()+dir*7);const nDs=d2s(d);gt.due_date=nDs;save();renderAll();pushUndo(()=>{gt.due_date=prevDs;save();renderAll();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);}
       return;
     }
     // Multi-task move: if dragged task is in selectedTasks with others, move all selected real tasks
@@ -2274,7 +2273,7 @@ function setupWkcEdgeDrop(){
     const _moved=_taskSids.map(sid=>({t:st.tasks.find(x=>String(x.id)===sid),prev:null})).filter(x=>x.t);
     _moved.forEach(x=>x.prev=x.t.due_date);
     _moved.forEach(x=>{x.t.due_date=newDs;localOverrides[String(x.t.id)]={due_date:newDs};pendingLocal.add(String(x.t.id));});
-    dragId=null;shiftWk(dir);save();renderAll();
+    dragId=null;save();renderAll();
     pushUndo(()=>{_moved.forEach(x=>{x.t.due_date=x.prev;localOverrides[String(x.t.id)]={due_date:x.prev};pendingLocal.add(String(x.t.id));sbReqNullable('PATCH','tasks',{due_date:x.prev},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)));});renderAll();},'Moved to other week');
     await Promise.all(_moved.map(x=>sbReqNullable('PATCH','tasks',{due_date:newDs},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)))));
   });
@@ -2304,7 +2303,7 @@ function setupEdge(id,dir){
         const prevTgt=r._dateOverrides[tgtWkKey];
         if(curWkKey!==tgtWkKey&&prevCur!==undefined)delete r._dateOverrides[curWkKey];
         r._dateOverrides[tgtWkKey]=newDs;
-        dragId=null;shiftWk(dir);save();renderAll();
+        dragId=null;save();renderAll();
         sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
         pushUndo(()=>{if(curWkKey!==tgtWkKey&&prevCur!==undefined)r._dateOverrides[curWkKey]=prevCur;if(prevTgt!==undefined)r._dateOverrides[tgtWkKey]=prevTgt;else delete r._dateOverrides[tgtWkKey];save();renderAll();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Moved to other week');
       }
@@ -2324,7 +2323,7 @@ function setupEdge(id,dir){
           // Backward: skip source + pin the earlier target week (back-lookback can't reach a later source).
           if(dir>0){rec._dateOverrides[curWkKey]=newDs;}
           else{rec._dateOverrides[curWkKey]='__skip__';rec._dateOverrides[getWkKey(targetWkOff)]=newDs;}
-          shiftWk(dir);save();renderAll();
+          save();renderAll();
           sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rec._dateOverrides},`?id=eq.${rec.id}`);
           pushUndo(()=>{
             rec._dateOverrides=_prevOvs;save();renderAll();
@@ -2333,7 +2332,7 @@ function setupEdge(id,dir){
         };
         if(['monthly','quarterly','biannual','annual'].includes(rec.cadence)){
           dragId=null;
-          showWrScopePicker(e,'⊘  This time only','↻  All future',doThisTime,()=>{_recMoveAllFuture(rec,curWkKey,newDs);shiftWk(dir);});
+          showWrScopePicker(e,'⊘  This time only','↻  All future',doThisTime,()=>{_recMoveAllFuture(rec,curWkKey,newDs);});
         } else doThisTime();
       }
       dragId=null;return;
@@ -2341,15 +2340,15 @@ function setupEdge(id,dir){
     if(dragId.startsWith('vid::')){
       const vidId=dragId.split('::')[1];
       _vidAssignToDay(vidId,newDs);
-      dragId=null;shiftWk(dir);return;
+      dragId=null;return;
     }
     if(dragId.startsWith('vidstep::')){
       const parts=dragId.split('::');const _eV=parts[1],_eS=parts[2],_eSD=parts[3]||null;
       if(_eS!=='step_thumbnail'&&_eS!=='step_description'&&_eSD){
         st.blocks.filter(bl=>String(bl._vidStepVid)===String(_eV)&&bl._vidStepName===_eS&&bl.ds===_eSD).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
-        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}if(_eE3)_vidStepMoveDoneDay(_eE3,_eSD,newDs);_vidStepDayMapSet(_eM3);save();
+        const _eM3=_vidStepDayMap();const _eK3=_eV+'::'+_eS;const _eE3=_eM3[_eK3];if(!_eE3)_eM3[_eK3]={ds:newDs,done:false};else if(_eE3.ds===_eSD)_eE3.ds=newDs;else if(_eE3.extraDays&&_eE3.extraDays.includes(_eSD)){_eE3.extraDays=_eE3.extraDays.filter(d=>d!==_eSD);if(_eE3.ds!==newDs&&!_eE3.extraDays.includes(newDs))_eE3.extraDays.push(newDs);if(!_eE3.extraDays.length)delete _eE3.extraDays;}if(_eE3)_vidStepMoveDoneDay(_eE3,_eSD,newDs);_vidStepDayMapSet(_eM3);save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
       } else {_vidStepAssignToDay(_eV,_eS,newDs);}
-      dragId=null;shiftWk(dir);return;
+      dragId=null;return;
     }
     if(dragId.startsWith('travel::')){
       const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
@@ -2359,7 +2358,7 @@ function setupEdge(id,dir){
         const dur=Math.round((new Date(tvEd+'T00:00:00')-new Date(tvSd+'T00:00:00'))/86400000);
         const newStart=newDs,newEnd=d2s(new Date(new Date(newDs+'T00:00:00').getTime()+dur*86400000));
         const prevStart=tv2.start_date,prevEnd=tv2.end_date;
-        tv2.start_date=newStart;tv2.end_date=newEnd;dragId=null;shiftWk(dir);save();renderAll();
+        tv2.start_date=newStart;tv2.end_date=newEnd;dragId=null;save();renderAll();
         sbReq('PATCH','travel',{start_date:newStart,end_date:newEnd},`?id=eq.${tvId}`);
         pushUndo(()=>{tv2.start_date=prevStart;tv2.end_date=prevEnd;save();renderAll();sbReq('PATCH','travel',{start_date:(prevStart||'').split('T')[0],end_date:(prevEnd||'').split('T')[0]},`?id=eq.${tvId}`);},'Moved trip');
       }
@@ -2370,7 +2369,7 @@ function setupEdge(id,dir){
     if(dragId.startsWith('wkgoal::')){
       const tid=dragId.split('::')[1];
       const gt=st.tasks.find(x=>String(x.id)===tid);dragId=null;
-      if(gt){const prevDs=gt.due_date;const d=new Date((gt.due_date||d2s(new Date()))+'T12:00');d.setDate(d.getDate()+dir*7);const nDs=d2s(d);gt.due_date=nDs;shiftWk(dir);save();renderAll();pushUndo(()=>{gt.due_date=prevDs;save();renderAll();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);}
+      if(gt){const prevDs=gt.due_date;const d=new Date((gt.due_date||d2s(new Date()))+'T12:00');d.setDate(d.getDate()+dir*7);const nDs=d2s(d);gt.due_date=nDs;save();renderAll();pushUndo(()=>{gt.due_date=prevDs;save();renderAll();sbReqNullable('PATCH','tasks',{due_date:prevDs},`?id=eq.${tid}`);},'Moved goal week');await sbReqNullable('PATCH','tasks',{due_date:nDs},`?id=eq.${tid}`);}
       return;
     }
     const _dragSid2=String(dragId);const _isMulti2=selectedTasks.has(_dragSid2)&&selectedTasks.size>1;
@@ -2378,7 +2377,7 @@ function setupEdge(id,dir){
     const _moved2=_taskSids2.map(sid=>({t:st.tasks.find(x=>String(x.id)===sid),prev:null})).filter(x=>x.t);
     _moved2.forEach(x=>x.prev=x.t.due_date);
     _moved2.forEach(x=>{x.t.due_date=newDs;localOverrides[String(x.t.id)]={due_date:newDs};pendingLocal.add(String(x.t.id));});
-    dragId=null;shiftWk(dir);save();renderAll();
+    dragId=null;save();renderAll();
     pushUndo(()=>{_moved2.forEach(x=>{x.t.due_date=x.prev;localOverrides[String(x.t.id)]={due_date:x.prev};pendingLocal.add(String(x.t.id));sbReqNullable('PATCH','tasks',{due_date:x.prev},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)));});renderAll();},'Moved to other week');
     await Promise.all(_moved2.map(x=>sbReqNullable('PATCH','tasks',{due_date:newDs},`?id=eq.${x.t.id}`).then(()=>pendingLocal.delete(String(x.t.id)))));
   });
