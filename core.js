@@ -1512,7 +1512,8 @@ function _showHelpOverlay(){
     ['W','Go to Weekly Reset / Recurring Tasks'],
     ['N','Quick Add task (to current day)'],
     ['R','Reload page'],
-    ['S','Sync all data'],
+    ['S','Toggle sidebar'],
+    ['S H','Open shopping / HEB modal'],
     ['I','Go to Ideas'],
     ['L','Style Guide'],
     ['G','Grid lines (debug)'],
@@ -1525,6 +1526,8 @@ function _showHelpOverlay(){
     overview:[
       ['T','Jump to Today'],
       ['M','Open / close month view'],
+      ['F (month view)','Toggle Filters panel'],
+      ['O (month view)','Toggle Objectives panel'],
       ['←/→','Previous / next day'],
       ['W + ←/→','Previous / next week'],
       ['←/→ (selected)','Move selected task ±1 day'],

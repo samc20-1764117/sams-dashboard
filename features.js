@@ -5235,7 +5235,8 @@ function renderGuidePage(){
     ${sRow('I','Ideas')}
     ${sRow('N','Quick Add task / New idea')}
     ${sRow('R','Reload page')}
-    ${sRow('S','Sync all / HEB grocery')}
+    ${sRow('S','Toggle sidebar')}
+    ${sRow('S H','Open shopping / HEB modal')}
     ${sRow('D','Toggle dark mode')}
     ${sRow('Esc','Close modal / deselect')}
     ${sRow('⌘Z','Undo')}
@@ -5247,6 +5248,8 @@ function renderGuidePage(){
     ${tHead('Key','Action')}
     ${sRow('T','Jump to Today')}
     ${sRow('M','Month view toggle')}
+    ${sRow('F (month view)','Toggle Filters panel')}
+    ${sRow('O (month view)','Toggle Objectives panel')}
     ${sRow('←/→','Previous / next day')}
     ${sRow('W + ←/→','Previous / next week')}
     ${sRow('←/→ (selected)','Move task ±1 day')}
