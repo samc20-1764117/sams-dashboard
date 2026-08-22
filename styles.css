@@ -1773,6 +1773,7 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
 .fin-ph-col-amt{padding-right:12px!important}
 .fin-ph-col-cum{padding-right:14px!important}
 .fin-details-pop .fin-tbl .delbtn{transform:translateX(26px)}
+.fin-details-pop .fin-pts-tbl .delbtn{transform:translateX(47px)}
 .fin-details-pop .fin-tbl tr.fin-ph-editing td{padding-top:2px!important;padding-bottom:2px!important}
 .fin-ph-date-text,.fin-ph-amt-input{width:100%;height:20px;box-sizing:border-box;font-size:12px;font-family:inherit;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 5px;color:var(--text);background:transparent;font-variant-numeric:tabular-nums}
 .fin-ph-amt-input{text-align:right}

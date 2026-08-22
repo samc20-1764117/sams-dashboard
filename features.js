@@ -2234,8 +2234,12 @@ function _finFocusNew(id,field){setTimeout(()=>{const el=document.querySelector(
 function renderFinancePage(){
   const el=document.getElementById('finPageContent');if(!el)return;
   const accs=_finOf('account').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-  const netWorth=accs.filter(a=>!a.exclude).reduce((s,a)=>s+(a.amount||0),0);
-  const totalAll=accs.reduce((s,a)=>s+(a.amount||0),0);
+  // Flight credits (fin_points, unit='usd') fold into net worth as extra value riding on
+  // the "CC Points" account — see _finEffAmt in _finRenderPersonal for where this actually
+  // affects the donut segment size, not just these two totals.
+  const flightUsdTotal=(st.finPoints||[]).filter(p=>p.unit==='usd').reduce((s,p)=>s+(Number(p.amount)||0),0);
+  const netWorth=accs.filter(a=>!a.exclude).reduce((s,a)=>s+(a.amount||0),0)+flightUsdTotal;
+  const totalAll=accs.reduce((s,a)=>s+(a.amount||0),0)+flightUsdTotal;
   const vtiAcc=accs.find(a=>(a.name||'')==='VTI');
   const purchases=_finOf('vti');
   const totalBought=purchases.reduce((s,p)=>s+Math.abs(p.amount||0),0);
@@ -2309,28 +2313,33 @@ function _finEditable(id,field,val,cls,round){
 
 // ── Left Top: Personal Finances (KPIs + donut + editable legend) ────────────
 function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
+  // "CC Points" carries the dollar-valued flight credits on top of its own manually-edited
+  // balance for chart/total purposes ONLY — the legend's editable amount field always shows
+  // and saves the raw base value, never this inflated one (else editing it would compound).
+  const flightUsdTotal=(st.finPoints||[]).filter(p=>p.unit==='usd').reduce((s,p)=>s+(Number(p.amount)||0),0);
+  const _isCcPts=a=>(a.name||'').toLowerCase()==='cc points';
+  const _effAmt=a=>(a.amount||0)+(_isCcPts(a)?flightUsdTotal:0);
   // Sort: non-excluded by amount desc, then excluded at bottom
-  const included=[...accs.filter(a=>!a.exclude)].sort((a,b)=>(b.amount||0)-(a.amount||0));
-  const excluded=[...accs.filter(a=>a.exclude)].sort((a,b)=>(b.amount||0)-(a.amount||0));
+  const included=[...accs.filter(a=>!a.exclude)].sort((a,b)=>_effAmt(b)-_effAmt(a));
+  const excluded=[...accs.filter(a=>a.exclude)].sort((a,b)=>_effAmt(b)-_effAmt(a));
   const allAccs=[...included,...excluded];
-  const chartItems=included.filter(a=>(a.amount||0)>0);
-  const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
+  const chartItems=included.filter(a=>_effAmt(a)>0);
+  const total=chartItems.reduce((s,a)=>s+_effAmt(a),0);
   const hasExcluded=excluded.length>0;
 
   let html=`<div class="card fin-card fin-personal-card" style="position:relative" ondblclick="if(!event.target.closest('button')&&!event.target.closest('.fin-legend-row')&&!event.target.closest('.fin-donut-wrap'))addFinRow('account')">
-    <button class="fin-hist-btn fin-pts-btn" onclick="openFinPointsDetails()" style="position:absolute;top:12px;right:44px;z-index:1">Points</button>
     <button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1;position:absolute;top:12px;right:16px;z-index:1">+</button>
     <div class="fin-hero">
       `;
   // Donut in hero row (right of KPIs)
   let cum=0;let _fbIdx=0;
   const segs=total>0?chartItems.map((a,i)=>{
-    const pct=(a.amount||0)/total;const start=cum;cum+=pct;
+    const pct=_effAmt(a)/total;const start=cum;cum+=pct;
     const named=_finAcctColor(a.name);
     const fb=named?null:_FIN_COLORS_FALLBACK[_fbIdx++%_FIN_COLORS_FALLBACK.length];
     const color=named?named[0]:fb[0];
     const colorLight=named?named[1]:fb[1];
-    return{id:a.id,name:a.name,amt:a.amount,pct,start,color,colorLight};
+    return{id:a.id,name:a.name,amt:_effAmt(a),pct,start,color,colorLight};
   }):[];
   // Right side: donut + legend
   html+=`<div class="fin-hero-right">`;
@@ -2397,6 +2406,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
       <span class="fin-legend-dot" style="background-color:${colorSolid};cursor:pointer" onclick="_finOpenColorPicker(event,'${a.name.replace(/'/g,"\\'")}','${colorSolid}')" title="Change color"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
       <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}</span>
+      ${_isCcPts(a)?`<button class="fin-excl-btn fin-pts-btn" onclick="event.stopPropagation();openFinPointsDetails()" title="Points &amp; Flight Credits">&#9992;</button>`:''}
       ${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
     </div>`;
@@ -2970,10 +2980,15 @@ function openFinPointsDetails(){
   let pop=document.getElementById('finPointsPop');
   if(pop){closeFinPointsDetails();return;}
   const card=document.querySelector('.fin-personal-card');
-  if(!card)return;
-  const r=card.getBoundingClientRect();
+  const rightCol=document.querySelector('.fin-right');
+  if(!card||!rightCol)return;
+  const cardRect=card.getBoundingClientRect();
+  const rightRect=rightCol.getBoundingClientRect();
+  // Mirrors openFinInvDetails: opens over the Recurring Expenses column, capped to a
+  // compact content-sized width rather than stretching to that column's full width.
+  const popWidth=Math.min(360,rightRect.width);
   pop=document.createElement('div');pop.id='finPointsPop';pop.className='fin-details-pop';
-  pop.style.cssText=`position:fixed;top:${r.top}px;left:${r.left}px;width:${r.width}px;height:${r.height}px;z-index:100`;
+  pop.style.cssText=`position:fixed;top:${cardRect.top}px;left:${rightRect.left}px;width:${popWidth}px;height:${cardRect.height}px;z-index:100`;
   _finRenderPointsContent(pop);
   document.body.appendChild(pop);
   requestAnimationFrame(()=>pop.classList.add('open'));
