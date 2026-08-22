@@ -2183,6 +2183,13 @@ function _finAcctColor(name){
   if(_finCustomColors[n])return[_finCustomColors[n],_finHexToRgba(_finCustomColors[n],.45)];
   return _FIN_ACCT_COLORS_MAP[n]||Object.keys(_FIN_ACCT_COLORS_MAP).reduce((r,k)=>r||( n.includes(k)?_FIN_ACCT_COLORS_MAP[k]:null),null);
 }
+function _finColorSwatchesHtml(name,currentColor){
+  const cur=(currentColor||'').toLowerCase();
+  return _FIN_COLOR_PALETTE.map(c=>{
+    const sel=c.toLowerCase()===cur;
+    return`<button class="fin-color-swatch${sel?' selected':''}" style="background-color:${c}" onclick="_finPickColor('${name.replace(/'/g,"\\'")}','${c}')" title="${c}">${sel?'<span class="fin-check">&#10003;</span>':''}</button>`;
+  }).join('');
+}
 function _finOpenColorPicker(event,name,currentColor){
   event.stopPropagation();
   document.getElementById('finColorPickerPop')?.remove();
@@ -2190,24 +2197,25 @@ function _finOpenColorPicker(event,name,currentColor){
   const r=anchor.getBoundingClientRect();
   const pop=document.createElement('div');
   pop.id='finColorPickerPop';
+  pop.dataset.finAcctName=name;
   pop.className='fin-quick-add fin-color-picker';
   pop.style.cssText=`position:fixed;top:${r.bottom+6}px;left:${r.left}px;right:auto;margin-top:0;z-index:200`;
-  const cur=(currentColor||'').toLowerCase();
-  pop.innerHTML=_FIN_COLOR_PALETTE.map(c=>{
-    const sel=c.toLowerCase()===cur;
-    return`<button class="fin-color-swatch${sel?' selected':''}" style="background:${c}" onclick="_finPickColor('${name.replace(/'/g,"\\'")}','${c}')" title="${c}">${sel?'&#10003;':''}</button>`;
-  }).join('');
+  pop.innerHTML=_finColorSwatchesHtml(name,currentColor);
   document.body.appendChild(pop);
   setTimeout(()=>{
-    const close=ev=>{if(!pop.contains(ev.target)){pop.remove();document.removeEventListener('mousedown',close);}};
+    // Picking a swatch just updates the selection in place — only an outside click or Enter closes it.
+    const close=ev=>{if(!pop.contains(ev.target)){pop.remove();document.removeEventListener('mousedown',close);document.removeEventListener('keydown',onKey);}};
+    const onKey=ev=>{if(ev.key==='Enter'){pop.remove();document.removeEventListener('mousedown',close);document.removeEventListener('keydown',onKey);}};
     document.addEventListener('mousedown',close);
+    document.addEventListener('keydown',onKey);
   },10);
 }
 function _finPickColor(name,hex){
   _finCustomColors[(name||'').toLowerCase()]=hex;
   _finSaveCustomColors();
-  document.getElementById('finColorPickerPop')?.remove();
   renderFinancePage();
+  const pop=document.getElementById('finColorPickerPop');
+  if(pop)pop.innerHTML=_finColorSwatchesHtml(name,hex);
 }
 const _FIN_COLORS_FALLBACK=[['#2a9db5','rgba(42,157,181,.45)'],['#eab308','rgba(234,179,8,.45)'],['#38bdf8','rgba(56,189,248,.45)'],['#f97316','rgba(249,115,22,.45)'],['#65a30d','rgba(101,163,13,.45)']];
 function _finOf(type){return st.finance.filter(r=>r.type===type);}
@@ -2385,7 +2393,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
     const pctStr=seg?`${(seg.pct*100).toFixed(0)}%`:'';
     const excCls=a.exclude?' fin-legend-excluded':'';
     html+=`<div class="fin-legend-row${excCls}" data-fin-id="${a.id}" onmouseenter="_finHover('${a.id}')" onmouseleave="_finHover(null)">
-      <span class="fin-legend-dot" style="background:${colorSolid};cursor:pointer" onclick="_finOpenColorPicker(event,'${a.name.replace(/'/g,"\\'")}','${colorSolid}')" title="Change color"></span>
+      <span class="fin-legend-dot" style="background-color:${colorSolid};cursor:pointer" onclick="_finOpenColorPicker(event,'${a.name.replace(/'/g,"\\'")}','${colorSolid}')" title="Change color"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
       <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}</span>
       ${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}
@@ -2852,10 +2860,10 @@ function _finRenderDetailsContent(pop){
   let cum=0;const chron=[...purchases].reverse();
   const cumMap={};chron.forEach(p=>{cum+=Math.abs(p.amount||0);cumMap[p.id]=cum;});
   let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Purchase History</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn fin-ph-icon-btn" onclick="openFinInvAdd(event)" title="Add">+</button><button class="fin-add-btn fin-ph-icon-btn fin-ph-close-btn" onclick="closeFinInvDetails()" style="opacity:.6" title="Close">&#x2715;</button></div></div>`;
-  html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))openFinInvAdd({target:document.querySelector('#finInvDetailsPop .fin-add-btn')})"><table class="fin-tbl fin-ph-tbl"><colgroup><col class="fin-ph-c-date"/><col class="fin-ph-c-amt"/><col class="fin-ph-c-cum"/><col class="fin-ph-c-del"/></colgroup><thead><tr><th style="text-align:left" class="fin-ph-col-date">Date</th><th style="text-align:right" class="fin-ph-col-amt">Amount</th><th style="text-align:right" class="fin-ph-col-cum">Cumulative</th><th class="fin-ph-col-del"></th></tr></thead><tbody>`;
+  html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))openFinInvAdd({target:document.querySelector('#finInvDetailsPop .fin-add-btn')})"><table class="fin-tbl fin-ph-tbl"><colgroup><col class="fin-ph-c-date"/><col class="fin-ph-c-amt"/><col class="fin-ph-c-cum"/><col class="fin-ph-c-del"/><col/></colgroup><thead><tr><th style="text-align:left" class="fin-ph-col-date">Date</th><th style="text-align:right" class="fin-ph-col-amt">Amount</th><th style="text-align:right" class="fin-ph-col-cum">Cumulative</th><th class="fin-ph-col-del"></th><th></th></tr></thead><tbody>`;
   purchases.forEach(p=>{
     const ds=_finPHDateDisplay(p.date);
-    html+=`<tr class="fin-row" data-fin-id="${p.id}" ondblclick="if(!event.target.closest('button'))_finPHEdit('${p.id}')"><td class="fin-ph-col-date">${ds}</td><td style="text-align:right" class="fin-num fin-ph-col-amt">${_finFmt(Math.abs(p.amount||0))}</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-ph-col-cum">${_finFmt(cumMap[p.id]||0)}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPurchase('${p.id}')">&#x2715;</button></td></tr>`;
+    html+=`<tr class="fin-row" data-fin-id="${p.id}" ondblclick="if(!event.target.closest('button'))_finPHEdit('${p.id}')"><td class="fin-ph-col-date">${ds}</td><td style="text-align:right" class="fin-num fin-ph-col-amt">${_finFmt(Math.abs(p.amount||0))}</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-ph-col-cum">${_finFmt(cumMap[p.id]||0)}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPurchase('${p.id}')">&#x2715;</button></td><td></td></tr>`;
   });
   html+=`</tbody></table></div>`;
   if(!purchases.length)html+=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No purchases yet</div>`;
