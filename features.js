@@ -2233,13 +2233,10 @@ function _finFocusNew(id,field){setTimeout(()=>{const el=document.querySelector(
 
 function renderFinancePage(){
   const el=document.getElementById('finPageContent');if(!el)return;
+  _finRenameLegacyPtsAcct();
   const accs=_finOf('account').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-  // Flight credits (fin_points, unit='usd') fold into net worth as extra value riding on
-  // the "CC Points" account — see _finEffAmt in _finRenderPersonal for where this actually
-  // affects the donut segment size, not just these two totals.
-  const flightUsdTotal=(st.finPoints||[]).filter(p=>p.unit==='usd').reduce((s,p)=>s+(Number(p.amount)||0),0);
-  const netWorth=accs.filter(a=>!a.exclude).reduce((s,a)=>s+(a.amount||0),0)+flightUsdTotal;
-  const totalAll=accs.reduce((s,a)=>s+(a.amount||0),0)+flightUsdTotal;
+  const netWorth=accs.filter(a=>!a.exclude).reduce((s,a)=>s+(a.amount||0),0);
+  const totalAll=accs.reduce((s,a)=>s+(a.amount||0),0);
   const vtiAcc=accs.find(a=>(a.name||'')==='VTI');
   const purchases=_finOf('vti');
   const totalBought=purchases.reduce((s,p)=>s+Math.abs(p.amount||0),0);
@@ -2312,19 +2309,14 @@ function _finEditable(id,field,val,cls,round){
 }
 
 // ── Left Top: Personal Finances (KPIs + donut + editable legend) ────────────
+function _isPtsAcct(a){const n=(a.name||'').toLowerCase();return n==='cc points'||n==='points & credits';}
 function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
-  // "CC Points" carries the dollar-valued flight credits on top of its own manually-edited
-  // balance for chart/total purposes ONLY — the legend's editable amount field always shows
-  // and saves the raw base value, never this inflated one (else editing it would compound).
-  const flightUsdTotal=(st.finPoints||[]).filter(p=>p.unit==='usd').reduce((s,p)=>s+(Number(p.amount)||0),0);
-  const _isCcPts=a=>(a.name||'').toLowerCase()==='cc points';
-  const _effAmt=a=>(a.amount||0)+(_isCcPts(a)?flightUsdTotal:0);
   // Sort: non-excluded by amount desc, then excluded at bottom
-  const included=[...accs.filter(a=>!a.exclude)].sort((a,b)=>_effAmt(b)-_effAmt(a));
-  const excluded=[...accs.filter(a=>a.exclude)].sort((a,b)=>_effAmt(b)-_effAmt(a));
+  const included=[...accs.filter(a=>!a.exclude)].sort((a,b)=>(b.amount||0)-(a.amount||0));
+  const excluded=[...accs.filter(a=>a.exclude)].sort((a,b)=>(b.amount||0)-(a.amount||0));
   const allAccs=[...included,...excluded];
-  const chartItems=included.filter(a=>_effAmt(a)>0);
-  const total=chartItems.reduce((s,a)=>s+_effAmt(a),0);
+  const chartItems=included.filter(a=>(a.amount||0)>0);
+  const total=chartItems.reduce((s,a)=>s+(a.amount||0),0);
   const hasExcluded=excluded.length>0;
 
   let html=`<div class="card fin-card fin-personal-card" style="position:relative" ondblclick="if(!event.target.closest('button')&&!event.target.closest('.fin-legend-row')&&!event.target.closest('.fin-donut-wrap'))addFinRow('account')">
@@ -2334,12 +2326,12 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
   // Donut in hero row (right of KPIs)
   let cum=0;let _fbIdx=0;
   const segs=total>0?chartItems.map((a,i)=>{
-    const pct=_effAmt(a)/total;const start=cum;cum+=pct;
+    const pct=(a.amount||0)/total;const start=cum;cum+=pct;
     const named=_finAcctColor(a.name);
     const fb=named?null:_FIN_COLORS_FALLBACK[_fbIdx++%_FIN_COLORS_FALLBACK.length];
     const color=named?named[0]:fb[0];
     const colorLight=named?named[1]:fb[1];
-    return{id:a.id,name:a.name,amt:_effAmt(a),pct,start,color,colorLight};
+    return{id:a.id,name:a.name,amt:a.amount,pct,start,color,colorLight};
   }):[];
   // Right side: donut + legend
   html+=`<div class="fin-hero-right">`;
@@ -2405,8 +2397,8 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
     html+=`<div class="fin-legend-row${excCls}" data-fin-id="${a.id}" onmouseenter="_finHover('${a.id}')" onmouseleave="_finHover(null)">
       <span class="fin-legend-dot" style="background-color:${colorSolid};cursor:pointer" onclick="_finOpenColorPicker(event,'${a.name.replace(/'/g,"\\'")}','${colorSolid}')" title="Change color"></span>
       <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
-      <span class="fin-legend-amt">${_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}</span>
-      ${_isCcPts(a)?`<button class="fin-excl-btn fin-pts-btn" onclick="event.stopPropagation();openFinPointsDetails()" title="Points &amp; Flight Credits">&#9992;</button>`:''}
+      ${_isPtsAcct(a)?`<button class="fin-excl-btn fin-pts-btn" onclick="event.stopPropagation();openFinPointsDetails()" title="Points &amp; Flight Credits">&#9992;</button>`:''}
+      <span class="fin-legend-amt">${_isPtsAcct(a)?_finFmtRound(a.amount||0):_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}</span>
       ${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
     </div>`;
@@ -2582,7 +2574,13 @@ function _finSubTabNext(fid,curField){
     const idx=focusable.indexOf(cur);
     let nxt;
     if(idx>=0&&idx<focusable.length-1){nxt=focusable[idx+1];}
-    else{const nextRow=row.nextElementSibling;if(nextRow){nxt=nextRow.querySelector('[contenteditable="true"]');}}
+    else{
+      const nextRow=row.nextElementSibling;
+      if(nextRow)nxt=nextRow.querySelector('[contenteditable="true"]');
+      // Last field of the last row — tab-to-add-row instead of doing nothing, same as
+      // Points & Credits and Purchase History (spreadsheet-style tab-to-add-row).
+      else{addFinSub();return;}
+    }
     if(nxt){nxt.focus();if(nxt.contentEditable==='true'){const r=document.createRange();r.selectNodeContents(nxt);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}}
   },30);
 }
@@ -2887,7 +2885,7 @@ function closeFinInvDetails(){
   setTimeout(()=>{if(pop.parentNode)pop.remove();},200);
 }
 function _finRenderDetailsContent(pop){
-  const purchases=_finOf('vti').filter(p=>p.date&&Math.abs(p.amount||0)>0).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const purchases=_finOf('vti').filter(p=>p._unsaved||(p.date&&Math.abs(p.amount||0)>0)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   let cum=0;const chron=[...purchases].reverse();
   const cumMap={};chron.forEach(p=>{cum+=Math.abs(p.amount||0);cumMap[p.id]=cum;});
   let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Purchase History</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn fin-ph-icon-btn" onclick="openFinInvAdd(event)" title="Add">+</button><button class="fin-add-btn fin-ph-icon-btn fin-ph-close-btn" onclick="closeFinInvDetails()" style="opacity:.6" title="Close">&#x2715;</button></div></div>`;
@@ -2899,6 +2897,33 @@ function _finRenderDetailsContent(pop){
   html+=`</tbody></table></div>`;
   if(!purchases.length)html+=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No purchases yet</div>`;
   pop.innerHTML=html;
+}
+function addFinPurchaseInline(){
+  const row={id:'l-'+Date.now(),type:'vti',name:'VTI Purchase',date:tod(),amount:0,sort_order:0,_unsaved:true};
+  st.finance.unshift(row);
+  _finPHRefresh();
+  setTimeout(()=>_finPHEdit(row.id),30);
+}
+// Tab date → amount; Tab on amount (last field) of the last row adds a new one instead of
+// doing nothing — mirrors a spreadsheet's tab-to-add-row. Same pattern as Points/Recurring.
+function _finPHTabNext(id,fromEl){
+  const tr=fromEl.closest('tr');if(!tr)return;
+  const focusable=[...tr.querySelectorAll('input.fin-ph-date-text,input.fin-ph-amt-input')];
+  const idx=focusable.indexOf(fromEl);
+  if(idx>=0&&idx<focusable.length-1){const nxt=focusable[idx+1];nxt.focus();if(nxt.select)nxt.select();return;}
+  const nextRow=tr.nextElementSibling;
+  if(nextRow&&nextRow.dataset.finId){
+    const rowId=nextRow.dataset.finId;
+    _finPHEdit(rowId);
+    setTimeout(()=>{const first=document.querySelector(`#finInvDetailsPop tr[data-fin-id="${rowId}"] .fin-ph-date-text`);if(first){first.focus();first.select&&first.select();}},20);
+  }else{
+    addFinPurchaseInline();
+  }
+}
+function _finPHCancelIfNew(id){
+  const row=st.finance.find(r=>String(r.id)===String(id));
+  if(row&&row._unsaved){st.finance=st.finance.filter(r=>r.id!==row.id);}
+  _finPHRefresh();
 }
 // Zero-padded MM/DD/YY (+ tabular-nums in CSS) keeps every row the same width so the Date column reads as a clean grid.
 function _finPHDateDisplay(dateStr){
@@ -2939,12 +2964,12 @@ function _finPHEdit(id){
   dateTd.innerHTML=`<span style="position:relative;display:block">
     <input type="text" class="fin-ph-date-text" value="${_finPHDateDisplay(row.date)}" placeholder="MM/DD/YY"
       onfocus="const h=this.nextElementSibling;if(h&&h.showPicker)try{h.showPicker();}catch(e){}"
-      onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPHRefresh();}"
+      onkeydown="if(event.key==='Tab'){event.preventDefault();_finPHTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPHCancelIfNew('${id}');}"
       onblur="_finPHSaveDateText('${id}',this.value)">
     <input type="date" class="fin-ph-date-hidden" value="${row.date||''}" tabindex="-1"
       onchange="_finPHDatePicked('${id}',this)">
   </span>`;
-  amtTd.innerHTML=`<input type="number" step="0.01" class="fin-ph-amt-input" value="${Math.abs(row.amount||0)}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPHRefresh();}" onblur="_finPHSave('${id}','amount',this.value)">`;
+  amtTd.innerHTML=`<input type="number" step="0.01" class="fin-ph-amt-input" value="${Math.abs(row.amount||0)}" onkeydown="if(event.key==='Tab'){event.preventDefault();_finPHTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPHCancelIfNew('${id}');}" onblur="_finPHSave('${id}','amount',this.value)">`;
   dateTd.querySelector('.fin-ph-date-text').focus();
 }
 async function _finPHSave(id,field,val){
@@ -2955,8 +2980,14 @@ async function _finPHSave(id,field,val){
     // If the user tabbed to the sibling field in the same row, don't re-render yet — that
     // would destroy the input mid-Tab and drop focus (see _finCommitNew's <select> bug).
     if(tr&&tr.contains(document.activeElement))return;
+    if(row._unsaved){
+      if(!row.amount){st.finance=st.finance.filter(r=>r.id!==row.id);_finPHRefresh();return;}
+      _finCommitNewPurchase(row);
+      return;
+    }
     _finPHRefresh();
   };
+  if(row._unsaved){row[field]=parsed;setTimeout(finishIfDone,0);return;}
   if(!parsed&&field==='date'){setTimeout(finishIfDone,0);return;}
   if(row[field]===parsed){setTimeout(finishIfDone,0);return;}
   const old=row[field];row[field]=parsed;
@@ -2964,6 +2995,16 @@ async function _finPHSave(id,field,val){
   setTimeout(finishIfDone,0);
   pushUndo(()=>{row[field]=old;renderFinancePage();_finPHRefresh();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance',{[field]:old},`?id=eq.${id}`);},'Edited purchase');
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance',{[field]:parsed},`?id=eq.${id}`);
+}
+async function _finCommitNewPurchase(row){
+  if(!row._unsaved)return;
+  delete row._unsaved;
+  const{id,_unsaved,...fields}=row;
+  pushUndo(()=>{st.finance=st.finance.filter(r=>r.id!==row.id);renderFinancePage();_finPHRefresh();},'Added purchase');
+  renderFinancePage();
+  _finPHRefresh();
+  const sv=await sbReq('POST','finance',fields);
+  if(sv&&sv[0]){const i=st.finance.findIndex(x=>x.id===row.id);if(i>-1){st.finance[i]={...sv[0]};renderFinancePage();_finPHRefresh();}}
 }
 async function delFinPurchase(id){
   const old=st.finance.find(r=>String(r.id)===String(id));
@@ -3006,13 +3047,30 @@ function closeFinPointsDetails(){
   pop.addEventListener('transitionend',()=>pop.remove(),{once:true});
   setTimeout(()=>{if(pop.parentNode)pop.remove();},200);
 }
+// 1 point/mile ≈ $0.01 — a flat, simple estimate (not per-program), shown as the computed
+// "$ Value" column so a points balance and a dollar credit are comparable at a glance.
+const _FIN_PTS_RATE=0.01;
+function _finPtsValue(p){return p.unit==='usd'?(Number(p.amount)||0):(Number(p.amount)||0)*_FIN_PTS_RATE;}
+function _finPtsTotal(){return(st.finPoints||[]).reduce((s,p)=>s+_finPtsValue(p),0);}
+function _finRenameLegacyPtsAcct(){
+  const a=st.finance.find(x=>x.type==='account'&&(x.name||'').toLowerCase()==='cc points');
+  if(a){a.name='Points & Credits';if(!String(a.id).startsWith('l-'))sbReqNullable('PATCH','finance',{name:a.name},`?id=eq.${a.id}`);}
+}
+async function _finSyncPtsAccount(){
+  const acct=st.finance.find(a=>_isPtsAcct(a));
+  if(!acct)return;
+  const total=_finPtsTotal();
+  if(acct.amount===total)return;
+  acct.amount=total;
+  renderFinancePage();
+  if(!String(acct.id).startsWith('l-'))await sbReqNullable('PATCH','finance',{amount:total},`?id=eq.${acct.id}`);
+}
 function _finPtsAmtLabel(p){
   const n=Number(p.amount||0);
   if(p.unit==='usd')return _finFmt(n);
   return n.toLocaleString('en-US')+' '+(p.unit==='miles'?'mi':'pts');
 }
 function _finRenderPointsContent(pop){
-  const ccPts=st.finance.find(a=>(a.name||'').toLowerCase()==='cc points');
   const pts=[...st.finPoints].sort((a,b)=>{
     if(!a.expires_on&&!b.expires_on)return 0;
     if(!a.expires_on)return 1;
@@ -3020,11 +3078,11 @@ function _finRenderPointsContent(pop){
     return a.expires_on.localeCompare(b.expires_on);
   });
   let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Points &amp; Flight Credits</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn fin-ph-icon-btn" onclick="addFinPoint()" title="Add">+</button><button class="fin-add-btn fin-ph-icon-btn fin-ph-close-btn" onclick="closeFinPointsDetails()" style="opacity:.6" title="Close">&#x2715;</button></div></div>`;
-  if(ccPts)html+=`<div style="padding:2px 16px 8px;font-size:11px;color:var(--muted)">Credit Card Points: <span style="font-weight:600;color:var(--text)">${_finFmt(ccPts.amount||0)}</span></div>`;
-  html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))addFinPoint()"><table class="fin-tbl fin-ph-tbl fin-pts-tbl"><colgroup><col class="fin-pts-c-name"/><col class="fin-pts-c-amt"/><col class="fin-pts-c-exp"/><col class="fin-ph-c-del"/><col/></colgroup><thead><tr><th style="text-align:left" class="fin-pts-col-name">Name</th><th style="text-align:right" class="fin-pts-col-amt">Amount</th><th style="text-align:right" class="fin-ph-col-date fin-pts-col-exp">Expires</th><th class="fin-ph-col-del"></th><th></th></tr></thead><tbody>`;
+  html+=`<div style="padding:2px 16px 8px;font-size:11px;color:var(--muted)">Total: <span style="font-weight:600;font-size:13px;color:var(--text)">${_finFmt(_finPtsTotal())}</span></div>`;
+  html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))addFinPoint()"><table class="fin-tbl fin-ph-tbl fin-pts-tbl"><colgroup><col class="fin-pts-c-name"/><col class="fin-pts-c-amt"/><col class="fin-pts-c-exp"/><col class="fin-pts-c-val"/><col class="fin-ph-c-del"/><col/></colgroup><thead><tr><th style="text-align:left" class="fin-pts-col-name">Name</th><th style="text-align:right" class="fin-pts-col-amt">Amount</th><th style="text-align:right" class="fin-ph-col-date fin-pts-col-exp">Expires</th><th style="text-align:right" class="fin-pts-col-val">$ Value</th><th class="fin-ph-col-del"></th><th></th></tr></thead><tbody>`;
   pts.forEach(p=>{
     const soon=p.expires_on&&(new Date(p.expires_on+'T00:00')-new Date())<1000*60*60*24*90;
-    html+=`<tr class="fin-row" data-fin-id="${p.id}" ondblclick="if(!event.target.closest('button'))_finPointsEdit('${p.id}')"><td class="fin-pts-col-name">${escHtml(p.name||'')}</td><td style="text-align:right" class="fin-num fin-pts-col-amt">${_finPtsAmtLabel(p)}</td><td style="text-align:right${soon?';color:#ef4444;font-weight:600':''}" class="fin-num fin-ph-col-date fin-pts-col-exp">${_finPHDateDisplay(p.expires_on)}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPoint('${p.id}')">&#x2715;</button></td><td></td></tr>`;
+    html+=`<tr class="fin-row" data-fin-id="${p.id}" ondblclick="if(!event.target.closest('button'))_finPointsEdit('${p.id}')"><td class="fin-pts-col-name">${escHtml(p.name||'')}</td><td style="text-align:right" class="fin-num fin-pts-col-amt">${_finPtsAmtLabel(p)}</td><td style="text-align:right${soon?';color:#ef4444;font-weight:600':''}" class="fin-num fin-ph-col-date fin-pts-col-exp">${_finPHDateDisplay(p.expires_on)}</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-pts-col-val">${_finFmt(_finPtsValue(p))}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPoint('${p.id}')">&#x2715;</button></td><td></td></tr>`;
   });
   html+=`</tbody></table></div>`;
   if(!pts.length)html+=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No points or flight credits yet</div>`;
@@ -3035,7 +3093,25 @@ function addFinPoint(){
   const row={id:'l-'+Date.now(),name:'',unit:'usd',amount:0,expires_on:null,note:null,sort_order:0,_unsaved:true};
   st.finPoints.unshift(row);
   _finPointsRefresh();
-  setTimeout(()=>_finPointsEdit(row.id),30);
+  setTimeout(()=>{_finPointsEdit(row.id);const el=document.querySelector(`#finPointsPop tr[data-fin-id="${row.id}"] input`);if(el)el.focus();},30);
+}
+// Tab through name → amount → unit → expires; Tab on the last field of the last row adds
+// a new one (same as pressing +) instead of doing nothing — mirrors a spreadsheet's
+// tab-to-add-row muscle memory. Applied the same way in Purchase History and Recurring
+// Expenses (_finPHTabNext / _finSubTabNext).
+function _finPointsTabNext(id,fromEl){
+  const tr=fromEl.closest('tr');if(!tr)return;
+  const focusable=[...tr.querySelectorAll('input.fin-ph-date-text,input.fin-ph-amt-input,select.fin-pts-unit-sel')];
+  const idx=focusable.indexOf(fromEl);
+  if(idx>=0&&idx<focusable.length-1){const nxt=focusable[idx+1];nxt.focus();if(nxt.select)nxt.select();return;}
+  const nextRow=tr.nextElementSibling;
+  if(nextRow&&nextRow.dataset.finId){
+    const rowId=nextRow.dataset.finId;
+    _finPointsEdit(rowId);
+    setTimeout(()=>{const first=document.querySelector(`#finPointsPop tr[data-fin-id="${rowId}"] input`);if(first){first.focus();first.select&&first.select();}},20);
+  }else{
+    addFinPoint();
+  }
 }
 function _finPointsEdit(id){
   const row=st.finPoints.find(r=>String(r.id)===String(id));if(!row)return;
@@ -3043,13 +3119,13 @@ function _finPointsEdit(id){
   tr.classList.add('fin-ph-editing');
   const[nameTd,amtTd,expTd]=tr.children;
   nameTd.innerHTML=`<input type="text" class="fin-ph-date-text" value="${escHtml(row.name||'')}" placeholder="Name"
-    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
+    onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
     onblur="_finPointsSave('${id}','name',this.value)">`;
-  amtTd.innerHTML=`<span style="display:flex;gap:4px;align-items:center;justify-content:flex-end">
-    <input type="number" step="1" class="fin-ph-amt-input" style="width:64px" value="${Math.abs(row.amount||0)}"
-      onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
+  amtTd.innerHTML=`<span style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
+    <input type="number" step="1" class="fin-ph-amt-input" style="width:70px" value="${Math.abs(row.amount||0)}"
+      onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
       onblur="_finPointsSave('${id}','amount',this.value)">
-    <select class="fin-pts-unit-sel" onchange="_finPointsSave('${id}','unit',this.value)" onkeydown="event.stopPropagation()">
+    <select class="fin-pts-unit-sel" onchange="_finPointsSave('${id}','unit',this.value)" onkeydown="event.stopPropagation();if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}">
       <option value="usd"${row.unit==='usd'?' selected':''}>$</option>
       <option value="miles"${row.unit==='miles'?' selected':''}>mi</option>
       <option value="points"${row.unit==='points'?' selected':''}>pts</option>
@@ -3058,7 +3134,7 @@ function _finPointsEdit(id){
   expTd.innerHTML=`<span style="position:relative;display:block">
     <input type="text" class="fin-ph-date-text" value="${_finPHDateDisplay(row.expires_on)}" placeholder="MM/DD/YY"
       onfocus="const h=this.nextElementSibling;if(h&&h.showPicker)try{h.showPicker();}catch(e){}"
-      onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
+      onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
       onblur="_finPointsSaveDateText('${id}',this.value)">
     <input type="date" class="fin-ph-date-hidden" value="${row.expires_on||''}" tabindex="-1"
       onchange="_finPointsDatePicked('${id}',this)">
@@ -3096,17 +3172,19 @@ async function _finPointsSave(id,field,val){
   if(row._unsaved){row[field]=parsed;setTimeout(finishIfDone,0);return;}
   if(row[field]===parsed){setTimeout(finishIfDone,0);return;}
   const old=row[field];row[field]=parsed;
-  renderFinancePage();
+  _finPointsRefresh();
   setTimeout(finishIfDone,0);
-  pushUndo(()=>{row[field]=old;renderFinancePage();_finPointsRefresh();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','fin_points',{[field]:old},`?id=eq.${id}`);},'Edited '+field);
+  if(field==='amount'||field==='unit')_finSyncPtsAccount();
+  pushUndo(()=>{row[field]=old;_finPointsRefresh();if(field==='amount'||field==='unit')_finSyncPtsAccount();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','fin_points',{[field]:old},`?id=eq.${id}`);},'Edited '+field);
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','fin_points',{[field]:parsed},`?id=eq.${id}`);
 }
 async function _finCommitNewPoint(row){
   if(!row._unsaved)return;
   delete row._unsaved;
   const{id,_unsaved,...fields}=row;
-  pushUndo(()=>{st.finPoints=st.finPoints.filter(r=>r.id!==row.id);_finPointsRefresh();},'Added point/credit');
+  pushUndo(()=>{st.finPoints=st.finPoints.filter(r=>r.id!==row.id);_finPointsRefresh();_finSyncPtsAccount();},'Added point/credit');
   _finPointsRefresh();
+  _finSyncPtsAccount();
   const sv=await sbReq('POST','fin_points',fields);
   if(sv&&sv[0]){const i=st.finPoints.findIndex(x=>x.id===row.id);if(i>-1){st.finPoints[i]={...sv[0]};_finPointsRefresh();}}
 }
@@ -3114,7 +3192,8 @@ async function delFinPoint(id){
   const old=st.finPoints.find(r=>String(r.id)===String(id));
   st.finPoints=st.finPoints.filter(r=>String(r.id)!==String(id));
   _finPointsRefresh();
-  pushUndo(()=>{if(old)st.finPoints.push(old);_finPointsRefresh();},'Deleted point/credit');
+  _finSyncPtsAccount();
+  pushUndo(()=>{if(old)st.finPoints.push(old);_finPointsRefresh();_finSyncPtsAccount();},'Deleted point/credit');
   if(!String(id).startsWith('l-'))await sbReq('DELETE','fin_points',null,`?id=eq.${id}`);
 }
 
@@ -5515,7 +5594,11 @@ function toggleNavGroup(id){
 function showPage(id){
   if(id==='tasks')return;
   if(id==='shopping')id='weekly';// shopping merged into weekly page
-  const detPop=document.getElementById('finInvDetailsPop');if(detPop)detPop.remove();
+  // Finance popups are position:fixed on document.body, not scoped to the finance page
+  // container, so they silently keep floating over other pages unless torn down here.
+  ['finInvDetailsPop','finPointsPop'].forEach(pid=>{const p=document.getElementById(pid);if(p){if(p._cleanup)p._cleanup();p.remove();}});
+  document.getElementById('finInvAddPop')?.remove();
+  document.getElementById('finColorPickerPop')?.remove();
   // Close video overlay panels when leaving overview
   if(typeof _vidOvCloseCal==='function'&&typeof _vidCalOpen!=='undefined'&&_vidCalOpen)_vidOvCloseCal();
   if(typeof _vidOvCloseAll==='function'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)_vidOvCloseAll();

@@ -1773,7 +1773,7 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
 .fin-ph-col-amt{padding-right:12px!important}
 .fin-ph-col-cum{padding-right:14px!important}
 .fin-details-pop .fin-tbl .delbtn{transform:translateX(26px)}
-.fin-details-pop .fin-pts-tbl .delbtn{transform:translateX(47px)}
+.fin-details-pop .fin-pts-tbl .delbtn{transform:translateX(1px)}
 .fin-details-pop .fin-tbl tr.fin-ph-editing td{padding-top:2px!important;padding-bottom:2px!important}
 .fin-ph-date-text,.fin-ph-amt-input{width:100%;height:20px;box-sizing:border-box;font-size:12px;font-family:inherit;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 5px;color:var(--text);background:transparent;font-variant-numeric:tabular-nums}
 .fin-ph-amt-input{text-align:right}
@@ -1782,9 +1782,11 @@ body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,25
 .fin-details-pop .fin-row:hover{background:rgba(100,100,140,.04)}
 .fin-details-pop .fin-row:hover .delbtn{opacity:.6}
 .fin-pts-tbl col.fin-pts-c-name{width:auto}
-.fin-pts-tbl col.fin-pts-c-amt{width:120px}
-.fin-pts-tbl col.fin-pts-c-exp{width:96px}
+.fin-pts-tbl col.fin-pts-c-amt{width:140px}
+.fin-pts-tbl col.fin-pts-c-exp{width:88px}
+.fin-pts-tbl col.fin-pts-c-val{width:80px}
 .fin-pts-col-name{padding-left:16px!important}
+.fin-pts-col-val{padding-right:8px!important}
 .fin-pts-unit-sel{font-size:11px;border:1px solid rgba(200,200,215,.25);border-radius:5px;background:transparent;color:var(--text);padding:1px 2px}
 body.dark .fin-pts-unit-sel{border-color:rgba(255,255,255,.12)}
 .fin-chart-hit{cursor:pointer}
