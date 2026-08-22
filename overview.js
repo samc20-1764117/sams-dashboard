@@ -2233,6 +2233,20 @@ function setupWkcEdgeDrop(){
       }
       dragId=null;return;
     }
+    if(dragId.startsWith('shop::')){
+      const shopId=dragId.split('::')[1];
+      const _isMultiShop=selectedTasks.has('shop-cal-'+shopId)&&selectedTasks.size>1;
+      const _shopMoveIds=_isMultiShop?[...selectedTasks].filter(sid=>sid.startsWith('shop-cal-')).map(sid=>sid.replace('shop-cal-','')):[shopId];
+      const _shopMoves=_shopMoveIds.map(sid=>{const s=st.shopping.find(x=>String(x.id)===String(sid));return s?{s,prev:s.due_date,prevOrder:s.shop_order}:null;}).filter(Boolean);
+      if(_shopMoves.length){
+        const newOrder=_shopTopOrder(_shopMoves[0].s);
+        _shopMoves.forEach(({s},i)=>{s.due_date=newDs;s.shop_order=newOrder-i;});
+        dragId=null;save();renderAll();
+        _shopMoves.forEach(({s})=>sbReq('PATCH','shopping_list',{due_date:newDs,shop_order:s.shop_order},`?id=eq.${s.id}`));
+        pushUndo(()=>{_shopMoves.forEach(({s,prev,prevOrder})=>{s.due_date=prev;s.shop_order=prevOrder;sbReq('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);});save();renderAll();},'Moved to other week');
+      }
+      dragId=null;return;
+    }
     if(dragId.startsWith('vid::')){
       const vidId=dragId.split('::')[1];
       _vidAssignToDay(vidId,newDs);
@@ -2334,6 +2348,20 @@ function setupEdge(id,dir){
           dragId=null;
           showWrScopePicker(e,'⊘  This time only','↻  All future',doThisTime,()=>{_recMoveAllFuture(rec,curWkKey,newDs);});
         } else doThisTime();
+      }
+      dragId=null;return;
+    }
+    if(dragId.startsWith('shop::')){
+      const shopId=dragId.split('::')[1];
+      const _isMultiShop=selectedTasks.has('shop-cal-'+shopId)&&selectedTasks.size>1;
+      const _shopMoveIds=_isMultiShop?[...selectedTasks].filter(sid=>sid.startsWith('shop-cal-')).map(sid=>sid.replace('shop-cal-','')):[shopId];
+      const _shopMoves=_shopMoveIds.map(sid=>{const s=st.shopping.find(x=>String(x.id)===String(sid));return s?{s,prev:s.due_date,prevOrder:s.shop_order}:null;}).filter(Boolean);
+      if(_shopMoves.length){
+        const newOrder=_shopTopOrder(_shopMoves[0].s);
+        _shopMoves.forEach(({s},i)=>{s.due_date=newDs;s.shop_order=newOrder-i;});
+        dragId=null;save();renderAll();
+        _shopMoves.forEach(({s})=>sbReq('PATCH','shopping_list',{due_date:newDs,shop_order:s.shop_order},`?id=eq.${s.id}`));
+        pushUndo(()=>{_shopMoves.forEach(({s,prev,prevOrder})=>{s.due_date=prev;s.shop_order=prevOrder;sbReq('PATCH','shopping_list',{due_date:prev||null,shop_order:prevOrder??null},`?id=eq.${s.id}`);});save();renderAll();},'Moved to other week');
       }
       dragId=null;return;
     }
