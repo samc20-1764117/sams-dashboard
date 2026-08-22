@@ -2879,14 +2879,42 @@ function _finPHDateDisplay(dateStr){
   return`${mm}/${dd}/${yy}`;
 }
 function _finPHRefresh(){const pop=document.getElementById('finInvDetailsPop');if(pop)_finRenderDetailsContent(pop);}
+function _finParsePHDate(text){
+  const m=(text||'').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if(!m)return null;
+  const mm=m[1].padStart(2,'0'),dd=m[2].padStart(2,'0');
+  const yy=m[3].length===2?'20'+m[3]:m[3];
+  return`${yy}-${mm}-${dd}`;
+}
+function _finPHDatePicked(id,hiddenInput){
+  const textInput=hiddenInput.previousElementSibling;
+  if(textInput)textInput.value=_finPHDateDisplay(hiddenInput.value);
+  _finPHSave(id,'date',hiddenInput.value);
+}
+function _finPHSaveDateText(id,text){
+  const iso=_finParsePHDate(text);
+  if(!iso){_finPHRefresh();return;}
+  _finPHSave(id,'date',iso);
+}
 function _finPHEdit(id){
   const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
   const tr=document.querySelector(`#finInvDetailsPop tr[data-fin-id="${id}"]`);if(!tr||tr.classList.contains('fin-ph-editing'))return;
   tr.classList.add('fin-ph-editing');
   const[dateTd,amtTd]=tr.children;
-  dateTd.innerHTML=`<input type="date" class="fin-ph-date-input" value="${row.date||''}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPHRefresh();}" onblur="_finPHSave('${id}','date',this.value)">`;
+  // A native <input type=date> can't render narrower than ~120px in Chrome, which overlapped
+  // the Amount column. Instead: a compact text field sized to match the column (typed as
+  // MM/DD/YY), paired with an invisible native date input for the picker — clicking/focusing
+  // the text field opens the real calendar via showPicker(), so both entry paths still work.
+  dateTd.innerHTML=`<span style="position:relative;display:block">
+    <input type="text" class="fin-ph-date-text" value="${_finPHDateDisplay(row.date)}" placeholder="MM/DD/YY"
+      onfocus="const h=this.nextElementSibling;if(h&&h.showPicker)try{h.showPicker();}catch(e){}"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPHRefresh();}"
+      onblur="_finPHSaveDateText('${id}',this.value)">
+    <input type="date" class="fin-ph-date-hidden" value="${row.date||''}" tabindex="-1"
+      onchange="_finPHDatePicked('${id}',this)">
+  </span>`;
   amtTd.innerHTML=`<input type="number" step="0.01" class="fin-ph-amt-input" value="${Math.abs(row.amount||0)}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPHRefresh();}" onblur="_finPHSave('${id}','amount',this.value)">`;
-  dateTd.querySelector('input').focus();
+  dateTd.querySelector('.fin-ph-date-text').focus();
 }
 async function _finPHSave(id,field,val){
   const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
