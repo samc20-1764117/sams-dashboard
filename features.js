@@ -2164,8 +2164,8 @@ async function testConn(){
 function saveSettings(){cfg.url=document.getElementById('cfgUrl').value.trim();cfg.key=document.getElementById('cfgKey').value.trim();save();syncAll();}
 
 // ── Sidebar ────────────────────────────────────────────────────────────────────
-function closeSB(){document.documentElement.classList.remove('init-sb');sbOpen=false;document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='0');save();}
-function openSB(){document.documentElement.classList.remove('init-sb');sbOpen=true;document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');document.querySelectorAll('.ov-topbar').forEach(el=>el.style.left='186px');save();}
+function closeSB(){document.documentElement.classList.remove('init-sb');sbOpen=false;document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');save();}
+function openSB(){document.documentElement.classList.remove('init-sb');sbOpen=true;document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');save();}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
