@@ -6947,6 +6947,10 @@ function getOvRecurring(){
     const pinDs=r._dateOverrides&&r._dateOverrides[curWk];
     if(!pinDs||pinDs==='__skip__'||pinDs>=today)return;
     if(isDoneWRRule(r.id,curWk))return;
+    // A skip/move recorded via the newer st.wrOverrides table (the Weekly Reset card's skip
+    // button) doesn't touch _dateOverrides, so the stale pinned date above can still look overdue
+    // — check both, same as _wrWeekMisses() below, so skipping here always clears the banner too.
+    if((st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===curWk&&(o.override_type==='skip'||o.override_type==='move')))return;
     out.push({_ruleId:r.id,_recId:r.id,_wkKey:curWk,due_date:pinDs,done:false,name:r.name});
   });
   // WR rule that missed its whole due WEEK (renderRecOv's top red-row block) — same eligibility
