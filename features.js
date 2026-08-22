@@ -2318,6 +2318,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
   const hasExcluded=excluded.length>0;
 
   let html=`<div class="card fin-card fin-personal-card" style="position:relative" ondblclick="if(!event.target.closest('button')&&!event.target.closest('.fin-legend-row')&&!event.target.closest('.fin-donut-wrap'))addFinRow('account')">
+    <button class="fin-hist-btn fin-pts-btn" onclick="openFinPointsDetails()" style="position:absolute;top:12px;right:44px;z-index:1">Points</button>
     <button class="fin-add-btn" onclick="addFinRow('account')" style="font-size:16px;padding:0 4px;line-height:1;position:absolute;top:12px;right:16px;z-index:1">+</button>
     <div class="fin-hero">
       `;
@@ -2708,6 +2709,26 @@ function _finCancelTasksForDate(ds){
       tasks.push({id:'fin-cancel-'+s.id,name:'Cancel '+s.name+' by '+dueLabel,category:'Home',due_date:reminderStr,done:_finCancelDone.has(String(s.id)),_subId:s.id,_virtual:true,_type:'fin-cancel'});
     }
   });
+  // Flight credit / points expiration reminders — 90 days before expires_on. Reuses the
+  // same fin-cancel virtual-task type (and _finCancelDone dismiss set) as subscription-cancel
+  // reminders above so it inherits all the existing today-list/importance/checkbox wiring
+  // for free instead of duplicating it for a second virtual task type.
+  (st.finPoints||[]).forEach(p=>{
+    if(!p.expires_on)return;
+    const sid='flight-'+p.id;
+    if(_finCancelDone.has(sid))return; // dismissed — stays hidden until unchecked (removes from the set)
+    const expDate=new Date(p.expires_on+'T00:00:00');
+    const reminderDate=new Date(expDate);reminderDate.setDate(reminderDate.getDate()-90);
+    const reminderStr=d2s(reminderDate);
+    // Unlike the subscription reminders above (single day, recurs monthly so a missed day
+    // isn't lost for good), a flight credit's expiration is one-shot — show it on every day
+    // in the window, not just the exact 90-days-before date, or missing that one day means
+    // never seeing the alert again.
+    if(ds>=reminderStr&&ds<=p.expires_on){
+      const expLabel=_FIN_MONTHS[expDate.getMonth()]+' '+expDate.getDate();
+      tasks.push({id:'fin-cancel-'+sid,name:'Flight credit expiring: '+p.name+' — '+_finPtsAmtLabel(p)+' (exp '+expLabel+')',category:'Home',due_date:reminderStr,done:false,_subId:sid,_virtual:true,_type:'fin-cancel'});
+    }
+  });
   return tasks;
 }
 
@@ -2942,6 +2963,144 @@ async function delFinPurchase(id){
   if(pop)_finRenderDetailsContent(pop);
   pushUndo(()=>{if(old)st.finance.push(old);renderFinancePage();},'Deleted purchase');
   if(!String(id).startsWith('l-'))await sbReq('DELETE','finance',null,`?id=eq.${id}`);
+}
+
+// ── Points & Flight Credits popup (fin_points table) ─────────────────────────
+function openFinPointsDetails(){
+  let pop=document.getElementById('finPointsPop');
+  if(pop){closeFinPointsDetails();return;}
+  const card=document.querySelector('.fin-personal-card');
+  if(!card)return;
+  const r=card.getBoundingClientRect();
+  pop=document.createElement('div');pop.id='finPointsPop';pop.className='fin-details-pop';
+  pop.style.cssText=`position:fixed;top:${r.top}px;left:${r.left}px;width:${r.width}px;height:${r.height}px;z-index:100`;
+  _finRenderPointsContent(pop);
+  document.body.appendChild(pop);
+  requestAnimationFrame(()=>pop.classList.add('open'));
+  const onKey=e=>{const t=e.target?.tagName;if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT')return;if(e.key==='Escape'||e.key==='Enter'){closeFinPointsDetails();}};
+  const onClick=e=>{if(!pop.contains(e.target)&&!e.target.closest('.fin-pts-btn'))closeFinPointsDetails();};
+  document.addEventListener('keydown',onKey);
+  setTimeout(()=>document.addEventListener('mousedown',onClick),10);
+  pop._cleanup=()=>{document.removeEventListener('keydown',onKey);document.removeEventListener('mousedown',onClick);};
+}
+function closeFinPointsDetails(){
+  const pop=document.getElementById('finPointsPop');
+  if(!pop)return;
+  if(pop._cleanup)pop._cleanup();
+  pop.classList.remove('open');
+  pop.addEventListener('transitionend',()=>pop.remove(),{once:true});
+  setTimeout(()=>{if(pop.parentNode)pop.remove();},200);
+}
+function _finPtsAmtLabel(p){
+  const n=Number(p.amount||0);
+  if(p.unit==='usd')return _finFmt(n);
+  return n.toLocaleString('en-US')+' '+(p.unit==='miles'?'mi':'pts');
+}
+function _finRenderPointsContent(pop){
+  const ccPts=st.finance.find(a=>(a.name||'').toLowerCase()==='cc points');
+  const pts=[...st.finPoints].sort((a,b)=>{
+    if(!a.expires_on&&!b.expires_on)return 0;
+    if(!a.expires_on)return 1;
+    if(!b.expires_on)return -1;
+    return a.expires_on.localeCompare(b.expires_on);
+  });
+  let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Points &amp; Flight Credits</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn fin-ph-icon-btn" onclick="addFinPoint()" title="Add">+</button><button class="fin-add-btn fin-ph-icon-btn fin-ph-close-btn" onclick="closeFinPointsDetails()" style="opacity:.6" title="Close">&#x2715;</button></div></div>`;
+  if(ccPts)html+=`<div style="padding:2px 16px 8px;font-size:11px;color:var(--muted)">Credit Card Points: <span style="font-weight:600;color:var(--text)">${_finFmt(ccPts.amount||0)}</span></div>`;
+  html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))addFinPoint()"><table class="fin-tbl fin-ph-tbl fin-pts-tbl"><colgroup><col class="fin-pts-c-name"/><col class="fin-pts-c-amt"/><col class="fin-pts-c-exp"/><col class="fin-ph-c-del"/><col/></colgroup><thead><tr><th style="text-align:left" class="fin-pts-col-name">Name</th><th style="text-align:right" class="fin-pts-col-amt">Amount</th><th style="text-align:right" class="fin-ph-col-date fin-pts-col-exp">Expires</th><th class="fin-ph-col-del"></th><th></th></tr></thead><tbody>`;
+  pts.forEach(p=>{
+    const soon=p.expires_on&&(new Date(p.expires_on+'T00:00')-new Date())<1000*60*60*24*90;
+    html+=`<tr class="fin-row" data-fin-id="${p.id}" ondblclick="if(!event.target.closest('button'))_finPointsEdit('${p.id}')"><td class="fin-pts-col-name">${escHtml(p.name||'')}</td><td style="text-align:right" class="fin-num fin-pts-col-amt">${_finPtsAmtLabel(p)}</td><td style="text-align:right${soon?';color:#ef4444;font-weight:600':''}" class="fin-num fin-ph-col-date fin-pts-col-exp">${_finPHDateDisplay(p.expires_on)}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPoint('${p.id}')">&#x2715;</button></td><td></td></tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  if(!pts.length)html+=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No points or flight credits yet</div>`;
+  pop.innerHTML=html;
+}
+function _finPointsRefresh(){const pop=document.getElementById('finPointsPop');if(pop)_finRenderPointsContent(pop);}
+function addFinPoint(){
+  const row={id:'l-'+Date.now(),name:'',unit:'usd',amount:0,expires_on:null,note:null,sort_order:0,_unsaved:true};
+  st.finPoints.unshift(row);
+  _finPointsRefresh();
+  setTimeout(()=>_finPointsEdit(row.id),30);
+}
+function _finPointsEdit(id){
+  const row=st.finPoints.find(r=>String(r.id)===String(id));if(!row)return;
+  const tr=document.querySelector(`#finPointsPop tr[data-fin-id="${id}"]`);if(!tr||tr.classList.contains('fin-ph-editing'))return;
+  tr.classList.add('fin-ph-editing');
+  const[nameTd,amtTd,expTd]=tr.children;
+  nameTd.innerHTML=`<input type="text" class="fin-ph-date-text" value="${escHtml(row.name||'')}" placeholder="Name"
+    onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
+    onblur="_finPointsSave('${id}','name',this.value)">`;
+  amtTd.innerHTML=`<span style="display:flex;gap:4px;align-items:center;justify-content:flex-end">
+    <input type="number" step="1" class="fin-ph-amt-input" style="width:64px" value="${Math.abs(row.amount||0)}"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
+      onblur="_finPointsSave('${id}','amount',this.value)">
+    <select class="fin-pts-unit-sel" onchange="_finPointsSave('${id}','unit',this.value)" onkeydown="event.stopPropagation()">
+      <option value="usd"${row.unit==='usd'?' selected':''}>$</option>
+      <option value="miles"${row.unit==='miles'?' selected':''}>mi</option>
+      <option value="points"${row.unit==='points'?' selected':''}>pts</option>
+    </select>
+  </span>`;
+  expTd.innerHTML=`<span style="position:relative;display:block">
+    <input type="text" class="fin-ph-date-text" value="${_finPHDateDisplay(row.expires_on)}" placeholder="MM/DD/YY"
+      onfocus="const h=this.nextElementSibling;if(h&&h.showPicker)try{h.showPicker();}catch(e){}"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
+      onblur="_finPointsSaveDateText('${id}',this.value)">
+    <input type="date" class="fin-ph-date-hidden" value="${row.expires_on||''}" tabindex="-1"
+      onchange="_finPointsDatePicked('${id}',this)">
+  </span>`;
+  nameTd.querySelector('input').focus();
+}
+function _finPointsCancelIfNew(id){
+  const row=st.finPoints.find(r=>String(r.id)===String(id));
+  if(row&&row._unsaved&&!(row.name||'').trim())st.finPoints=st.finPoints.filter(r=>r.id!==row.id);
+  _finPointsRefresh();
+}
+function _finPointsDatePicked(id,hiddenInput){
+  const textInput=hiddenInput.previousElementSibling;
+  if(textInput)textInput.value=_finPHDateDisplay(hiddenInput.value);
+  _finPointsSave(id,'expires_on',hiddenInput.value);
+}
+function _finPointsSaveDateText(id,text){
+  const iso=text.trim()?_finParsePHDate(text):null;
+  if(text.trim()&&!iso){_finPointsRefresh();return;}
+  _finPointsSave(id,'expires_on',iso);
+}
+async function _finPointsSave(id,field,val){
+  const row=st.finPoints.find(r=>String(r.id)===String(id));if(!row)return;
+  const parsed=field==='amount'?Math.abs(_finParseNum(String(val))):val;
+  const finishIfDone=()=>{
+    const tr=document.querySelector(`#finPointsPop tr[data-fin-id="${id}"]`);
+    if(tr&&tr.contains(document.activeElement))return;
+    if(row._unsaved){
+      if(!(row.name||'').trim()){st.finPoints=st.finPoints.filter(r=>r.id!==row.id);_finPointsRefresh();return;}
+      _finCommitNewPoint(row);
+      return;
+    }
+    _finPointsRefresh();
+  };
+  if(row._unsaved){row[field]=parsed;setTimeout(finishIfDone,0);return;}
+  if(row[field]===parsed){setTimeout(finishIfDone,0);return;}
+  const old=row[field];row[field]=parsed;
+  renderFinancePage();
+  setTimeout(finishIfDone,0);
+  pushUndo(()=>{row[field]=old;renderFinancePage();_finPointsRefresh();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','fin_points',{[field]:old},`?id=eq.${id}`);},'Edited '+field);
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','fin_points',{[field]:parsed},`?id=eq.${id}`);
+}
+async function _finCommitNewPoint(row){
+  if(!row._unsaved)return;
+  delete row._unsaved;
+  const{id,_unsaved,...fields}=row;
+  pushUndo(()=>{st.finPoints=st.finPoints.filter(r=>r.id!==row.id);_finPointsRefresh();},'Added point/credit');
+  _finPointsRefresh();
+  const sv=await sbReq('POST','fin_points',fields);
+  if(sv&&sv[0]){const i=st.finPoints.findIndex(x=>x.id===row.id);if(i>-1){st.finPoints[i]={...sv[0]};_finPointsRefresh();}}
+}
+async function delFinPoint(id){
+  const old=st.finPoints.find(r=>String(r.id)===String(id));
+  st.finPoints=st.finPoints.filter(r=>String(r.id)!==String(id));
+  _finPointsRefresh();
+  pushUndo(()=>{if(old)st.finPoints.push(old);_finPointsRefresh();},'Deleted point/credit');
+  if(!String(id).startsWith('l-'))await sbReq('DELETE','fin_points',null,`?id=eq.${id}`);
 }
 
 // ── Finance hover interactions ──────────────────────────────────────────────
