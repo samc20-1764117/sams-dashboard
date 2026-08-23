@@ -5989,6 +5989,15 @@ async function init(){
   document.addEventListener('visibilitychange',_fgResync);
   window.addEventListener('pageshow',_fgResync);
   window.addEventListener('focus',_fgResync);
+  // renderMoCal() sizes each day cell's visible-item count off window.innerHeight at
+  // render time and never recomputes it — so a window resized after load (e.g. entering
+  // fullscreen) leaves cells stuck showing the old (smaller) item count with blank space
+  // below. Re-render on resize, debounced so a drag doesn't thrash it.
+  let _resizeMoT=null;
+  window.addEventListener('resize',()=>{
+    clearTimeout(_resizeMoT);
+    _resizeMoT=setTimeout(()=>{if(typeof renderMoCal==='function')renderMoCal();},150);
+  });
   // Pause the decorative bg orbs (blurred, infinitely-animating) while the window
   // is backgrounded — they otherwise keep compositing at full cost all day.
   document.addEventListener('visibilitychange',()=>{
