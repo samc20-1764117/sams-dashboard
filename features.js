@@ -6428,7 +6428,12 @@ document.addEventListener('keydown',async e=>{
         }
       }
       if(moved){e.preventDefault();save();renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
-        pushUndo(()=>{undos.forEach(fn=>fn());save();renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();},'Moved tasks');
+        // Keep weekly-cal keyboard nav (_wkcColKeyNav) pointed at the day the selection just moved
+        // to — without this, Up/Down right after this move kept searching the stale OLD day and
+        // found nothing there, so arrow nav silently no-op'd until the next click (2026-08-24 fix,
+        // same root cause as the drag-to-another-day fix above).
+        if(_lastSelSurface==='wkcCol'&&_lastSelWkcDs)_lastSelWkcDs=_shiftDs(_lastSelWkcDs,dir);
+        pushUndo(()=>{undos.forEach(fn=>fn());if(_lastSelSurface==='wkcCol'&&_lastSelWkcDs)_lastSelWkcDs=_shiftDs(_lastSelWkcDs,-dir);save();renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();},'Moved tasks');
       }
     }
     return;
