@@ -1470,6 +1470,11 @@ function renderWkCal(){
       if(_wr){const _r=_wr.getBoundingClientRect();if(e.clientX-_r.left<44||_r.right-e.clientX<44)return;}
       e.preventDefault();col.classList.remove('drop-here');
       if(!dragId)return;
+      // Keep keyboard nav pointed at wherever the moved item actually landed — without this,
+      // _wkcColKeyNav (Up/Down) keeps looking in the SOURCE day (still stale from the click that
+      // selected it) and finds nothing there once the item's moved away, so arrow nav silently
+      // no-ops right after a same-week drag-to-another-day move (2026-08-23 fix).
+      _lastSelSurface='wkcCol';_lastSelWkcDs=ds;
       if(dragId.startsWith('travel::')){
         const parts=dragId.split('::');const tvId=parts[1],offsetDays=parseInt(parts[2])||0;
         const tv2=st.travel.find(x=>String(x.id)===String(tvId));
