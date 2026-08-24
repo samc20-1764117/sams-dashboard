@@ -51,8 +51,19 @@ function openQA(ctx,btn,ds='',kcat=''){
   document.getElementById('qaName').placeholder=ctx==='pup'?'Skill name…':ctx==='shop'?'Item name…':'Task name…';
   document.getElementById('qaName').value='';
   p.classList.add('open');
-  if(btn){const r=btn.getBoundingClientRect();let top=r.bottom+5,left=r.left,pw=270;if(left+pw>window.innerWidth-6)left=window.innerWidth-pw-6;if(top+340>window.innerHeight)top=r.top-344;p.style.top=top+'px';p.style.left=left+'px';p.style.transform='';}
-  else{p.style.top='50%';p.style.left='50%';p.style.transform='translate(-50%,-50%)';}
+  if(btn){const r=btn.getBoundingClientRect();let top=r.bottom+5,left=r.left,pw=270;if(left+pw>window.innerWidth-6)left=window.innerWidth-pw-6;if(top+340>window.innerHeight)top=r.top-344;p.style.top=Math.round(top)+'px';p.style.left=Math.round(left)+'px';p.style.transform='';}
+  else{
+    // Center via measured, rounded whole-pixel top/left instead of top:50%/left:50%+translate(-50%,-50%):
+    // the popup's rendered height is essentially never a whole number of pixels, so -50% of it lands the
+    // translate on a fractional pixel — GPU-compositing an element at a fractional offset blurs its own
+    // rasterized content (not just its edges), and since `transform` is what CSS animations to it, the
+    // `fadeUp` open animation's own transform (translateY) was fighting this same property, causing a
+    // visible jump/glitch on open too. Measuring post-layout and writing plain top/left leaves `transform`
+    // free for the animation and removes the fractional pixel entirely (2026-08-24 fix).
+    p.style.left='50%';p.style.top='50%';p.style.transform='translate(-50%,-50%)';
+    const r=p.getBoundingClientRect();
+    p.style.left=Math.round(r.left)+'px';p.style.top=Math.round(r.top)+'px';p.style.transform='';
+  }
   setTimeout(()=>document.getElementById('qaName').focus(),50);
 }
 function closeQA(){const p=document.getElementById('qaPopup');p.classList.remove('open');p.style.transform='';}
