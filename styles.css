@@ -67,6 +67,8 @@ body.dark .modal{background:rgba(18,18,22,.97);border-color:rgba(255,255,255,.08
 body.dark .overlay{background:rgba(0,0,0,.5);}
 body.dark dialog.overlay[open]::backdrop{background:rgba(0,0,0,.5);}
 body.dark .qa-popup{background:rgba(18,18,22,.97);}
+body.dark .qa-imp-row input[type=checkbox],body.dark .mimp-row input[type=checkbox]{background:rgba(255,255,255,.15);}
+body.dark .qa-imp-row input[type=checkbox]:checked,body.dark .mimp-row input[type=checkbox]:checked{background:#eab308;}
 body.dark .ti:hover{background:rgba(255,255,255,.04)!important;box-shadow:0 2px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.06);}
 body.dark .ti.sel-row{background:var(--sel-bg-dark)!important;}
 body.dark input,body.dark select,body.dark textarea{background:rgba(255,255,255,.05);color:var(--text);border-color:rgba(255,255,255,.08);}
@@ -84,12 +86,12 @@ body.dark #bdayPresentPopup{background:rgba(20,20,24,.97);}
 body.dark .ctx-item:hover{background:rgba(255,255,255,.06);}
 body.dark .ctx-col-box{--ctx-col-bg:rgba(255,255,255,.04);--ctx-col-border:rgba(255,255,255,.08)}
 body.dark .wkc-chip{filter:brightness(.85);}
-body.dark .chk::after{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1.25px rgba(255,255,255,.15);}
+body.dark .chk::after{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15);}
 body.dark .chk:checked::after{background-color:rgba(152,152,160,.55);box-shadow:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-position:center;}
 /* Today list checkboxes stay bright white in dark mode, same as the weekly-view chip checkboxes
    (.wchk, which never gets dimmed for dark mode) — deliberately more visible than every other .chk
    on the page so today's unfinished tasks draw the eye. */
-body.dark #todList .chk::after{background:rgba(255,255,255,.85);box-shadow:inset 0 0 0 1.25px rgba(180,170,210,.42);}
+body.dark #todList .chk::after{background:rgba(255,255,255,.85);border-color:rgba(180,170,210,.42);}
 body.dark #todList .chk:checked::after{background-color:rgba(200,195,210,.35);box-shadow:inset 0 0 0 1px rgba(200,195,210,.35);}
 body.dark .tb-chk:checked::after{background-color:rgba(152,152,160,.55);box-shadow:none;}
 body.dark .ch-prog-bar{background:rgba(255,255,255,.06);}
@@ -425,7 +427,7 @@ body.dark .ti.sel-row{box-shadow:0 4px 14px var(--sel-shadow),0 1px 4px var(--se
 body.dark .chip.sel-row{outline-color:color-mix(in srgb,var(--sel-d) 55%,transparent)!important}
 .chk-wrap{display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:7px 6px;margin:-7px -6px;cursor:pointer;border-radius:6px}
 .chk{position:relative;width:12px;height:12px;min-width:12px;min-height:12px;max-width:12px;max-height:12px;flex-shrink:0;pointer-events:none;appearance:none;-webkit-appearance:none;-moz-appearance:none;border:none;background:none;padding:0;margin:0;outline:none;box-shadow:none}
-.chk::after{content:'';position:absolute;top:0;left:0;width:12px;height:12px;border-radius:50%;border:none;background:rgba(255,255,255,.8);box-sizing:border-box;box-shadow:inset 0 0 0 1.25px rgba(180,170,210,.42);transition:all .2s}
+.chk::after{content:'';position:absolute;top:0;left:0;width:12px;height:12px;border-radius:50%;border:1.25px solid rgba(180,170,210,.42);background:rgba(255,255,255,.8);box-sizing:border-box;transition:all .2s}
 /* green checkbox option: #a3c41a */
 .chk:checked::after{background:rgba(200,195,210,.35);box-shadow:inset 0 0 0 1px rgba(200,195,210,.35);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-position:center}
 .tn{flex:1;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;letter-spacing:-.01em}
@@ -492,18 +494,24 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .asel{padding:3px 4px;border-radius:var(--rs);border:1px solid var(--gb);font-family:inherit;font-size:10px;font-weight:500;background:rgba(255,255,255,.7);color:var(--text);outline:none;cursor:pointer}
 
 /* Quick-add popup */
-.qa-popup{position:fixed;z-index:600;background:rgba(255,255,255,.97);border:1px solid var(--gb);border-radius:13px;box-shadow:var(--shadow-lg);padding:12px 14px 11px;width:270px;display:none}
+.qa-popup{position:fixed;z-index:600;background:rgba(255,255,255,.97);border:1px solid var(--gb);border-radius:13px;box-shadow:var(--shadow-lg);padding:0 14px 11px;width:270px;display:none}
 .qa-popup.open{display:block;animation:fadeUp .13s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-.qa-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;letter-spacing:-.1px}
+.qa-header{display:flex;align-items:center;justify-content:space-between;margin:0 -14px 10px;padding:11px 14px 8px;border-bottom:1px solid var(--border)}
+.qa-title{font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px}
 .qa-field{margin-bottom:6px}
-.qa-field label{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.07em}
+.qa-field label{display:block;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:2px}
+.qa-req{color:#ef4444;font-weight:700;font-size:11px;margin-left:2px;vertical-align:1px}
 .qa-field input,.qa-field select,.qa-field textarea{width:100%;padding:5px 7px;border-radius:var(--rs);border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none;font-weight:500}
 .qa-field input:focus,.qa-field select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(109,95,230,.1)}
-.qa-imp-row{display:flex;align-items:center;gap:6px;padding:4px 0 2px}
+.qa-imp-row{display:flex;align-items:center;gap:8px;padding:4px 0 2px}
 .qa-imp-row label{font-size:11px;font-weight:500;color:var(--text);cursor:pointer}
+.qa-imp-row input[type=checkbox]{appearance:none;-webkit-appearance:none;-moz-appearance:none;width:30px;height:17px;min-width:30px;border-radius:20px;background:rgba(0,0,0,.15);position:relative;cursor:pointer;transition:background .15s;margin:0;padding:0;border:none;outline:none;box-shadow:none}
+.qa-imp-row input[type=checkbox]::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.qa-imp-row input[type=checkbox]:checked{background:#eab308}
+.qa-imp-row input[type=checkbox]:checked::after{transform:translateX(13px)}
 .qa-hint{font-size:9px;color:var(--subtle);margin-top:6px;text-align:center}
-.qa-close{position:absolute;top:8px;right:10px;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:13px;padding:2px 3px;border-radius:4px}
+.qa-close{background:none;border:none;cursor:pointer;color:var(--subtle);padding:3px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .qa-close:hover{color:var(--text);background:rgba(0,0,0,.05)}
 
 /* Layout — consistent 14px gaps everywhere */
@@ -582,7 +590,7 @@ body.dark .tod-bottom-controls .btn.btn-ghost.btn-xs{background:rgba(255,255,255
 .tb-block.done-block .tb-bt,.rec-atb-block.done-block .tb-bt{text-decoration:line-through}
 .tb-block.dragging-block{opacity:.35;cursor:grabbing}
 .tb-chk{position:relative;width:10px;height:10px;min-width:10px;min-height:10px;max-width:10px;max-height:10px;flex-shrink:0;cursor:pointer;appearance:none;-webkit-appearance:none;-moz-appearance:none;border:none;background:none;padding:0;margin:0 2px 0 0;align-self:flex-start;margin-top:-1.415px;outline:none;box-shadow:none}
-.tb-chk::after{content:'';position:absolute;top:0;left:0;width:10px;height:10px;border-radius:50%;border:none;background:rgba(255,255,255,.8);box-sizing:border-box;box-shadow:inset 0 0 0 1.25px rgba(180,170,210,.42);transition:all .2s}
+.tb-chk::after{content:'';position:absolute;top:0;left:0;width:10px;height:10px;border-radius:50%;border:1.25px solid rgba(180,170,210,.42);background:rgba(255,255,255,.8);box-sizing:border-box;transition:all .2s}
 /* green checkbox option: #a3c41a */
 .tb-chk:checked::after{background:rgba(200,195,210,.35);box-shadow:inset 0 0 0 1px rgba(200,195,210,.35);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-position:center}
 .tb-block:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,0.85),0 8px 20px rgba(0,0,0,0.12);transform:translateY(-1px)}
@@ -718,7 +726,7 @@ body.dark .wkc-day-sel .wkc-dd{color:#1a1a1e}
 .chip{margin-bottom:2px;padding:2px 4px;border-radius:6px;font-size:9px;font-weight:500;display:flex;align-items:center;gap:4px;cursor:pointer;border:1px solid rgba(255,255,255,0.6);white-space:nowrap;overflow:hidden;transition:filter .1s;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.75)}
 .chip:hover{filter:brightness(.96)}
 .chip .wchk{position:relative;width:10px;height:10px;min-width:10px;min-height:10px;max-width:10px;max-height:10px;flex-shrink:0;cursor:pointer;appearance:none;-webkit-appearance:none;-moz-appearance:none;border:none;background:none;padding:0;margin:0;outline:none;box-shadow:none}
-.chip .wchk::after{content:'';position:absolute;top:0;left:0;width:10px;height:10px;border-radius:50%;border:none;background:rgba(255,255,255,.8);box-sizing:border-box;box-shadow:inset 0 0 0 1.25px rgba(180,170,210,.42);transition:all .2s}
+.chip .wchk::after{content:'';position:absolute;top:0;left:0;width:10px;height:10px;border-radius:50%;border:1.25px solid rgba(180,170,210,.42);background:rgba(255,255,255,.8);box-sizing:border-box;transition:all .2s}
 /* green checkbox option: #a3c41a */
 .chip .wchk:checked::after{background:rgba(200,195,210,.35);box-shadow:inset 0 0 0 1px rgba(200,195,210,.35);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-position:center}
 .chip.done-chip{opacity:.25}
@@ -808,13 +816,17 @@ body.scenic-theme:not(.dark) .ov-topbar-label{color:rgba(255,255,255,.78);text-s
 body.scenic-theme:not(.dark) .ov-topbar-date{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35)}
 body.scenic-theme:not(.dark) .ov-topbar-dot{background:#fff;opacity:.55}
 body.scenic-theme:not(.dark) .ov-topbar-time{color:rgba(255,255,255,.88);background:transparent;border-color:transparent;text-shadow:0 1px 4px rgba(0,0,0,.3)}
-.mt{font-size:14px;font-weight:700;letter-spacing:-.3px;margin-bottom:11px}
+.mt{font-size:14px;font-weight:700;letter-spacing:-.3px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--border)}
 .mfield{margin-bottom:8px}
-.mfield label{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-bottom:2px;text-transform:uppercase;letter-spacing:.07em}
+.mfield label{display:block;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:2px}
 .mfield input,.mfield select,.mfield textarea{width:100%;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border);font-family:inherit;font-size:12px;background:rgba(255,255,255,.8);color:var(--text);outline:none;font-weight:500}
 .mfield input:focus,.mfield select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(109,95,230,.1)}
-.mimp-row{display:flex;align-items:center;gap:6px;padding:5px 0 2px}
+.mimp-row{display:flex;align-items:center;gap:8px;padding:5px 0 2px}
 .mimp-row label{font-size:11px;font-weight:500;color:var(--text);cursor:pointer}
+.mimp-row input[type=checkbox]{appearance:none;-webkit-appearance:none;-moz-appearance:none;width:30px;height:17px;min-width:30px;border-radius:20px;background:rgba(0,0,0,.15);position:relative;cursor:pointer;transition:background .15s;margin:0;padding:0;border:none;outline:none;box-shadow:none}
+.mimp-row input[type=checkbox]::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.mimp-row input[type=checkbox]:checked{background:#eab308}
+.mimp-row input[type=checkbox]:checked::after{transform:translateX(13px)}
 .mact{display:flex;gap:5px;justify-content:flex-end;margin-top:11px}
 .task-modal{width:300px;padding:16px}
 
@@ -877,7 +889,7 @@ body.dark .mo-side-toggle.active{background:rgba(109,95,230,.22)}
 .mo-filter-row{display:flex;align-items:center;gap:6px;padding:5px 8px;margin:3px 6px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;transition:opacity .12s}
 .mo-filter-row:hover{opacity:.8}
 .mo-filter-row .chk,.mo-filter-row .chk::after{width:9px;height:9px;min-width:9px;min-height:9px;max-width:9px;max-height:9px}
-.mo-filter-row .chk::after{background:transparent;box-shadow:inset 0 0 0 1.5px var(--fc-b)}
+.mo-filter-row .chk::after{background:transparent;border-width:1.5px;border-color:var(--fc-b)}
 .mo-filter-row .chk:checked::after,body.dark .mo-filter-row .chk:checked::after{background:var(--fc-d);background-image:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),rgba(255,255,255,0) 60%);box-shadow:inset 0 0 0 1.5px var(--fc-d),0 1px 2px rgba(0,0,0,.35)}
 
 /* Settings */
