@@ -7170,6 +7170,14 @@ function toggleDark(){
   const lb=document.getElementById('darkToggleLabel');if(lb)lb.textContent=isDark?'Light Mode':'Night Mode';
   if(typeof renderAll==='function')renderAll();
   if(typeof renderGuidePage==='function'&&activePg==='guide')renderGuidePage();
+  // The vidOv floating panels (Calendar/All-videos/Analytics) aren't part of renderAll's sweep, so
+  // toggling dark mode while one is open left it half-stale: the panel's own container color updates
+  // fine (styled via var()s/classes, which cascade instantly), but content built by functions like
+  // _vidRenderAnalytics() bakes some colors in as inline styles at render time — those only change on
+  // an actual re-render, hence "part light, part dark" (2026-08-25 fix).
+  if(typeof _vidOvAnOpen!=='undefined'&&_vidOvAnOpen&&typeof _vidOvRenderAnalyticsPanel==='function')_vidOvRenderAnalyticsPanel();
+  if(typeof _vidCalOpen!=='undefined'&&_vidCalOpen&&typeof _vidOvRenderCal==='function')_vidOvRenderCal();
+  if(typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen&&typeof _vidOvRenderAll==='function')_vidOvRenderAll();
 }
 function toggleSettingsPopup(){
   const p=document.getElementById('settingsPopup');if(!p)return;

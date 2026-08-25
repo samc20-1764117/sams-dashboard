@@ -4816,10 +4816,10 @@ function _vidOvToggleTitleMode(){
   const panel=document.getElementById('vidOvPanel');
   if(panel){
     const card=panel.parentElement;
-    // #main has no max-width (unlike .overview-cols, which caps at 1600px) — using it here so
-    // title mode actually reaches full page width instead of stopping at that cap (2026-08-25 fix).
-    const cols=card.closest('#main');
-    const extend=cols?(cols.offsetWidth-card.offsetWidth-14)+'px':'600px';
+    // Content width (page padding-aware, see _vidOvContentRect) instead of raw #main width, which
+    // overshoots by #page-overview's own left/right padding (2026-08-25 fix).
+    const _cr=_vidOvContentRect();
+    const extend=_cr?(_cr.width-card.offsetWidth-14)+'px':'600px';
     panel.style.right='-'+extend;
     if(card){card.style.overflow='visible';card.style.zIndex='60';}
   }
@@ -5122,7 +5122,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" data-postvid="${csid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_cPostColor};cursor:pointer;line-height:12px">${_cPostDate||''}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex-shrink:0;width:16px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums;font-family:ui-monospace,'SF Mono',Consolas,monospace">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:${c.title?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${c.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><div style="display:flex;align-items:center;flex:1;min-width:0;gap:2px"><span style="flex-shrink:0;width:16px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums;font-family:'DM Sans',system-ui,-apple-system,sans-serif">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span></div>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:${c.title?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${c.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone"><button class="vid-insert-btn" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this.closest('.vid-insert-zone'))">+</button></div>`;}
   });
   return html;
@@ -5622,6 +5622,21 @@ function _vidCalRenderYearView(allVids,today){
   h+='</div>';
   return h;
 }
+// Content-area rect for the vidOv floating panels and title-mode extend: #main has no max-width
+// but includes #page-overview's own horizontal padding (clamp(12px,3vw,56px)), so using #main's
+// raw rect overshoots the actual visible content by that padding on each side — inset by it here
+// instead (2026-08-25 fix; previously .overview-cols, which is correctly inset but caps at
+// max-width:1600px, making these panels too NARROW on wide screens instead of too wide).
+function _vidOvContentRect(){
+  const main=document.getElementById('main');
+  if(!main)return null;
+  const mr=main.getBoundingClientRect();
+  const pageEl=document.getElementById('page-overview');
+  const cs=pageEl?getComputedStyle(pageEl):null;
+  const padL=cs?parseFloat(cs.paddingLeft)||0:0;
+  const padR=cs?parseFloat(cs.paddingRight)||0:0;
+  return{left:mr.left+padL,width:mr.width-padL-padR,top:mr.top,height:mr.height};
+}
 function _vidOvRenderCal(){
   let panel=document.getElementById('vidOvCalPanel');
   const _bg=_dk()?'rgba(24,24,28,.98)':'rgba(255,255,255,.98)';
@@ -5633,10 +5648,10 @@ function _vidOvRenderCal(){
     // Span the full page content width (matching every other page's margins), not just the
     // right-hand column or the overview-cols max-width cap (2026-08-25: switched from
     // .overview-cols to #main, which has no max-width, to actually reach full page width).
-    const rightPanel=document.getElementById('main');
+    const rightPanel=_vidOvContentRect();
     if(card){
       const cr=card.getBoundingClientRect();
-      const rr=rightPanel?rightPanel.getBoundingClientRect():{left:cr.right+10,width:700,top:cr.top,height:cr.height};
+      const rr=rightPanel||{left:cr.right+10,width:700,top:cr.top,height:cr.height};
       panel.style.cssText=`position:fixed;top:${cr.top}px;left:${rr.left}px;width:${rr.width}px;height:${cr.height}px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
     }else{
       panel.style.cssText=`position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
@@ -5884,10 +5899,10 @@ function _vidOvRenderAll(){
     // Span the full page content width (matching every other page's margins), not just the
     // right-hand column or the overview-cols max-width cap (2026-08-25: switched from
     // .overview-cols to #main, which has no max-width, to actually reach full page width).
-    const rightPanel=document.getElementById('main');
+    const rightPanel=_vidOvContentRect();
     if(card){
       const cr=card.getBoundingClientRect();
-      const rr=rightPanel?rightPanel.getBoundingClientRect():{left:cr.right+10,width:700,top:cr.top,height:cr.height};
+      const rr=rightPanel||{left:cr.right+10,width:700,top:cr.top,height:cr.height};
       panel.style.cssText=`position:fixed;top:${cr.top}px;left:${rr.left}px;width:${rr.width}px;height:${cr.height}px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
     }else{
       panel.style.cssText=`position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
@@ -6045,10 +6060,10 @@ function _vidOvRenderAnalyticsPanel(){
     // Span the full page content width (matching every other page's margins), not just the
     // right-hand column or the overview-cols max-width cap (2026-08-25: switched from
     // .overview-cols to #main, which has no max-width, to actually reach full page width).
-    const rightPanel=document.getElementById('main');
+    const rightPanel=_vidOvContentRect();
     if(card){
       const cr=card.getBoundingClientRect();
-      const rr=rightPanel?rightPanel.getBoundingClientRect():{left:cr.right+10,width:700,top:cr.top,height:cr.height};
+      const rr=rightPanel||{left:cr.right+10,width:700,top:cr.top,height:cr.height};
       panel.style.cssText=`position:fixed;top:${cr.top}px;left:${rr.left}px;width:${rr.width}px;height:${cr.height}px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
     }else{
       panel.style.cssText=`position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
