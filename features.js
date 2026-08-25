@@ -53,16 +53,21 @@ function openQA(ctx,btn,ds='',kcat=''){
   p.classList.add('open');
   if(btn){const r=btn.getBoundingClientRect();let top=r.bottom+5,left=r.left,pw=270;if(left+pw>window.innerWidth-6)left=window.innerWidth-pw-6;if(top+340>window.innerHeight)top=r.top-344;p.style.top=Math.round(top)+'px';p.style.left=Math.round(left)+'px';p.style.transform='';}
   else{
-    // Center via measured, rounded whole-pixel top/left instead of top:50%/left:50%+translate(-50%,-50%):
-    // the popup's rendered height is essentially never a whole number of pixels, so -50% of it lands the
-    // translate on a fractional pixel — GPU-compositing an element at a fractional offset blurs its own
-    // rasterized content (not just its edges), and since `transform` is what CSS animations to it, the
-    // `fadeUp` open animation's own transform (translateY) was fighting this same property, causing a
-    // visible jump/glitch on open too. Measuring post-layout and writing plain top/left leaves `transform`
-    // free for the animation and removes the fractional pixel entirely (2026-08-24 fix).
-    p.style.left='50%';p.style.top='50%';p.style.transform='translate(-50%,-50%)';
-    const r=p.getBoundingClientRect();
-    p.style.left=Math.round(r.left)+'px';p.style.top=Math.round(r.top)+'px';p.style.transform='';
+    // Center over #main (the actual page content area, which starts at 186px when the sidebar is
+    // open — not the full window) using measured, rounded whole-pixel top/left instead of
+    // top:50%/left:50%+translate(-50%,-50%): the popup's rendered height is essentially never a
+    // whole number of pixels, so -50% of it lands the translate on a fractional pixel —
+    // GPU-compositing an element at a fractional offset blurs its own rasterized content (not just
+    // its edges), and since `transform` is what CSS animates to open it, the `fadeUp` animation's
+    // own transform (translateY) was fighting this same property, causing a visible jump/glitch on
+    // open too. Measuring post-layout and writing plain top/left leaves `transform` free for the
+    // animation and removes the fractional pixel entirely (2026-08-24 fix).
+    const _main=document.getElementById('main');
+    const _mr=_main?_main.getBoundingClientRect():{left:0,top:0,width:window.innerWidth,height:window.innerHeight};
+    const _pr=p.getBoundingClientRect();
+    p.style.left=Math.round(_mr.left+(_mr.width-_pr.width)/2)+'px';
+    p.style.top=Math.round(_mr.top+(_mr.height-_pr.height)/2)+'px';
+    p.style.transform='';
   }
   setTimeout(()=>document.getElementById('qaName').focus(),50);
 }

@@ -545,7 +545,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
    smaller sizes without it. line-height:1 + translateY together correct DM Sans's cap-height-vs-
    baseline asymmetry (more space above cap-height than below baseline) specifically at this
    font-size/checkbox-size pairing; recalibrated live after the first pass overshot by ~1px. */
-.tod-tb-body.tb-list-only .tod-list-row #todList .tn{font-size:14px;line-height:1;transform:translateY(.08em)}
+.tod-tb-body.tb-list-only .tod-list-row #todList .tn{font-size:14px;line-height:1;transform:translateY(-.005em)}
 .tod-tb-body.tb-list-only .tod-list-row #todList .cat-dot{width:12px;height:12px}
 .tod-tb-body.tb-list-only .tod-list-row #todList .dlbl.ov{right:11px}
 .tod-tb-body.tb-list-only .tod-list-row #todList .heb-cnt,.tod-tb-body.tb-list-only .tod-list-row #todList .pup-link-badge{top:2px}

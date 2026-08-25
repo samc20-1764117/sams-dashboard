@@ -1,6 +1,37 @@
 // ── YouTube Analytics ────────────────────────────────────────────────────────
 let _ytData=null,_ytMatch=null,_ytFetched=false;
 let _ytAnalytics=null,_ytAnalyticsFetched=false;
+// Shared, still one-fetch-per-page-load-guarded (`_ytFetched`/`_ytAnalyticsFetched`) trigger — pulled
+// out of renderVideosPage so the Overview page's video popup analytics panel (`_vidOvRenderAnalyticsPanel`,
+// overview.js) can also request the SAME data instead of only ever reading a possibly-empty localStorage
+// cache. Whichever surface asks first fetches; the other sees the flag already set and skips (2026-08-24
+// fix — do NOT remove these guards or call fetch directly elsewhere, see YouTube API rules in CLAUDE.md).
+function _ytEnsureFetch(){
+  if(_ytFetched)return;
+  _ytFetched=true;
+  fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
+    if(d.error)return;
+    _ytData=d;
+    try{localStorage.setItem('_ytCache',JSON.stringify(d));}catch(e){}
+    _ytBuildMatch();
+    _vidAutoPublishFromYt();
+    if(document.getElementById('page-videos')&&document.getElementById('page-videos').classList.contains('active'))renderVideosPageKeepScroll();
+    if(typeof _vidOvAnOpen!=='undefined'&&_vidOvAnOpen&&typeof _vidOvRenderAnalyticsPanel==='function')_vidOvRenderAnalyticsPanel();
+    if(_vidTableScrolledOnce)_vidScrollToDefault();
+  }).catch(function(){});
+}
+function _ytEnsureAnalyticsFetch(){
+  if(_ytAnalyticsFetched)return;
+  _ytAnalyticsFetched=true;
+  try{var _lac=JSON.parse(localStorage.getItem('_ytAnalyticsCache')||'null');if(_lac&&_lac.monthly)_ytAnalytics=_lac;}catch(e){}
+  fetch('/api/yt?mode=analytics&_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
+    if(d.error)return;
+    _ytAnalytics=d;
+    try{localStorage.setItem('_ytAnalyticsCache',JSON.stringify(d));}catch(e){}
+    if(_vidView==='analytics')renderVideosPageKeepScroll();
+    if(typeof _vidOvAnOpen!=='undefined'&&_vidOvAnOpen&&typeof _vidOvRenderAnalyticsPanel==='function')_vidOvRenderAnalyticsPanel();
+  }).catch(function(){});
+}
 function _ytEsc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function _ytDur(iso){var m=iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);if(!m)return'0:00';var h=m[1]?parseInt(m[1]):0,min=m[2]?parseInt(m[2]):0,s=m[3]?parseInt(m[3]):0;if(h)return h+':'+String(min).padStart(2,'0')+':'+String(s).padStart(2,'0');return min+':'+String(s).padStart(2,'0');}
 function _ytNum(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M';if(n>=1000)return(n/1000).toFixed(1)+'K';return String(n);}
@@ -472,29 +503,9 @@ function renderVideosPage(){
   if(_vidSearch)requestAnimationFrame(()=>_vidPostRenderMatches());
   // Load cached YT data from localStorage on first run
   if(!_ytData){try{var _lsc=JSON.parse(localStorage.getItem('_ytCache')||'null');if(_lsc&&_lsc.channelStats){_ytData=_lsc;_ytBuildMatch();_vidAutoPublishFromYt();renderVideosPageKeepScroll();_vidScrollToDefault();}}catch(e){}}
-  if(!_ytFetched){
-    _ytFetched=true;
-    fetch('/api/yt?_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
-      if(d.error)return;
-      _ytData=d;
-      try{localStorage.setItem('_ytCache',JSON.stringify(d));}catch(e){}
-      _ytBuildMatch();
-      _vidAutoPublishFromYt();
-      renderVideosPageKeepScroll();
-      if(_vidTableScrolledOnce)_vidScrollToDefault();
-    }).catch(function(){});
-  }
+  _ytEnsureFetch();
   // Fetch YouTube Analytics API data (actual revenue) — once per page load
-  if(!_ytAnalyticsFetched){
-    _ytAnalyticsFetched=true;
-    try{var _lac=JSON.parse(localStorage.getItem('_ytAnalyticsCache')||'null');if(_lac&&_lac.monthly)_ytAnalytics=_lac;}catch(e){}
-    fetch('/api/yt?mode=analytics&_='+Date.now(),{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();}).then(function(d){
-      if(d.error)return;
-      _ytAnalytics=d;
-      try{localStorage.setItem('_ytAnalyticsCache',JSON.stringify(d));}catch(e){}
-      if(_vidView==='analytics')renderVideosPageKeepScroll();
-    }).catch(function(){});
-  }
+  _ytEnsureAnalyticsFetch();
   // Render YT stats from _ytData (either fresh or cached)
   if(_ytData){
     var ytSlot=document.getElementById('yt-analytics-slot');

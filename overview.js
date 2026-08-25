@@ -1709,6 +1709,13 @@ function renderWkCal(){
       }
       if(dragId.startsWith('vidstep::')){
         const parts=dragId.split('::');const _vsVid=parts[1],_vsStep=parts[2],_vsSrcDay=parts[3]||null;
+        // Selection id matching the format `_moveOtherSelected` already knows how to move
+        // (`vidstep-<vid>-<step>-<day>`, see the virtual-task construction, ~line 4712) — needed so a
+        // multi-selected drag of several video-stage chips moves ALL of them, not just the one actually
+        // dragged (2026-08-24 fix: this branch never called `_moveOtherSelected` at all, unlike every
+        // other drag-type branch here, so a second selected vidstep chip silently never moved).
+        const _vsSid='vidstep-'+_vsVid+'-'+_vsStep+(_vsSrcDay?('-'+_vsSrcDay):'');
+        const _vsIsMultiSel=selectedTasks.has(_vsSid)&&selectedTasks.size>1;
         const _vsIsMulti=_vsStep!=='step_thumbnail'&&_vsStep!=='step_description';
         if(_vsIsMulti&&_vsSrcDay&&_vsSrcDay!==ds){
           // Multi-day step: move only source day's blocks to target day
@@ -1730,8 +1737,18 @@ function renderWkCal(){
             const m2=_vidStepDayMap();if(_vsPrevMap)m2[_vsK]=_vsPrevMap;else delete m2[_vsK];_vidStepDayMapSet(m2);
             save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
           },'Moved step');
+          if(_vsIsMultiSel){
+            const _vsOtherUndos=[];
+            _moveOtherSelected(ds,_vsSid,_vsOtherUndos);
+            if(_vsOtherUndos.length){save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();pushUndo(()=>{_vsOtherUndos.forEach(fn=>fn());save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Moved tasks to '+ds);}
+          }
         } else {
           _vidStepAssignToDay(_vsVid,_vsStep,ds);
+          if(_vsIsMultiSel){
+            const _vsOtherUndos2=[];
+            _moveOtherSelected(ds,_vsSid,_vsOtherUndos2);
+            if(_vsOtherUndos2.length){save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();pushUndo(()=>{_vsOtherUndos2.forEach(fn=>fn());save();renderAll();if(document.getElementById('tbGrid'))renderDayTB();},'Moved tasks to '+ds);}
+          }
         }
         dragId=null;return;
       }
@@ -4795,7 +4812,7 @@ function _vidOvStartTitleEdit(el,vidId){
   el.textContent='';
   const inp=document.createElement('input');
   inp.type='text';inp.value=prev;
-  inp.style.cssText='width:100%;border:none;outline:1px solid rgba(14,165,233,.35);outline-offset:-1px;background:transparent;font-size:11px;color:var(--text);font-weight:500;padding:0 3px;border-radius:3px;font-family:inherit;height:20px;line-height:18px;box-sizing:border-box;margin:0';
+  inp.style.cssText='width:100%;border:none;outline:1px solid rgba(14,165,233,.35);outline-offset:-1px;background:transparent;font-size:11px;color:var(--text);font-weight:500;padding:0 3px;border-radius:3px;font-family:inherit;height:20px;line-height:20px;box-sizing:border-box;margin:0';
   el.appendChild(inp);
   inp.focus();inp.select();
   const _commit=()=>{
@@ -4822,7 +4839,7 @@ function _vidOvStartCommentEdit(el,vidId){
   el.textContent='';
   const inp=document.createElement('input');
   inp.type='text';inp.value=prev;
-  inp.style.cssText='width:100%;border:none;outline:1px solid rgba(14,165,233,.35);outline-offset:-1px;background:transparent;font-size:11px;color:var(--text);font-weight:400;padding:0 3px;border-radius:3px;font-family:inherit;height:20px;line-height:18px;box-sizing:border-box;margin:0';
+  inp.style.cssText='width:100%;border:none;outline:1px solid rgba(14,165,233,.35);outline-offset:-1px;background:transparent;font-size:11px;color:var(--text);font-weight:400;padding:0 3px;border-radius:3px;font-family:inherit;height:20px;line-height:20px;box-sizing:border-box;margin:0';
   el.appendChild(inp);
   inp.focus();inp.select();
   const _commit=()=>{
@@ -5002,7 +5019,7 @@ function _renderVidOvMenu(){
   const _moonColor=_focusActive?'#eab308':'var(--muted)';
   const _moonGlow=_focusActive?'filter:drop-shadow(0 0 4px rgba(234,179,8,.5))':'';
   const _ib='background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0';
-  const _hdr=`<div class="tod-tb-header" style="position:relative"><button onclick="_vidOvToggleCal()" style="${_ib};color:${_vidCalOpen?'var(--accent)':'var(--muted)'}" title="Monthly schedule (M)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><button onclick="_vidOvToggleAll()" style="${_ib};color:${_vidOvAllOpen?'var(--accent)':'var(--muted)'}" title="All videos"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></button><button onclick="_vidOvToggleTitleMode()" style="${_ib};color:${_vidOvTitleMode?'var(--accent)':'var(--muted)'}" title="Edit titles"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button onclick="_vidOvNewVideo('B')" style="${_ib};color:var(--muted)" title="Add video (N)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="_vidOvToggleFocusWk()" style="${_ib};color:${_moonColor};${_moonGlow}" title="Focus this week"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button><button onclick="_vidOvToggleAnalytics()" style="${_ib};color:${_vidOvAnOpen?'var(--accent)':'var(--muted)'}" title="Analytics"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button><button onclick="closeVidOvMenu();showPage('videos')" style="${_ib};color:var(--muted)" title="Go to Videos page"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button><button onclick="closeVidOvMenu()" style="${_ib};color:var(--muted)" title="Close"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`;
+  const _hdr=`<div class="tod-tb-header" style="position:relative"><button onclick="_vidOvToggleCal()" style="${_ib};color:${_vidCalOpen?'var(--accent)':'var(--muted)'}" title="Monthly schedule (M)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><button onclick="_vidOvToggleAll()" style="${_ib};color:${_vidOvAllOpen?'var(--accent)':'var(--muted)'}" title="All videos"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></button><button onclick="_vidOvToggleTitleMode()" style="${_ib};color:${_vidOvTitleMode?'var(--accent)':'var(--muted)'}" title="Edit titles"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button onclick="_vidOvNewVideo('B')" style="${_ib};color:var(--muted)" title="Add video (N)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="_vidOvToggleFocusWk()" style="${_ib};color:${_moonColor};${_moonGlow}" title="Focus this week"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button><button onclick="_vidOvToggleAnalytics()" style="${_ib};color:${_vidOvAnOpen?'var(--accent)':'var(--muted)'}" title="Analytics"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button><button onclick="closeVidOvMenu();showPage('videos')" style="${_ib};color:var(--muted)" title="Go to Videos page"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button><button onclick="closeVidOvMenu()" style="${_ib};color:var(--muted)" title="Close"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button></div>`;
   if(!vids.length){
     menu.innerHTML=_hdr+'<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No videos to add</div>';
     return;
@@ -5069,9 +5086,9 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _focusCls=_isFocused?' vid-ov-focus':'';
   const _smallCount=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;
   const _countBadge=_smallCount?` <span style="font-size:10px;font-weight:400;color:var(--muted);opacity:.5;font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums">· ${_smallCount}</span>`:'';
-  const _titleField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${sid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:${v.title?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${v.title?escHtml(v.title):''}</span>`:'';
-  const _commentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${v.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${v.comment?escHtml(v.comment):''}</span>`:'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex-shrink:0;width:16px"></span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+  const _titleField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${sid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:${v.title?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:20px;display:block;min-height:20px">${v.title?escHtml(v.title):''}</span>`:'';
+  const _commentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${v.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:20px;display:block;min-height:20px">${v.comment?escHtml(v.comment):''}</span>`:'';
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex-shrink:0;width:16px"></span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:20px">${escHtml(v.topic||v.title)}${_countBadge}</span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   // Keep a published small visible (shown done) under its big until the whole group is complete.
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='idea'&&(c.status!=='published'||!_vidGroupFullyComplete(c))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
@@ -5084,7 +5101,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" data-postvid="${csid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_cPostColor};cursor:pointer;line-height:12px">${_cPostDate||''}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex-shrink:0;width:16px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:${c.title?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${c.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex-shrink:0;width:16px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums;line-height:20px">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:20px">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:${c.title?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:20px;display:block;min-height:20px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${c.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:20px;display:block;min-height:20px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone"><button class="vid-insert-btn" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this.closest('.vid-insert-zone'))">+</button></div>`;}
   });
   return html;
@@ -5589,13 +5606,22 @@ function _vidOvRenderCal(){
   if(!panel){
     panel=document.createElement('div');panel.id='vidOvCalPanel';
     const card=document.getElementById('vidOvPanel')?.closest('.card');
-    const rightPanel=document.querySelector('.row1-right-panel');
+    // Span the full page content width (matching every other page's margins) instead of just the
+    // right-hand column, which only covered the Weekly Reset/Shopping side (2026-08-24 fix).
+    const rightPanel=document.querySelector('.overview-cols');
+    // Built once via inline styles (not a CSS class), so `body.dark` selectors in styles.css can't
+    // reach it — branch the colors here instead (2026-08-24 fix: this floating panel had no dark
+    // mode at all, always rendering a light card even in dark mode; same fix applied to all 3
+    // vidOv floating panels — Calendar/All-videos/Analytics — since all 3 share this exact pattern).
+    const _bg=_dk()?'rgba(24,24,28,.98)':'rgba(255,255,255,.98)';
+    const _bd=_dk()?'rgba(255,255,255,.08)':'rgba(210,205,228,.18)';
+    const _sh=_dk()?'0 10px 30px rgba(0,0,0,.32)':'0 10px 30px rgba(0,0,0,.08)';
     if(card){
       const cr=card.getBoundingClientRect();
       const rr=rightPanel?rightPanel.getBoundingClientRect():{left:cr.right+10,width:700,top:cr.top,height:cr.height};
-      panel.style.cssText=`position:fixed;top:${cr.top}px;left:${rr.left}px;width:${rr.width}px;height:${cr.height}px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid rgba(210,205,228,.18);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
+      panel.style.cssText=`position:fixed;top:${cr.top}px;left:${rr.left}px;width:${rr.width}px;height:${cr.height}px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
     }else{
-      panel.style.cssText='position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid rgba(210,205,228,.18);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease';
+      panel.style.cssText=`position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
     }
     document.body.appendChild(panel);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';}));
@@ -5832,13 +5858,22 @@ function _vidOvRenderAll(){
   if(!panel){
     panel=document.createElement('div');panel.id='vidOvAllPanel';
     const card=document.getElementById('vidOvPanel')?.closest('.card');
-    const rightPanel=document.querySelector('.row1-right-panel');
+    // Span the full page content width (matching every other page's margins) instead of just the
+    // right-hand column, which only covered the Weekly Reset/Shopping side (2026-08-24 fix).
+    const rightPanel=document.querySelector('.overview-cols');
+    // Built once via inline styles (not a CSS class), so `body.dark` selectors in styles.css can't
+    // reach it — branch the colors here instead (2026-08-24 fix: this floating panel had no dark
+    // mode at all, always rendering a light card even in dark mode; same fix applied to all 3
+    // vidOv floating panels — Calendar/All-videos/Analytics — since all 3 share this exact pattern).
+    const _bg=_dk()?'rgba(24,24,28,.98)':'rgba(255,255,255,.98)';
+    const _bd=_dk()?'rgba(255,255,255,.08)':'rgba(210,205,228,.18)';
+    const _sh=_dk()?'0 10px 30px rgba(0,0,0,.32)':'0 10px 30px rgba(0,0,0,.08)';
     if(card){
       const cr=card.getBoundingClientRect();
       const rr=rightPanel?rightPanel.getBoundingClientRect():{left:cr.right+10,width:700,top:cr.top,height:cr.height};
-      panel.style.cssText=`position:fixed;top:${cr.top}px;left:${rr.left}px;width:${rr.width}px;height:${cr.height}px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid rgba(210,205,228,.18);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
+      panel.style.cssText=`position:fixed;top:${cr.top}px;left:${rr.left}px;width:${rr.width}px;height:${cr.height}px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
     }else{
-      panel.style.cssText='position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid rgba(210,205,228,.18);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease';
+      panel.style.cssText=`position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
     }
     document.body.appendChild(panel);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';}));
@@ -5980,18 +6015,31 @@ function _vidOvRenderAnalyticsPanel(){
   if(!panel){
     panel=document.createElement('div');panel.id='vidOvAnPanel';
     const card=document.getElementById('vidOvPanel')?.closest('.card');
-    const rightPanel=document.querySelector('.row1-right-panel');
+    // Span the full page content width (matching every other page's margins) instead of just the
+    // right-hand column, which only covered the Weekly Reset/Shopping side (2026-08-24 fix).
+    const rightPanel=document.querySelector('.overview-cols');
+    // Built once via inline styles (not a CSS class), so `body.dark` selectors in styles.css can't
+    // reach it — branch the colors here instead (2026-08-24 fix: this floating panel had no dark
+    // mode at all, always rendering a light card even in dark mode; same fix applied to all 3
+    // vidOv floating panels — Calendar/All-videos/Analytics — since all 3 share this exact pattern).
+    const _bg=_dk()?'rgba(24,24,28,.98)':'rgba(255,255,255,.98)';
+    const _bd=_dk()?'rgba(255,255,255,.08)':'rgba(210,205,228,.18)';
+    const _sh=_dk()?'0 10px 30px rgba(0,0,0,.32)':'0 10px 30px rgba(0,0,0,.08)';
     if(card){
       const cr=card.getBoundingClientRect();
       const rr=rightPanel?rightPanel.getBoundingClientRect():{left:cr.right+10,width:700,top:cr.top,height:cr.height};
-      panel.style.cssText=`position:fixed;top:${cr.top}px;left:${rr.left}px;width:${rr.width}px;height:${cr.height}px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid rgba(210,205,228,.18);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
+      panel.style.cssText=`position:fixed;top:${cr.top}px;left:${rr.left}px;width:${rr.width}px;height:${cr.height}px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
     }else{
-      panel.style.cssText='position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:rgba(255,255,255,.98);backdrop-filter:blur(12px);border:1px solid rgba(210,205,228,.18);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease';
+      panel.style.cssText=`position:fixed;top:60px;right:20px;width:700px;bottom:20px;z-index:200;background:${_bg};backdrop-filter:blur(12px);border:1px solid ${_bd};border-radius:16px;box-shadow:${_sh};overflow:hidden;display:flex;flex-direction:column;opacity:0;transform:translateX(12px);transition:opacity .25s ease,transform .25s ease`;
     }
     document.body.appendChild(panel);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';}));
   }
-  // Ensure YT data is loaded (may not be if videos page hasn't been visited)
+  // Ensure YT data is loaded (may not be if videos page hasn't been visited) — read local cache
+  // instantly, then trigger the SAME once-per-session guarded fetches the Videos page uses
+  // (_ytEnsureFetch/_ytEnsureAnalyticsFetch, videos.js) so this panel isn't stuck showing nothing
+  // just because the Videos page was never opened this session (2026-08-24 fix). Both functions
+  // no-op if already fetched, so this never adds a second request — same quota footprint as before.
   if(typeof _ytData!=='undefined'&&!_ytData){
     try{const _lsc=JSON.parse(localStorage.getItem('_ytCache')||'null');
     if(_lsc&&_lsc.channelStats){_ytData=_lsc;if(typeof _ytBuildMatch==='function')_ytBuildMatch();}}catch(e){}
@@ -6000,6 +6048,8 @@ function _vidOvRenderAnalyticsPanel(){
     try{const _lac=JSON.parse(localStorage.getItem('_ytAnalyticsCache')||'null');
     if(_lac&&_lac.monthly)_ytAnalytics=_lac;}catch(e){}
   }
+  if(typeof _ytEnsureFetch==='function')_ytEnsureFetch();
+  if(typeof _ytEnsureAnalyticsFetch==='function')_ytEnsureAnalyticsFetch();
   // Reuse exact same analytics render from videos page
   if(typeof _vidRenderAnalytics==='function'){
     const content=_vidRenderAnalytics();
