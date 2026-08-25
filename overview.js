@@ -4848,7 +4848,7 @@ function _vidOvStartTitleEdit(el,vidId){
   const _commit=()=>{
     const val=inp.value.trim();
     if(inp._saved)return;inp._saved=true;
-    el.textContent=val||'';el.style.color=val?'var(--text)':'var(--muted)';
+    el.textContent=val||'';el.style.color='var(--muted)';
     if(val!==prev){
       v.title=val;save();
       sbReqSilent('PATCH','videos',{title:val},`?id=eq.${vidId}`);
@@ -4875,7 +4875,7 @@ function _vidOvStartCommentEdit(el,vidId){
   const _commit=()=>{
     const val=inp.value.trim();
     if(inp._saved)return;inp._saved=true;
-    el.textContent=val||'';el.style.color=val?'var(--text)':'var(--muted)';
+    el.textContent=val||'';el.style.color='var(--muted)';
     if(val!==prev){
       v.comment=val;save();
       sbReqSilent('PATCH','videos',{comment:val},`?id=eq.${vidId}`);
@@ -5034,19 +5034,31 @@ function _renderVidOvMenu(){
     const _map=_vidDayMap();
     const _sMap=_vidStepDayMap();
     const _inWk=ds=>ds&&ds>=_wkStart&&ds<=_wkEnd;
-    const _vidHasStepInWk=vid=>{for(const k in _sMap){if(k.startsWith(String(vid.id)+'::')&&_sMap[k]&&_inWk(_sMap[k].ds))return true;}return false;};
+    // A step only keeps a video "in focus" while it has an INCOMPLETE instance this week — not
+    // whether the whole video/group is done. Check every day the step occupies this week (primary
+    // `ds` plus any `extraDays` for multi-day steps) via the same done-check the overdue banner
+    // uses, so e.g. finishing this week's Cut removes the highlight even though other weeks' steps
+    // (or the group overall) aren't done — but adding a new instance for tomorrow brings it right
+    // back (2026-08-25 fix: previously any presence in the week counted, done or not; a same-turn
+    // attempt at whole-group completeness was too broad — reverted per explicit correction).
+    const _vidHasStepInWk=vid=>{
+      for(const k in _sMap){
+        if(!k.startsWith(String(vid.id)+'::'))continue;
+        const e=_sMap[k];if(!e)continue;
+        const step=k.split('::')[1];
+        const days=[e.ds,...(e.extraDays||[])].filter(Boolean);
+        for(const d of days){if(_inWk(d)&&!_vidStepComputeDone(vid.id,step,d,e))return true;}
+      }
+      return false;
+    };
     vids.forEach(vid=>{
       const sid=String(vid.id);
       const dayDs=_map[sid];
-      // Skip the focus highlight once a video's whole group is checked off/published, even if its
-      // post_date or a day-assignment still technically falls in this week — a finished video isn't
-      // something to focus on anymore (2026-08-25 fix; post_date in particular never gets cleared
-      // just because the work is done, so it kept re-triggering the highlight after completion).
-      if((_inWk(dayDs)||_inWk(vid.post_date)||_vidHasStepInWk(vid))&&!(typeof _vidGroupFullyComplete==='function'&&_vidGroupFullyComplete(vid)))_focusSet.add(sid);
+      if(_inWk(dayDs)||_inWk(vid.post_date)||_vidHasStepInWk(vid))_focusSet.add(sid);
       (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).forEach(c=>{
         const csid=String(c.id);
         const cd=_map[csid];
-        if((_inWk(cd)||_inWk(c.post_date)||_vidHasStepInWk(c))&&!(typeof _vidGroupFullyComplete==='function'&&_vidGroupFullyComplete(c))){_focusSet.add(sid);_focusSet.add(csid);}
+        if(_inWk(cd)||_inWk(c.post_date)||_vidHasStepInWk(c)){_focusSet.add(sid);_focusSet.add(csid);}
       });
     });
   }
@@ -5121,8 +5133,8 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _focusCls=_isFocused?' vid-ov-focus':'';
   const _smallCount=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;
   const _countBadge=_smallCount?` <span style="font-size:10px;font-weight:400;color:var(--muted);opacity:.5;font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums">· ${_smallCount}</span>`:'';
-  const _titleField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${sid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:${v.title?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${v.title?escHtml(v.title):''}</span>`:'';
-  const _commentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${v.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${v.comment?escHtml(v.comment):''}</span>`:'';
+  const _titleField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${sid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${v.title?escHtml(v.title):''}</span>`:'';
+  const _commentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${v.comment?escHtml(v.comment):''}</span>`:'';
   let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span><span style="flex-shrink:0;width:13px"></span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   // Keep a published small visible (shown done) under its big until the whole group is complete.
@@ -5136,7 +5148,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" data-postvid="${csid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_cPostColor};cursor:pointer;line-height:12px">${_cPostDate||''}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex-shrink:0;width:16px;margin-right:-3px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums;font-family:Menlo,Consolas,monospace">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:${c.title?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${c.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex-shrink:0;width:16px;margin-right:-3px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums;font-family:Menlo,Consolas,monospace">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone"><button class="vid-insert-btn" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this.closest('.vid-insert-zone'))">+</button></div>`;}
   });
   return html;
