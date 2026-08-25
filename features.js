@@ -41,8 +41,8 @@ function openQA(ctx,btn,ds='',kcat=''){
   } else {
     const def=(ctx==='kanban'||ctx==='wkc')&&kcat?kcat:'Home';
     const defaultDate=ctx==='today'?d2s(getDayDate(dayOff)):(ds||'');
-    extra=`<div class="qa-field"><label>Category</label>${catSelHTML('qaCat',def)}</div>
-    <div class="qa-field"><label>Due date</label><div style="display:flex;align-items:center;gap:8px"><input id="qaDue" type="date" value="${defaultDate}" style="flex:1;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaImp').focus();}"><div class="qa-imp-row"><input type="checkbox" id="qaImp" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaNotes').focus();}"><label for="qaImp" title="Important">⭐</label></div></div></div>
+    extra=`<div class="qa-field"><label style="margin-bottom:5px">Type</label>${catSelHTML('qaCat',def)}</div>
+    <div class="qa-field"><label>Due</label><div style="display:flex;align-items:center;gap:8px"><input id="qaDue" type="date" value="${defaultDate}" style="flex:1;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaImp').focus();}"><div class="qa-imp-row"><label for="qaImp" title="Important">⭐</label><input type="checkbox" id="qaImp" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaNotes').focus();}"></div></div></div>
     <div class="qa-field" style="margin-top:6px"><label>Notes</label><textarea id="qaNotes" placeholder="Add notes…" style="resize:vertical;min-height:60px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none;box-sizing:border-box"></textarea></div>`;
   }
   document.getElementById('qaTitle').textContent=title;

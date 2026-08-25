@@ -4816,7 +4816,9 @@ function _vidOvToggleTitleMode(){
   const panel=document.getElementById('vidOvPanel');
   if(panel){
     const card=panel.parentElement;
-    const cols=card.closest('.overview-cols');
+    // #main has no max-width (unlike .overview-cols, which caps at 1600px) — using it here so
+    // title mode actually reaches full page width instead of stopping at that cap (2026-08-25 fix).
+    const cols=card.closest('#main');
     const extend=cols?(cols.offsetWidth-card.offsetWidth-14)+'px':'600px';
     panel.style.right='-'+extend;
     if(card){card.style.overflow='visible';card.style.zIndex='60';}
@@ -5049,8 +5051,8 @@ function _renderVidOvMenu(){
   // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
   html+='<div style="display:flex;align-items:center;padding:3px 19px 3px 6px;gap:5px">';
   html+='<div style="width:12px;flex-shrink:0"></div>';
-  html+='<span style="flex-shrink:0;width:16px"></span>';
   html+='<span style="flex:1;min-width:0"></span>';
+  html+='<span style="flex-shrink:0;width:16px"></span>';
   if(_vidOvTitleMode)html+='<span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700">Title</span><span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700">Comment</span>';
   html+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center">';
   html+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0">${(labels[s]||s).charAt(0)}</div>`).join('');
@@ -5107,7 +5109,7 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _countBadge=_smallCount?` <span style="font-size:10px;font-weight:400;color:var(--muted);opacity:.5;font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums">· ${_smallCount}</span>`:'';
   const _titleField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${sid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:${v.title?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${v.title?escHtml(v.title):''}</span>`:'';
   const _commentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:${v.comment?'var(--text)':'var(--muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${v.comment?escHtml(v.comment):''}</span>`:'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex-shrink:0;width:16px"></span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span><span style="flex-shrink:0;width:16px"></span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   // Keep a published small visible (shown done) under its big until the whole group is complete.
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='idea'&&(c.status!=='published'||!_vidGroupFullyComplete(c))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
@@ -5622,19 +5624,16 @@ function _vidCalRenderYearView(allVids,today){
 }
 function _vidOvRenderCal(){
   let panel=document.getElementById('vidOvCalPanel');
+  const _bg=_dk()?'rgba(24,24,28,.98)':'rgba(255,255,255,.98)';
+  const _bd=_dk()?'rgba(255,255,255,.08)':'rgba(210,205,228,.18)';
+  const _sh=_dk()?'0 10px 30px rgba(0,0,0,.32)':'0 10px 30px rgba(0,0,0,.08)';
   if(!panel){
     panel=document.createElement('div');panel.id='vidOvCalPanel';
     const card=document.getElementById('vidOvPanel')?.closest('.card');
-    // Span the full page content width (matching every other page's margins) instead of just the
-    // right-hand column, which only covered the Weekly Reset/Shopping side (2026-08-24 fix).
-    const rightPanel=document.querySelector('.overview-cols');
-    // Built once via inline styles (not a CSS class), so `body.dark` selectors in styles.css can't
-    // reach it — branch the colors here instead (2026-08-24 fix: this floating panel had no dark
-    // mode at all, always rendering a light card even in dark mode; same fix applied to all 3
-    // vidOv floating panels — Calendar/All-videos/Analytics — since all 3 share this exact pattern).
-    const _bg=_dk()?'rgba(24,24,28,.98)':'rgba(255,255,255,.98)';
-    const _bd=_dk()?'rgba(255,255,255,.08)':'rgba(210,205,228,.18)';
-    const _sh=_dk()?'0 10px 30px rgba(0,0,0,.32)':'0 10px 30px rgba(0,0,0,.08)';
+    // Span the full page content width (matching every other page's margins), not just the
+    // right-hand column or the overview-cols max-width cap (2026-08-25: switched from
+    // .overview-cols to #main, which has no max-width, to actually reach full page width).
+    const rightPanel=document.getElementById('main');
     if(card){
       const cr=card.getBoundingClientRect();
       const rr=rightPanel?rightPanel.getBoundingClientRect():{left:cr.right+10,width:700,top:cr.top,height:cr.height};
@@ -5644,6 +5643,8 @@ function _vidOvRenderCal(){
     }
     document.body.appendChild(panel);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';}));
+  }else{
+    panel.style.background=_bg;panel.style.borderColor=_bd;panel.style.boxShadow=_sh;
   }
   const today=d2s(new Date());
   const allVids=(st.videos||[]).filter(v=>!v.is_deleted&&v.post_date&&v.status!=='idea');
@@ -5874,19 +5875,16 @@ function _vidOvAllIdeaRow(v){
 }
 function _vidOvRenderAll(){
   let panel=document.getElementById('vidOvAllPanel');
+  const _bg=_dk()?'rgba(24,24,28,.98)':'rgba(255,255,255,.98)';
+  const _bd=_dk()?'rgba(255,255,255,.08)':'rgba(210,205,228,.18)';
+  const _sh=_dk()?'0 10px 30px rgba(0,0,0,.32)':'0 10px 30px rgba(0,0,0,.08)';
   if(!panel){
     panel=document.createElement('div');panel.id='vidOvAllPanel';
     const card=document.getElementById('vidOvPanel')?.closest('.card');
-    // Span the full page content width (matching every other page's margins) instead of just the
-    // right-hand column, which only covered the Weekly Reset/Shopping side (2026-08-24 fix).
-    const rightPanel=document.querySelector('.overview-cols');
-    // Built once via inline styles (not a CSS class), so `body.dark` selectors in styles.css can't
-    // reach it — branch the colors here instead (2026-08-24 fix: this floating panel had no dark
-    // mode at all, always rendering a light card even in dark mode; same fix applied to all 3
-    // vidOv floating panels — Calendar/All-videos/Analytics — since all 3 share this exact pattern).
-    const _bg=_dk()?'rgba(24,24,28,.98)':'rgba(255,255,255,.98)';
-    const _bd=_dk()?'rgba(255,255,255,.08)':'rgba(210,205,228,.18)';
-    const _sh=_dk()?'0 10px 30px rgba(0,0,0,.32)':'0 10px 30px rgba(0,0,0,.08)';
+    // Span the full page content width (matching every other page's margins), not just the
+    // right-hand column or the overview-cols max-width cap (2026-08-25: switched from
+    // .overview-cols to #main, which has no max-width, to actually reach full page width).
+    const rightPanel=document.getElementById('main');
     if(card){
       const cr=card.getBoundingClientRect();
       const rr=rightPanel?rightPanel.getBoundingClientRect():{left:cr.right+10,width:700,top:cr.top,height:cr.height};
@@ -5896,6 +5894,8 @@ function _vidOvRenderAll(){
     }
     document.body.appendChild(panel);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';}));
+  }else{
+    panel.style.background=_bg;panel.style.borderColor=_bd;panel.style.boxShadow=_sh;
   }
   const all=(st.videos||[]).filter(v=>!v.is_deleted);
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
@@ -6031,19 +6031,21 @@ function _vidOvCloseAnalytics(){
 }
 function _vidOvRenderAnalyticsPanel(){
   let panel=document.getElementById('vidOvAnPanel');
+  // Built via inline styles (not a CSS class), so `body.dark` selectors in styles.css can't reach
+  // it — branch the colors here instead. Computed and (re)applied on every call, not just at
+  // creation (2026-08-25 fix): the panel used to only get colored once, when first created, so
+  // toggling dark mode while it already existed left it stuck with whatever theme was active at
+  // creation time. Same fix applied to all 3 vidOv floating panels (Calendar/All-videos/Analytics).
+  const _bg=_dk()?'rgba(24,24,28,.98)':'rgba(255,255,255,.98)';
+  const _bd=_dk()?'rgba(255,255,255,.08)':'rgba(210,205,228,.18)';
+  const _sh=_dk()?'0 10px 30px rgba(0,0,0,.32)':'0 10px 30px rgba(0,0,0,.08)';
   if(!panel){
     panel=document.createElement('div');panel.id='vidOvAnPanel';
     const card=document.getElementById('vidOvPanel')?.closest('.card');
-    // Span the full page content width (matching every other page's margins) instead of just the
-    // right-hand column, which only covered the Weekly Reset/Shopping side (2026-08-24 fix).
-    const rightPanel=document.querySelector('.overview-cols');
-    // Built once via inline styles (not a CSS class), so `body.dark` selectors in styles.css can't
-    // reach it — branch the colors here instead (2026-08-24 fix: this floating panel had no dark
-    // mode at all, always rendering a light card even in dark mode; same fix applied to all 3
-    // vidOv floating panels — Calendar/All-videos/Analytics — since all 3 share this exact pattern).
-    const _bg=_dk()?'rgba(24,24,28,.98)':'rgba(255,255,255,.98)';
-    const _bd=_dk()?'rgba(255,255,255,.08)':'rgba(210,205,228,.18)';
-    const _sh=_dk()?'0 10px 30px rgba(0,0,0,.32)':'0 10px 30px rgba(0,0,0,.08)';
+    // Span the full page content width (matching every other page's margins), not just the
+    // right-hand column or the overview-cols max-width cap (2026-08-25: switched from
+    // .overview-cols to #main, which has no max-width, to actually reach full page width).
+    const rightPanel=document.getElementById('main');
     if(card){
       const cr=card.getBoundingClientRect();
       const rr=rightPanel?rightPanel.getBoundingClientRect():{left:cr.right+10,width:700,top:cr.top,height:cr.height};
@@ -6053,6 +6055,8 @@ function _vidOvRenderAnalyticsPanel(){
     }
     document.body.appendChild(panel);
     requestAnimationFrame(()=>requestAnimationFrame(()=>{panel.style.opacity='1';panel.style.transform='translateX(0)';}));
+  }else{
+    panel.style.background=_bg;panel.style.borderColor=_bd;panel.style.boxShadow=_sh;
   }
   // Ensure YT data is loaded (may not be if videos page hasn't been visited) — read local cache
   // instantly, then trigger the SAME once-per-session guarded fetches the Videos page uses
