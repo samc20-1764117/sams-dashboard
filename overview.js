@@ -4900,6 +4900,7 @@ function _vidOvGetRows(){const p=document.getElementById('vidOvPanel');return p?
 function _vidOvClickSelect(el,e){
   const rows=_vidOvGetRows();const idx=rows.indexOf(el);if(idx<0)return;
   const vid=el.dataset.vidrow||null;
+  if(typeof _lastSelSurface!=='undefined')_lastSelSurface='vidOv';
   if(e&&e.shiftKey&&_vidOvSelIdx>=0){
     // Shift-click: range select
     const lo=Math.min(_vidOvSelIdx,idx),hi=Math.max(_vidOvSelIdx,idx);
@@ -5034,6 +5035,10 @@ function _vidOvKeyNav(e){
     }
     return true;
   }
+  // Plain Up/Down only navigates the panel's own list when IT was the last surface clicked —
+  // otherwise (e.g. the user last clicked into the weekly view while the panel sat open beside it)
+  // let the arrow key fall through to that surface's own nav instead of hijacking it here.
+  if((e.key==='ArrowDown'||e.key==='ArrowUp')&&_lastSelSurface!=='vidOv')return false;
   if(e.key==='ArrowDown'){e.preventDefault();_vidOvSelIdx=Math.min(_vidOvSelIdx+1,rows.length-1);const nv=rows[_vidOvSelIdx]?.dataset.vidrow;if(e.shiftKey&&nv){_vidOvSelSet.add(nv);}else{_vidOvSelSet.clear();if(nv)_vidOvSelSet.add(nv);}_vidOvSelVid=nv||null;_vidOvHighlight();return true;}
   if(e.key==='ArrowUp'){e.preventDefault();_vidOvSelIdx=Math.max(_vidOvSelIdx-1,0);const nv=rows[_vidOvSelIdx]?.dataset.vidrow;if(e.shiftKey&&nv){_vidOvSelSet.add(nv);}else{_vidOvSelSet.clear();if(nv)_vidOvSelSet.add(nv);}_vidOvSelVid=nv||null;_vidOvHighlight();return true;}
   if((e.key==='Delete'||e.key==='Backspace')&&_vidOvSelSet.size>0){
@@ -5669,6 +5674,7 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
 function _vidCalSelectChip(vidId){
   _vidOvSelVid=vidId;
   _vidOvSelSet.clear();_vidOvSelSet.add(vidId);
+  if(typeof _lastSelSurface!=='undefined')_lastSelSurface='vidOv';
   // Highlight in video popup
   const panel=document.getElementById('vidOvPanel');
   if(panel){
