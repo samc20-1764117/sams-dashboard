@@ -4450,6 +4450,35 @@ function _vidDayMapSet(m){localStorage._vidDayMap=JSON.stringify(m);}
 // Video step → day map: key="vidId::stepName", value={ds,done}
 function _vidStepDayMap(){try{return JSON.parse(localStorage._vidStepDayMap||'{}');}catch(e){return{};}}
 function _vidStepDayMapSet(m){localStorage._vidStepDayMap=JSON.stringify(m);}
+// Deleting or demoting-to-idea a video should remove its stage tasks (Build/VO/Cut/etc) from the
+// weekly view and timeblock grid, not just rely on every render path remembering to filter by
+// is_deleted/status — called from delVideo, _vidOvBulkDelete, _vidOvDemote, _vidOvBulkDemote.
+// Returns a snapshot so the caller's pushUndo can restore it via _vidStepCleanupRestore.
+function _vidStepCleanupForVideo(vidId){
+  const vid=String(vidId);
+  const m=_vidStepDayMap();
+  const removedMapKeys={};
+  let changed=false;
+  Object.keys(m).forEach(key=>{if(key.startsWith(vid+'::')){removedMapKeys[key]=m[key];delete m[key];changed=true;}});
+  if(changed)_vidStepDayMapSet(m);
+  const removedBlocks=(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===vid);
+  if(removedBlocks.length){
+    removedBlocks.forEach(bl=>{if(typeof sbDeleteBlock==='function')sbDeleteBlock(bl.id);});
+    st.blocks=st.blocks.filter(bl=>String(bl._vidStepVid)!==vid);
+  }
+  return{removedMapKeys,removedBlocks};
+}
+function _vidStepCleanupRestore(snapshot){
+  if(!snapshot)return;
+  if(Object.keys(snapshot.removedMapKeys).length){
+    const m=_vidStepDayMap();
+    Object.entries(snapshot.removedMapKeys).forEach(([k,v])=>{m[k]=v;});
+    _vidStepDayMapSet(m);
+  }
+  snapshot.removedBlocks.forEach(bl=>{
+    if(!st.blocks.find(x=>x.id===bl.id)){st.blocks.push(bl);if(typeof sbSaveBlock==='function')sbSaveBlock(bl);}
+  });
+}
 const _VID_STEP_LABELS={step_build:'Build',step_vo:'VO',step_cut:'Cut',step_thumbnail:'Th',step_description:'Des'};
 function _vidStepReconstructBlocks(){
   const m=_vidStepDayMap();let mapChanged=false;
@@ -5282,19 +5311,23 @@ function _vidOvDemote(vidId){
   if(v.video_type==='B'){
     (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(vidId)&&c.status!=='published').forEach(c=>{
       const cp=c.status;const cpBig=c.big_video_id;const cpPost=c.post_date;
+      const cStepSnap=_vidStepCleanupForVideo(c.id);
       c.status='idea';c.big_video_id=null;c.post_date=null;
-      childUndos.push({id:c.id,prevStatus:cp,prevBig:cpBig,prevPost:cpPost});
+      childUndos.push({id:c.id,prevStatus:cp,prevBig:cpBig,prevPost:cpPost,stepSnap:cStepSnap});
       sbReqSilent('PATCH','videos',{status:'idea',big_video_id:null,post_date:null},`?id=eq.${c.id}`);
     });
   }
-  // Remove from day map if assigned
+  // Remove from day map if assigned, and remove any scheduled stage tasks (Build/VO/Cut/etc) —
+  // an idea video shouldn't still show stage tasks in the weekly view/timeblock grid.
   const map=_vidDayMap();const prevDay=map[String(vidId)]||null;
   if(prevDay){delete map[String(vidId)];_vidDayMapSet(map);}
+  const stepSnap=_vidStepCleanupForVideo(vidId);
   save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
   sbReqSilent('PATCH','videos',patch,`?id=eq.${vidId}`);
   pushUndo(()=>{
     v.status=prevStatus;v.big_video_id=prevBigId;v.post_date=prevPostDate;
-    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prevStatus;c.big_video_id=cu.prevBig;c.post_date=cu.prevPost;sbReqSilent('PATCH','videos',{status:cu.prevStatus,big_video_id:cu.prevBig,post_date:cu.prevPost??null},`?id=eq.${cu.id}`);}});
+    _vidStepCleanupRestore(stepSnap);
+    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prevStatus;c.big_video_id=cu.prevBig;c.post_date=cu.prevPost;_vidStepCleanupRestore(cu.stepSnap);sbReqSilent('PATCH','videos',{status:cu.prevStatus,big_video_id:cu.prevBig,post_date:cu.prevPost??null},`?id=eq.${cu.id}`);}});
     if(prevDay){const m2=_vidDayMap();m2[String(vidId)]=prevDay;_vidDayMapSet(m2);}
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();
     sbReqSilent('PATCH','videos',{status:prevStatus,big_video_id:prevBigId,post_date:prevPostDate??null},`?id=eq.${vidId}`);
@@ -5305,8 +5338,9 @@ function _vidOvBulkDemote(ids){
     const v=(st.videos||[]).find(x=>String(x.id)===vid);if(!v)return null;
     const prevStatus=v.status;const prevBig=v.big_video_id;const prevPost=v.post_date;
     const map=_vidDayMap();const prevDay=map[vid]||null;
-    const childData=v.video_type==='B'?(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===vid&&c.status!=='published').map(c=>({id:c.id,status:c.status,big:c.big_video_id,post:c.post_date})):[];
-    return{vid,prevStatus,prevBig,prevPost,prevDay,childData};
+    const childData=v.video_type==='B'?(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===vid&&c.status!=='published').map(c=>({id:c.id,status:c.status,big:c.big_video_id,post:c.post_date,stepSnap:_vidStepCleanupForVideo(c.id)})):[];
+    const stepSnap=_vidStepCleanupForVideo(vid);
+    return{vid,prevStatus,prevBig,prevPost,prevDay,childData,stepSnap};
   }).filter(Boolean);
   ids.forEach(vid=>{
     const v=(st.videos||[]).find(x=>String(x.id)===vid);if(!v)return;
@@ -5321,8 +5355,9 @@ function _vidOvBulkDemote(ids){
     undoData.forEach(u=>{
       const v=(st.videos||[]).find(x=>String(x.id)===u.vid);if(!v)return;
       v.status=u.prevStatus;v.big_video_id=u.prevBig;v.post_date=u.prevPost;
+      _vidStepCleanupRestore(u.stepSnap);
       sbReqSilent('PATCH','videos',{status:u.prevStatus,big_video_id:u.prevBig,post_date:u.prevPost??null},`?id=eq.${u.vid}`);
-      u.childData.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.status;c.big_video_id=cu.big;c.post_date=cu.post;sbReqSilent('PATCH','videos',{status:cu.status,big_video_id:cu.big,post_date:cu.post??null},`?id=eq.${cu.id}`);}});
+      u.childData.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.status;c.big_video_id=cu.big;c.post_date=cu.post;_vidStepCleanupRestore(cu.stepSnap);sbReqSilent('PATCH','videos',{status:cu.status,big_video_id:cu.big,post_date:cu.post??null},`?id=eq.${cu.id}`);}});
       if(u.prevDay){const m=_vidDayMap();m[u.vid]=u.prevDay;_vidDayMapSet(m);}
     });
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();if(_vidOvAllOpen&&typeof _vidOvRenderAll==='function')_vidOvRenderAll();
@@ -5331,7 +5366,7 @@ function _vidOvBulkDemote(ids){
 function _vidOvBulkDelete(ids){
   const undoData=ids.map(vid=>{
     const v=(st.videos||[]).find(x=>String(x.id)===vid);if(!v)return null;
-    return{vid,wasDeleted:v.is_deleted};
+    return{vid,wasDeleted:v.is_deleted,stepSnap:_vidStepCleanupForVideo(vid)};
   }).filter(Boolean);
   ids.forEach(vid=>{
     const v=(st.videos||[]).find(x=>String(x.id)===vid);if(!v)return;
@@ -5344,6 +5379,7 @@ function _vidOvBulkDelete(ids){
     undoData.forEach(u=>{
       const v=(st.videos||[]).find(x=>String(x.id)===u.vid);if(!v)return;
       v.is_deleted=u.wasDeleted;
+      _vidStepCleanupRestore(u.stepSnap);
       if(!u.vid.startsWith('l-'))sbReqSilent('PATCH','videos',{is_deleted:u.wasDeleted},`?id=eq.${u.vid}`);
     });
     save();_renderVidOvMenu();renderAll();if(document.getElementById('tbGrid'))renderDayTB();if(_vidOvAllOpen&&typeof _vidOvRenderAll==='function')_vidOvRenderAll();

@@ -3017,8 +3017,11 @@ async function delVideo(id){
   const copy={...v};
   v.is_deleted=true;
   _vidSelected.delete(sid);
+  // Deleting a video should remove its stage tasks (Build/VO/Cut/etc) from the weekly view and
+  // timeblock grid too, not just filter them out downstream.
+  const stepSnap=typeof _vidStepCleanupForVideo==='function'?_vidStepCleanupForVideo(sid):null;
   save();renderVideosPageKeepScroll();
-  pushUndo(async()=>{v.is_deleted=false;save();renderVideosPageKeepScroll();if(!sid.startsWith('l-'))await sbReqSilent('PATCH','videos',{is_deleted:false},`?id=eq.${sid}`);},'Deleted video');
+  pushUndo(async()=>{v.is_deleted=false;if(typeof _vidStepCleanupRestore==='function')_vidStepCleanupRestore(stepSnap);save();renderVideosPageKeepScroll();if(!sid.startsWith('l-'))await sbReqSilent('PATCH','videos',{is_deleted:false},`?id=eq.${sid}`);},'Deleted video');
   if(!sid.startsWith('l-')){
     const res=await sbReqSilent('PATCH','videos',{is_deleted:true},`?id=eq.${sid}`);
     if(!res){

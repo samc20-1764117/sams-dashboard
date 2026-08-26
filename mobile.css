@@ -366,7 +366,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-mo-title-caret{font-size:10px;color:var(--sub)}
 .m-mo-hdr-drop{display:none;position:absolute;top:30px;left:0;background:var(--bg-elevated,var(--bg));border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:240px;overflow-y:auto;z-index:50;min-width:120px}
 .m-mo-hdr-drop.open{display:block}
-.m-mo-hdr-drop-opt{padding:9px 14px;font-size:14px;color:var(--text);cursor:pointer;white-space:nowrap}
+.m-mo-hdr-drop-opt{padding:9px 14px;font-size:14px;color:var(--text);cursor:pointer;white-space:nowrap;font-variant-numeric:tabular-nums}
 .m-mo-hdr-drop-opt:active{background:rgba(124,106,247,.1)}
 .m-mo-hdr-drop-opt.is-current{color:var(--accent);font-weight:700}
 .m-mo-nav-group{display:flex;align-items:center;gap:2px}
@@ -386,7 +386,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-mo-hdr{font-size:10px;font-weight:700;color:var(--sub);padding:4px 0;text-transform:uppercase;letter-spacing:.05em}
 /* Fixed top-down layout (not centered) so the day number sits in the same spot
    whether or not that day has a badge below it. */
-.m-mo-day{padding:6px 1px 8px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);position:relative;z-index:1;min-height:42px;display:flex;flex-direction:column;align-items:center;gap:0}
+.m-mo-day{padding:6px 1px 8px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);position:relative;z-index:1;min-height:42px;display:flex;flex-direction:column;align-items:center;gap:0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 /* Blank placeholder cell for the days that belong to the OTHER partial row when a
    week is split at a month boundary — keeps both partial rows as real 7-column grids
    so they still line up under the day-of-week header. */

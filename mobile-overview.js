@@ -3077,7 +3077,7 @@ function mToggleYearDrop() {
   if (el.classList.contains('open')) { el.classList.remove('open'); return; }
   const nowYr = new Date().getFullYear();
   let html = '';
-  for (let y = nowYr - 5; y <= nowYr + 5; y++) html += `<div class="m-mo-hdr-drop-opt${y === _mMonthDisplayedYr ? ' is-current' : ''}" onclick="mPickYear(${y})">${y}</div>`;
+  for (let y = 2026; y <= Math.max(nowYr + 5, 2031); y++) html += `<div class="m-mo-hdr-drop-opt${y === _mMonthDisplayedYr ? ' is-current' : ''}" onclick="mPickYear(${y})">${y}</div>`;
   el.innerHTML = html;
   el.classList.add('open');
 }
