@@ -549,7 +549,10 @@ document.addEventListener('DOMContentLoaded', mInit);
 After the 30s `setInterval`, `mInit` adds `visibilitychange`/`pageshow`/`focus` listeners → `syncAll(true)` (3s dedup guard). iOS freezes `setInterval` while the PWA is backgrounded, so without this, reopening shows stale data (completed-elsewhere tasks reappear, deleted items linger). This is the mobile-side defense against stale-cache complaints — the DB is the source of truth; force a re-pull on every foreground.
 
 ### Live re-render after toggle
-`togRecVirt` (and other mobile togglers) MUST call `renderAll()`, not just `mRenderToday()` — otherwise checking a recurring task while on the Week tab doesn't update that tab. `renderAll()` re-renders whichever tab is current.
+`togRecVirt` (and other mobile togglers) MUST call `renderAll()`, not just `mRenderToday()` — otherwise checking a recurring task while on the Week tab doesn't update that tab. `renderAll()` re-renders whichever tab is current. `togWrRule` drifted to `mRenderToday()`-only and was fixed 2026-08-26 — when adding/touching any toggler (`toggleTask`, `togRec`, `togShop`, `togWrRule`, `togRecVirt`, ...), grep all of them for `mRenderToday()` without a following `renderAll()` in the same statement.
+
+### Today-tab lookback must extend forward, not just back 4 weeks
+`mGetTodayTasks`'s three "check the last 4 weeks for a pinned/carried instance" loops (plain recurring, legacy `wrec`, `wrRules`) all start from week 0 by default — correct only while viewing today. Swiping the Today tab forward (`_mTodayOffset` can go positive, mobile-overview.js:1274) views a FUTURE day, and a loop hardcoded to start at week 0 never reaches that future week's own pinned items. Mirrors desktop's `_wkHi=Math.max(0,_dayWkOff)` pattern (overview.js): compute the viewed day's week offset (`_mDayWkOff`) once, start each loop at `_mWkHi=Math.max(0,_mDayWkOff)` and end at `_mWkLo=Math.min(0,_mDayWkOff)-4`. Fixed 2026-08-26 (was hardcoded `for(let w=0;w>=-4;w--)` in all three).
 
 ### Auth flow
 `checkAuth()` (core.js) calls `showLoginOverlay()` if no session found.
