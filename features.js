@@ -5621,6 +5621,13 @@ function showPage(id){
   if(typeof _vidOvCloseAll==='function'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)_vidOvCloseAll();
   if(typeof _vidOvCloseAnalytics==='function'&&typeof _vidOvAnOpen!=='undefined'&&_vidOvAnOpen)_vidOvCloseAnalytics();
   if(typeof closeVidOvMenu==='function'){const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block')closeVidOvMenu();}
+  // Navigating to another view clears the Overview video panel's selection and its cross-view echo
+  // (Videos page / All Videos panel outline, and the vid-ov-* entries in selectedTasks) — otherwise
+  // a stale highlight lingers elsewhere after the panel itself is gone.
+  if(typeof _vidOvSelVid!=='undefined'&&(_vidOvSelVid||(typeof _vidOvSelSet!=='undefined'&&_vidOvSelSet.size))){
+    _vidOvSelVid=null;_vidOvSelIdx=-1;if(typeof _vidOvSelSet!=='undefined')_vidOvSelSet.clear();
+    if(typeof _vidCrossSyncSel==='function')_vidCrossSyncSel();
+  }
   const _prevPg=activePg;activePg=id;
   const _navGrpTasks=document.getElementById('navGroupTasks');
   if(_navGrpTasks){

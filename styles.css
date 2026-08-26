@@ -93,7 +93,7 @@ body.dark .chk:checked::after{background-color:rgba(152,152,160,.55);box-shadow:
    (.wchk, which never gets dimmed for dark mode) — deliberately more visible than every other .chk
    on the page so today's unfinished tasks draw the eye. */
 body.dark #todList .chk::after{background-color:rgba(255,255,255,.85);}
-body.dark #todList .chk:checked::after{background-color:rgba(200,195,210,.35);box-shadow:inset 0 0 0 1px rgba(200,195,210,.35);}
+body.dark #todList .chk:checked::after{background-color:rgba(150,150,155,.28);box-shadow:inset 0 0 0 1px rgba(150,150,155,.22);}
 body.dark .tb-chk:checked::after{background-color:rgba(152,152,160,.55);box-shadow:none;}
 body.dark .ch-prog-bar{background:rgba(255,255,255,.06);}
 body.dark .orb{opacity:0!important;animation-play-state:paused!important;}
@@ -1374,6 +1374,13 @@ body.dark .cat-sel-drop{background:rgba(24,24,28,.98);}
 .vid-tbl thead{position:sticky;top:0;background:var(--bg);z-index:3}
 .vid-tbl th{padding:11px 6px 5px;height:32px;box-sizing:border-box;text-align:left;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.04em;border-bottom:2px solid var(--border);white-space:nowrap;background:transparent;vertical-align:middle}
 .vid-tbl td{padding:3px 6px;border-bottom:1px solid rgba(210,205,228,.12);vertical-align:middle}
+/* Echoes the video selected in the Overview video panel onto its row on the full Videos page and
+   in the All Videos panel — the Today list / week-timeblock / calendar-grid views already get this
+   for free via the existing selectedTasks/applySelHighlight system (vid-ov-*, vidstep-* ids), so
+   this only needs to cover the two views that system doesn't reach. A distinct outline rather than
+   reusing .vid-sel's background means it never fights each view's own native selection styling,
+   and works on <tr> (box-shadow doesn't paint on table rows in Chrome; outline does). */
+.vid-cross-sel{outline:2px solid rgba(14,165,233,.55)!important;outline-offset:-2px}
 .vid-row{cursor:pointer;transition:background .12s}.vid-row:hover{background:rgba(14,165,233,.04)}
 .vid-sel{background:rgba(14,165,233,.10)!important;box-shadow:0 4px 14px rgba(14,165,233,.15),0 1px 4px rgba(14,165,233,.12),inset 0 1px 1px rgba(255,255,255,.92)!important;transform:translateY(-1.5px)!important;border-color:rgba(14,165,233,.3)!important;z-index:1;position:relative}
 .vid-row.vid-sel,.vid-row.vid-sel td{background:rgba(14,165,233,.12)!important}

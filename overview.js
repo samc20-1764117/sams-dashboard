@@ -4917,7 +4917,23 @@ function _vidOvClickSelect(el,e){
   _vidOvHighlight();if(typeof _vidCalHighlightChip==='function')_vidCalHighlightChip(_vidOvSelVid);
 }
 function _vidOvDeselect(e){if(!e.target.closest('[data-vidrow]')){_vidOvSelIdx=-1;_vidOvSelVid=null;_vidOvSelSet.clear();_vidOvHighlight();}}
-function _vidOvHighlight(){const rows=_vidOvGetRows();rows.forEach(r=>{r.classList.toggle('vid-sel',_vidOvSelSet.has(r.dataset.vidrow));});if(typeof _vidCalHighlightChip==='function')_vidCalHighlightChip(_vidOvSelVid);}
+function _vidOvHighlight(){const rows=_vidOvGetRows();rows.forEach(r=>{r.classList.toggle('vid-sel',_vidOvSelSet.has(r.dataset.vidrow));});if(typeof _vidCalHighlightChip==='function')_vidCalHighlightChip(_vidOvSelVid);_vidCrossSyncSel();}
+// Echoes the Overview panel's video selection into every other view. The Today list, week/day
+// timeblock chips, and calendar grid already highlight matching 'vid-ov-<id>'/'vidstep-<id>-<step>'
+// entries for free via the app-wide selectedTasks/applySelHighlight system, so we just need to keep
+// that Set in sync with _vidOvSelSet. The full Videos page and the All Videos panel aren't wired
+// into that system, so they get a separate lightweight .vid-cross-sel outline instead.
+function _vidCrossSyncSel(){
+  if(typeof selectedTasks!=='undefined'){
+    [...selectedTasks].forEach(id=>{if(id.startsWith('vid-ov-'))selectedTasks.delete(id);});
+    _vidOvSelSet.forEach(id=>selectedTasks.add('vid-ov-'+id));
+    if(typeof applySelHighlight==='function')applySelHighlight();
+  }
+  document.querySelectorAll('.vid-cross-sel').forEach(el=>el.classList.remove('vid-cross-sel'));
+  const id=_vidOvSelVid;
+  if(!id)return;
+  document.querySelectorAll(`[data-vid="${id}"],[data-alldrag="${id}"]`).forEach(el=>el.classList.add('vid-cross-sel'));
+}
 function _vidOvRestoreSel(){
   if(!_vidOvSelVid&&!_vidOvSelSet.size)return;
   const rows=_vidOvGetRows();
@@ -5072,13 +5088,15 @@ function _renderVidOvMenu(){
   const _hdr=`<div class="tod-tb-header" style="position:relative"><button onclick="_vidOvToggleCal()" style="${_ib};color:${_vidCalOpen?'var(--accent)':'var(--muted)'}" title="Monthly schedule (M)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button><button onclick="_vidOvToggleAll()" style="${_ib};color:${_vidOvAllOpen?'var(--accent)':'var(--muted)'}" title="All videos"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></button><button onclick="_vidOvToggleTitleMode()" style="${_ib};color:${_vidOvTitleMode?'var(--accent)':'var(--muted)'}" title="Edit titles"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button onclick="_vidOvNewVideo('B')" style="${_ib};color:var(--muted)" title="Add video (N)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Videos</span><button onclick="_vidOvToggleFocusWk()" style="${_ib};color:${_moonColor};${_moonGlow}" title="Focus this week"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></button><button onclick="_vidOvToggleAnalytics()" style="${_ib};color:${_vidOvAnOpen?'var(--accent)':'var(--muted)'}" title="Analytics"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button><button onclick="closeVidOvMenu();showPage('videos')" style="${_ib};color:var(--muted)" title="Go to Videos page"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button><button onclick="closeVidOvMenu()" style="${_ib};color:var(--muted)" title="Close"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button></div>`;
   if(!vids.length){
     const _empty='<div style="padding:30px;font-size:12px;color:var(--subtle);text-align:center">No videos to add</div>';
-    menu.innerHTML=_hdr+(_vidCalOpen?`<div style="display:flex;align-items:stretch;height:calc(100% - 31px);min-height:0"><div style="flex:1;min-width:0">${_empty}</div><div id="vidOvCalEmbed" style="width:${_VID_CAL_W}px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0;overflow:hidden"></div></div>`:_empty);
+    const _listW=menu.dataset.calListW;
+    menu.innerHTML=_hdr+(_vidCalOpen?`<div style="display:flex;align-items:stretch;height:calc(100% - 31px);min-height:0">${_listW?`<div style="width:${_listW};flex-shrink:0">${_empty}</div>`:`<div style="flex:1;min-width:0">${_empty}</div>`}<div id="vidOvCalEmbed" style="flex:1;min-width:0;border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0;overflow:hidden"></div></div>`:_empty);
     if(_vidCalOpen)_vidOvRenderCal();
     return;
   }
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
-  let listHtml='<div id="vidOvContent" style="padding:4px 10px 0;flex:1;min-width:0;min-height:0;overflow-y:auto" ondragover="event.preventDefault();_vidOvDragIndicator(event)" ondragleave="_vidOvClearIndicator()" ondrop="_vidOvContentDrop(event)">';
+  const _calListW=_vidCalOpen?menu.dataset.calListW:null;
+  let listHtml=`<div id="vidOvContent" style="padding:4px 10px 0;${_calListW?`width:${_calListW};flex-shrink:0`:'flex:1;min-width:0'};min-height:0;overflow-y:auto" ondragover="event.preventDefault();_vidOvDragIndicator(event)" ondragleave="_vidOvClearIndicator()" ondrop="_vidOvContentDrop(event)">`;
   // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
   listHtml+='<div style="display:flex;align-items:center;padding:3px 19px 3px 6px;gap:5px">';
   listHtml+='<div style="width:12px;flex-shrink:0"></div>';
@@ -5097,7 +5115,7 @@ function _renderVidOvMenu(){
   // When the calendar is open it lives in a column beside the list, both inside #vidOvPanel
   // itself (extended further right — see _vidOvToggleCal), instead of a separate floating panel.
   let html=_hdr;
-  html+=_vidCalOpen?`<div style="display:flex;align-items:stretch;height:calc(100% - 31px);min-height:0">${listHtml}<div id="vidOvCalEmbed" style="width:${_VID_CAL_W}px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0;overflow:hidden"></div></div>`:listHtml;
+  html+=_vidCalOpen?`<div style="display:flex;align-items:stretch;height:calc(100% - 31px);min-height:0">${listHtml}<div id="vidOvCalEmbed" style="flex:1;min-width:0;border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0;overflow:hidden"></div></div>`:listHtml;
   menu.innerHTML=html;
   // Insert zone hover delay
   menu.querySelectorAll('.vid-insert-zone').forEach(iz=>{
@@ -5133,19 +5151,15 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _ctxAttr=`oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')"`;
   const _hovBg=_dk()?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';
   const _hov=`onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background='none'" onclick="_vidOvClickSelect(this,event)"`;
-  const _map=_vidDayMap();const _onCal=!!_map[sid];
-  const _btnAccent=_onCal||_isFocused;
-  const _addBtn=`<div onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',null,null,this.closest('[data-vidrow]'))" style="width:12px;min-width:12px;max-width:12px;height:12px;min-height:12px;max-height:12px;display:flex;align-items:center;justify-content:center;align-self:center;border-radius:2px;border:1px solid ${_btnAccent?'var(--accent)':'var(--border)'};background:var(--bg);color:${_btnAccent?'var(--accent)':'var(--muted)'};cursor:pointer;flex-shrink:0;flex-grow:0;box-sizing:border-box;overflow:hidden" title="Add small video"><svg width="6" height="6" viewBox="0 0 6 6" style="display:block;flex-shrink:0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><line x1="3" y1="1" x2="3" y2="5"/><line x1="1" y1="3" x2="5" y2="3"/></svg></div>`;
+  const _map=_vidDayMap();
   const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvXClick('${sid}',this)" title="Actions">✕</button>`;
   const _postDate=v.post_date?_vidOvPostStr(v.post_date):'';
   const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
   const _postField=`<span class="vid-ov-post" data-postvid="${sid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_postColor};cursor:pointer;line-height:12px">${_postDate||''}</span>`;
   const _focusCls=_isFocused?' vid-ov-focus':'';
-  const _smallCount=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;
-  const _countBadge=_smallCount?` <span style="font-size:10px;font-weight:400;color:var(--muted);opacity:.5;font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums">· ${_smallCount}</span>`:'';
   const _titleField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${sid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${v.title?escHtml(v.title):''}</span>`:'';
   const _commentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${v.comment?escHtml(v.comment):''}</span>`:'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span><span style="flex-shrink:0;width:13px"></span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}</span><span style="flex-shrink:0;width:13px"></span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   // Keep a published small visible (shown done) under its big until the whole group is complete.
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='idea'&&(c.status!=='published'||!_vidGroupFullyComplete(c))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
@@ -5158,7 +5172,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" data-postvid="${csid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_cPostColor};cursor:pointer;line-height:12px">${_cPostDate||''}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:8px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex-shrink:0;min-width:0;width:20px;margin-right:-3px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums;font-family:Menlo,Consolas,monospace;overflow:visible">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:8px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex-shrink:0;min-width:0;width:20px;margin-left:-3px;margin-right:-3px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums;font-family:Menlo,Consolas,monospace;overflow:visible">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone"><button class="vid-insert-btn" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this.closest('.vid-insert-zone'))">+</button></div>`;}
   });
   return html;
@@ -5501,12 +5515,13 @@ function _vidOvToggleCal(){
   const panel=document.getElementById('vidOvPanel');
   if(panel){
     const card=panel.parentElement;
-    // Cap the extension at the page content edge (same overshoot bug as Title mode's fallback —
-    // see _vidOvContentRect) instead of always adding the full width, which could push the
-    // calendar off-screen on narrower layouts.
     const cardRect=card?card.getBoundingClientRect():panel.getBoundingClientRect();
+    // Fill the full page content width, same as Title mode, instead of a fixed sidebar width —
+    // the list keeps its original (pre-extension) width via panel.dataset.calListW, and the
+    // calendar column (flex:1 in _renderVidOvMenu) fills whatever's left.
     const _cr=_vidOvContentRect();
-    const ext=_cr?Math.min(_VID_CAL_W,Math.max(220,_cr.left+_cr.width-cardRect.right)):_VID_CAL_W;
+    const ext=_cr?Math.max(300,_cr.left+_cr.width-cardRect.right):_VID_CAL_W;
+    panel.dataset.calListW=Math.round(cardRect.width)+'px';
     panel.style.right=(-ext)+'px';
     if(card){card.style.overflow='visible';card.style.zIndex='60';}
   }
@@ -5547,6 +5562,7 @@ function _vidOvCloseCal(){
   const panel=document.getElementById('vidOvPanel');
   if(panel){
     panel.querySelectorAll('[data-vidrow]').forEach(r=>r.classList.remove('vid-sel'));
+    delete panel.dataset.calListW;
     const card=panel.parentElement;
     panel.style.right='0';panel.style.left='0';panel.style.width='';
     if(card){card.style.overflow='hidden';card.style.zIndex='';}
@@ -5609,6 +5625,7 @@ function _vidCalRenderMonth(y,m,vidsByDate,today,search){
 }
 function _vidCalSelectChip(vidId){
   _vidOvSelVid=vidId;
+  _vidOvSelSet.clear();_vidOvSelSet.add(vidId);
   // Highlight in video popup
   const panel=document.getElementById('vidOvPanel');
   if(panel){
@@ -5618,6 +5635,7 @@ function _vidCalSelectChip(vidId){
   }
   // Highlight in calendar
   _vidCalHighlightChip(vidId);
+  _vidCrossSyncSel();
 }
 function _vidCalHighlightChip(vidId){
   const cal=document.getElementById('vidOvCalEmbed');

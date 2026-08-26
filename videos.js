@@ -2647,11 +2647,13 @@ function openVidEdit(id){
 function _vidRenderSteps(vals){
   const el=document.getElementById('vmSteps');
   const parts=[];
+  const dk=typeof _dk==='function'&&_dk();
+  const _naLbl=dk?'rgba(200,195,215,.5)':'rgba(180,175,205,.5)';
   VID_STEPS.forEach(s=>{
     if(s==='step_tableau_public'){
       parts.push(`<div id="vmPostDateWrap" style="display:flex;flex-direction:column;gap:2px;align-items:center">
         <span class="vm-step-lbl" style="font-size:9px;color:var(--muted)">Posted</span>
-        <input id="vmPostDate" type="text" placeholder="m/d" style="width:50px;height:22px;font-size:11px;padding:0 3px;border:1.5px solid rgba(210,205,228,.4);border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none;font-weight:500;line-height:22px">
+        <input id="vmPostDate" type="text" placeholder="m/d" style="width:50px;height:22px;font-size:11px;padding:0 3px;border:1.5px solid ${dk?'rgba(255,255,255,.14)':'rgba(210,205,228,.4)'};border-radius:3px;background:transparent;color:var(--text);text-align:center;box-sizing:border-box;outline:none;font-weight:500;line-height:22px">
       </div>`);
     }
     const cur=vals[s]||'not_started';
@@ -2659,14 +2661,14 @@ function _vidRenderSteps(vals){
     const _isTab=s==='step_tableau_public';
     const _tabNa=_isTab&&cur==='na';
     parts.push(`<div ${_isTab?'id="vmTabWrap" ':''} style="display:flex;flex-direction:column;gap:2px;align-items:center;${_tabNa?'opacity:.5':''}">
-      <span style="font-size:9px;color:${cur==='na'?'rgba(180,175,205,.5)':'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
+      <span style="font-size:9px;color:${cur==='na'?_naLbl:'var(--muted)'}">${VID_STEP_LABELS[s]}</span>
       <div data-step="${s}" data-val="${cur}" tabindex="${tab}" onclick="_vidToggleModalStep(this)" oncontextmenu="_vidNaModalStep(event,this);return false" onkeydown="_vidStepKey(event,this)" style="${_vidModalStepCSS(cur)}${_tabNa?';opacity:1':''}"></div>
     </div>`);
     if(s==='step_tableau_public'){
       const _linkNa=cur==='na';
       parts.push(`<div id="vmLinkWrap" oncontextmenu="_vidLinkCtx(event);return false" style="display:flex;flex-direction:column;gap:2px;align-items:flex-start;flex:1;cursor:default;${_linkNa?'opacity:.5':''}">
-        <span class="vm-step-lbl" style="font-size:9px;color:${_linkNa?'rgba(180,175,205,.5)':'var(--muted)'}">Link</span>
-        <input id="vmYoutubeUrl" type="text" placeholder="${_linkNa?'':'url'}" ${_linkNa?'readonly ':''} style="width:100%;height:22px;font-size:9px;padding:0 6px;border:1.5px solid rgba(210,205,228,${_linkNa?'.3':'.4'});border-radius:3px;background:${_linkNa?'rgba(210,205,228,.15)':'transparent'};color:var(--text);text-align:left;box-sizing:border-box;outline:none${_linkNa?';pointer-events:none':''}">
+        <span class="vm-step-lbl" style="font-size:9px;color:${_linkNa?_naLbl:'var(--muted)'}">Link</span>
+        <input id="vmYoutubeUrl" type="text" placeholder="${_linkNa?'':'url'}" ${_linkNa?'readonly ':''} style="width:100%;height:22px;font-size:9px;padding:0 6px;border:1.5px solid ${dk?`rgba(255,255,255,${_linkNa?'.10':'.14'})`:`rgba(210,205,228,${_linkNa?'.3':'.4'})`};border-radius:3px;background:${_linkNa?(dk?'rgba(255,255,255,.05)':'rgba(210,205,228,.15)'):'transparent'};color:var(--text);text-align:left;box-sizing:border-box;outline:none${_linkNa?';pointer-events:none':''}">
       </div>`);
     }
   });
@@ -2732,9 +2734,10 @@ function _vidUpdateModalComplete(){
       _vidModalSparkle(wrap);
     }
   }else{
-    wrap.style.background='rgba(255,255,255,.7)';
-    wrap.style.borderColor='rgba(210,205,228,.3)';
-    wrap.style.boxShadow='1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)';
+    const dk=typeof _dk==='function'&&_dk();
+    wrap.style.background=dk?'rgba(255,255,255,.05)':'rgba(255,255,255,.7)';
+    wrap.style.borderColor=dk?'rgba(255,255,255,.08)':'rgba(210,205,228,.3)';
+    wrap.style.boxShadow=dk?'none':'1px 1px 3px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.8)';
     if(statusRow){
       statusRow.style.background='';statusRow.style.outline='';statusRow.style.borderRadius='';statusRow.style.position='';
       const badge=statusRow.querySelector('.vm-complete-badge');
@@ -2760,9 +2763,10 @@ function _vidModalSparkle(container){
 }
 function _vidModalStepCSS(val){
   const base='width:22px;height:22px;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;transition:transform .1s;';
+  const dk=typeof _dk==='function'&&_dk();
   if(val==='done')return base+'border:1.5px solid #10b981;background:#10b981';
-  if(val==='na')return base+'border:1.5px solid rgba(210,205,228,.3);background:rgba(210,205,228,.15);opacity:.5';
-  return base+'border:1.5px solid rgba(210,205,228,.4);background:transparent';
+  if(val==='na')return base+`border:1.5px solid ${dk?'rgba(255,255,255,.10)':'rgba(210,205,228,.3)'};background:${dk?'rgba(255,255,255,.05)':'rgba(210,205,228,.15)'};opacity:.5`;
+  return base+`border:1.5px solid ${dk?'rgba(255,255,255,.14)':'rgba(210,205,228,.4)'};background:transparent`;
 }
 function _vidStepKey(event,el){
   if(event.key==='c'||event.key==='C'){
