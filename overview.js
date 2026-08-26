@@ -5748,9 +5748,12 @@ function _vidOvRenderCal(){
     // Find first day cell of current month
     const firstCell=scrollEl.querySelector(`[data-caldate^="${curMonthKey}"]`);
     if(firstCell){
-      const monthContainer=firstCell.closest('[style*="display:flex;align-items:stretch"]');
-      if(monthContainer)monthContainer.scrollIntoView({block:'start',behavior:'instant'});
-      else firstCell.scrollIntoView({block:'start',behavior:'instant'});
+      const target=firstCell.closest('[style*="display:flex;align-items:stretch"]')||firstCell;
+      // Scroll #vidCalScroll directly instead of scrollIntoView, which walks every scrollable
+      // ancestor — now that the calendar lives inside #main (a real scroll container) rather than
+      // its own body-appended fixed panel, scrollIntoView would drag #main's scroll position along
+      // with it (2026-08-25 fix).
+      scrollEl.scrollTop+=target.getBoundingClientRect().top-scrollEl.getBoundingClientRect().top;
     }
   }
   // Refocus search input if was searching
