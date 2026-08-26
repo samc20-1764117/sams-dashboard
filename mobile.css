@@ -367,6 +367,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-mo-hdr-drop{display:none;position:absolute;top:30px;left:0;background:var(--bg-elevated,var(--bg));border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:240px;overflow-y:auto;z-index:50;min-width:120px}
 .m-mo-hdr-drop.open{display:block}
 .m-mo-hdr-drop-opt{padding:9px 14px;font-size:14px;color:var(--text);cursor:pointer;white-space:nowrap;font-variant-numeric:tabular-nums}
+/* DM Sans' self-hosted subset doesn't carry tabular-figure OpenType data, so
+   font-variant-numeric:tabular-nums above is a no-op for digits — scoped to the year
+   list only (not the month-name list) so "2030"/"2031" etc. render the same width. */
+#mMonthYearDrop .m-mo-hdr-drop-opt{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
 .m-mo-hdr-drop-opt:active{background:rgba(124,106,247,.1)}
 .m-mo-hdr-drop-opt.is-current{color:var(--accent);font-weight:700}
 .m-mo-nav-group{display:flex;align-items:center;gap:2px}
