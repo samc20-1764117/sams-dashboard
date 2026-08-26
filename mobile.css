@@ -41,12 +41,18 @@ body.dark .m-prog.m-prog-complete{color:#86efac}
 #mPTR.ptr-loading .m-ptr-spinner{display:block;animation:ptr-spin .7s linear infinite}
 @keyframes ptr-spin{to{transform:rotate(360deg)}}
 
-/* ── Task row wrapper (swipe-to-delete) ───────────────────────────────────── */
+/* ── Task row wrapper (swipe-to-delete, drag-to-reorder) ─────────────────────── */
 .m-row-outer{position:relative;background:transparent;overflow:hidden}
 .m-row-outer.ptr-ready{background:#ef4444}
 .m-row-outer:first-child .m-row{border-top:none}
 .m-del-hint{position:absolute;right:18px;top:50%;transform:translateY(-50%);color:#fff;font-size:20px;font-weight:300;pointer-events:none;opacity:0;transition:opacity .1s;line-height:1}
 .m-row-outer.ptr-ready .m-del-hint{opacity:1}
+/* Long-press-drag reorder (Today list): no text-selection/callout during the long-press
+   (same requirement as .m-wk-row/.m-mo-day's own long-press-drag gestures), and a lifted
+   look while actively dragging. */
+.m-row-outer[data-tid]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.m-row-outer.m-row-dragging{opacity:.6;z-index:5}
+.m-row-outer.m-row-dragging .m-row{box-shadow:0 6px 18px rgba(0,0,0,.18);border-radius:var(--rs)}
 
 /* ── Task rows ────────────────────────────────────────────────────────────── */
 .m-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--border);min-height:38px;background:var(--bg);position:relative;will-change:transform}

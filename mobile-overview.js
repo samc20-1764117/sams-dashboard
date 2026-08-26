@@ -341,7 +341,7 @@ function mInitPickers() {
 }
 
 // ── Sort today ────────────────────────────────────────────────────────────────
-// Match desktop sort: birthday, done last, travel, overdue, important, timeblock order, then type priority
+// Type priority — exact port of desktop's taskTypePri (overview.js)
 function _mTaskTypePri(t) {
   if (t._type === 'birthday' || t._type === 'holiday') return 1;
   const cat = (t.category || '').toLowerCase();
@@ -358,11 +358,38 @@ function _mTaskTypePri(t) {
   if (t._virtual) return 6;
   return 5;
 }
+// Manual per-day order — exact port of desktop's _dayOrder/_dayOrderSet (overview.js).
+// Same localStorage key as desktop, so the underlying data model matches exactly (only
+// the drag gesture that writes it differs — see mInitTodayDrag below).
+function _dayOrder() { try { return JSON.parse(localStorage._dayOrder || '{}'); } catch (e) { return {}; } }
+function _dayOrderSet(m) { localStorage._dayOrder = JSON.stringify(m); }
+// Exact port of desktop's _manualTieBreak/_hardTierNatural (overview.js) — once the hard
+// tiers (travel/birthday/overdue/done) agree, a saved manual order for this day wins
+// outright when BOTH compared items are in it; otherwise falls to the natural fallback
+// (important -> [timeblock, mSortDayTasks only] -> type priority -> name).
+function _mManualTieBreak(a, b, ds, naturalFn) {
+  const order = ds ? _dayOrder()[ds] : null;
+  if (!order || !order.length) return naturalFn();
+  const ai = order.indexOf(String(a.id)), bi = order.indexOf(String(b.id));
+  if (ai < 0 && bi < 0) return naturalFn();
+  if (ai < 0) return 1;
+  if (bi < 0) return -1;
+  return ai - bi;
+}
+function _mHardTierNatural(a, b) {
+  const aI = (a.important || a._type === 'fin-cancel') && !a.done, bI = (b.important || b._type === 'fin-cancel') && !b.done;
+  if (aI && !bI) return -1; if (!aI && bI) return 1;
+  return _mTaskTypePri(a) - _mTaskTypePri(b) || (a.name || '').localeCompare(b.name || '');
+}
 function mSortToday(tasks) {
   const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
   return mSortDayTasks(tasks, ds);
 }
-// Shared day sort — exact port of desktop sortTasksForDay (used by Today, Week, Month)
+// Shared day sort — exact port of desktop sortTasksForDay (used by Today, Week, Month),
+// hard-tier order corrected 2026-08-26 to match desktop's current stack (travel > birthday/
+// holiday > overdue > done, THEN manual day order, else timeblock/important/type/name) —
+// was previously birthday > done > travel > overdue > important > timeblock > type > name,
+// and had no manual-order tie-break at all.
 function mSortDayTasks(tasks, ds) {
   const blks = (st.blocks || []).filter(b => b.ds === ds);
   function tbSm(t) {
@@ -377,20 +404,20 @@ function mSortDayTasks(tasks, ds) {
     return b ? b.sm : null;
   }
   return [...tasks].sort((a, b) => {
-    const aB = a._type === 'birthday' || a._type === 'holiday', bB = b._type === 'birthday' || b._type === 'holiday';
-    if (aB && !bB) return -1; if (!aB && bB) return 1;
-    if (a.done && !b.done) return 1; if (!a.done && b.done) return -1;
     const aT = a._type === 'travel' && !a.done, bT = b._type === 'travel' && !b.done;
     if (aT && !bT) return -1; if (!aT && bT) return 1;
+    const aB = a._type === 'birthday' || a._type === 'holiday', bB = b._type === 'birthday' || b._type === 'holiday';
+    if (aB && !bB) return -1; if (!aB && bB) return 1;
     const aO = isOv(a.due_date) && !a.done, bO = isOv(b.due_date) && !b.done;
     if (aO && !bO) return -1; if (!aO && bO) return 1;
-    const aI = (a.important || a._type === 'fin-cancel') && !a.done, bI = (b.important || b._type === 'fin-cancel') && !b.done;
-    if (aI && !bI) return -1; if (!aI && bI) return 1;
-    const aSm = tbSm(a), bSm = tbSm(b);
-    if (aSm !== null && bSm === null) return -1;
-    if (aSm === null && bSm !== null) return 1;
-    if (aSm !== null && bSm !== null) return aSm - bSm;
-    return _mTaskTypePri(a) - _mTaskTypePri(b) || (a.name || '').localeCompare(b.name || '');
+    if (a.done && !b.done) return 1; if (!a.done && b.done) return -1;
+    return _mManualTieBreak(a, b, ds, () => {
+      const aSm = tbSm(a), bSm = tbSm(b);
+      if (aSm !== null && bSm === null) return -1;
+      if (aSm === null && bSm !== null) return 1;
+      if (aSm !== null && bSm !== null) return aSm - bSm;
+      return _mHardTierNatural(a, b);
+    });
   });
 }
 
@@ -578,7 +605,10 @@ function mTaskRow(t) {
     ${mvBtn}${dot}
   </div>`;
 
-  return `<div class="m-row-outer"${canEdit ? ` data-tid="${t.id}"` : ''}>
+  // data-rid: every row, any type — lets drag-reorder capture the FULL day order (matches
+  // desktop's .ti[id^="ti-"] full-list capture). data-tid: canEdit rows only — the narrower
+  // scope swipe-to-delete/double-tap-edit/drag-to-reorder actually grab.
+  return `<div class="m-row-outer" data-rid="${t.id}"${canEdit ? ` data-tid="${t.id}"` : ''}>
     ${canEdit ? '<div class="m-del-hint">✕</div>' : ''}
     ${inner}
   </div>`;
@@ -1192,6 +1222,92 @@ function mInitSwipe() {
       setTimeout(() => row.style.transition = '', 200);
     }
   }, {passive: true});
+}
+
+// ── Today list drag-to-reorder ──────────────────────────────────────────────────
+// Hold + drag a task row up/down to set a manual sort order for today — touch port of
+// desktop's `_todDragRowId`/`_dropReorderToday` (core.js/overview.js, native HTML5 drag,
+// not usable on iOS Safari). Only real tasks (`.m-row-outer[data-tid]`, same scope as
+// swipe-to-delete/double-tap-edit above) are grabbable, but the order captured on drop
+// covers EVERY row (`data-rid`, set on all row types in mTaskRow) so a dragged task's
+// position relative to virtual/recurring/shopping rows is preserved exactly — matches
+// desktop's `.ti[id^="ti-"]` full-list capture. Unlike desktop's placeholder-divider
+// approach, the dragged row is live-reparented in the DOM as the finger moves, so at
+// drop time the DOM order already IS the new order — no separate placeholder math needed.
+let _mTodDrag = null;
+function mInitTodayDrag() {
+  const list = document.getElementById('mTodayList');
+  if (!list || list._todDragInited) return;
+  list._todDragInited = true;
+
+  let pressTimer = null;
+  let touchStartX = 0, touchStartY = 0;
+
+  list.addEventListener('touchstart', e => {
+    const outer = e.target.closest('.m-row-outer[data-tid]');
+    if (!outer) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      outer.classList.add('m-row-dragging');
+      _mTodDrag = {el: outer, origOrder: [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid)};
+      document.addEventListener('touchmove', _mTodDragMove, {passive: false});
+      navigator.vibrate?.(8);
+    }, 480);
+  }, {passive: true});
+
+  list.addEventListener('touchmove', e => {
+    if (!pressTimer) return;
+    if (Math.abs(e.touches[0].clientX - touchStartX) > 8 || Math.abs(e.touches[0].clientY - touchStartY) > 8) {
+      clearTimeout(pressTimer); pressTimer = null;
+    }
+  }, {passive: true});
+
+  list.addEventListener('touchend', () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    if (_mTodDrag) _mTodDragEnd();
+  });
+  list.addEventListener('touchcancel', () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    if (_mTodDrag) _mTodDragEnd(true);
+  });
+}
+
+function _mTodDragMove(e) {
+  if (!_mTodDrag) return;
+  e.preventDefault();
+  const list = document.getElementById('mTodayList');
+  if (!list) return;
+  const touch = e.touches[0];
+  const {el} = _mTodDrag;
+  el.style.pointerEvents = 'none';
+  const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.m-row-outer');
+  el.style.pointerEvents = '';
+  if (!target || target === el || !list.contains(target)) return;
+  const rect = target.getBoundingClientRect();
+  const before = touch.clientY < rect.top + rect.height / 2;
+  list.insertBefore(el, before ? target : target.nextSibling);
+}
+
+function _mTodDragEnd(cancelled) {
+  const {el, origOrder} = _mTodDrag;
+  _mTodDrag = null;
+  document.removeEventListener('touchmove', _mTodDragMove);
+  el.classList.remove('m-row-dragging');
+  if (cancelled) { mRenderToday(); return; }
+
+  const list = document.getElementById('mTodayList');
+  const newOrder = [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid);
+  if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) return; // dropped back where it started — no-op, no toast
+
+  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
+  const m = _dayOrder();
+  const prevOrder = m[ds] ? [...m[ds]] : null;
+  m[ds] = newOrder;
+  _dayOrderSet(m);
+  mRenderToday();
+  pushUndo(() => { const m2 = _dayOrder(); if (prevOrder) m2[ds] = prevOrder; else delete m2[ds]; _dayOrderSet(m2); renderAll(); }, 'Reordered today');
 }
 
 // ── Pull-to-refresh ───────────────────────────────────────────────────────────
@@ -3462,15 +3578,29 @@ function mMonthTapDay(ds) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-// Wraps the shared toggleDark() (features.js) — that function toggles body.dark/html.init-dark
-// and re-renders, but has no idea about mobile.css's `html.init-dark{--bg:...}` variable
-// block being shadowed by the inline --bg style features.js's initTheme()/applyTheme() sets
-// on <html> (see mInit's comment). Switching TO dark needs that inline value cleared so the
-// CSS var cascades through; switching back to light is already handled (toggleDark() calls
-// applyTheme() in that branch, which re-sets --bg itself).
+// Wraps the shared toggleDark() (features.js) — that function toggles body.dark/html.init-dark,
+// persists cfg.dark, and re-renders, but its background handling (applyTheme()) is built for
+// desktop's decorative theme gradients, not mobile's flat --bg tokens: applyTheme() always
+// re-sets the --bg custom property (and, when switching to light, body's own inline
+// background) to a THEMES[...] value, clobbering whatever mobile.css intended. This wrapper
+// is the final word on mobile's background after toggleDark() runs — it force-sets the
+// correct flat --bg for the new state regardless of what applyTheme() just did.
+//
+// This also fixes a real bug (reported 2026-08-26): switching dark→light left the sticky
+// #mHeader showing its old dark background until a manual refresh. #mHeader's background is
+// `var(--bg)`, and applyTheme() DOES reset that variable correctly and synchronously — but a
+// sticky-positioned element on iOS Safari can keep its previously-composited background
+// on-screen when only a CSS custom property changes, with no accompanying layout/paint
+// trigger. Forcing a reflow (the same `void el.offsetHeight` trick already used elsewhere in
+// this codebase for an analogous dark-mode flash bug) makes it repaint immediately.
 function mToggleDark() {
   toggleDark();
-  if (document.body.classList.contains('dark')) document.documentElement.style.removeProperty('--bg');
+  const isDark = document.body.classList.contains('dark');
+  document.documentElement.style.setProperty('--bg', isDark ? '#16141f' : '#f5f4f8');
+  document.body.style.background = '';
+  const hdr = document.getElementById('mHeader');
+  if (hdr) void hdr.offsetHeight;
+  void document.body.offsetHeight;
 }
 
 async function mInit() {
@@ -3484,7 +3614,7 @@ async function mInit() {
   if (cfg.dark) {
     document.body.classList.add('dark');
     document.documentElement.classList.add('init-dark');
-    document.documentElement.style.removeProperty('--bg');
+    document.documentElement.style.setProperty('--bg', '#16141f');
     document.body.style.background = '';
   }
   _fetchHolidays();
@@ -3494,6 +3624,7 @@ async function mInit() {
   mInitPickers();
   mInitTodayDblTap();
   mInitSwipe();
+  mInitTodayDrag();
   mInitPTR();
   mInitTBSwipe();
   mInitBlockDrag();
