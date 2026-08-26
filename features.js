@@ -5524,6 +5524,8 @@ function renderGuidePage(){
     ${sRow('O','Overview')}
     ${sRow('V','Videos')}
     ${sRow('F','Finance')}
+    ${sRow('H','Holidays')}
+    ${sRow('B','Birthdays')}
     ${sRow('W','Weekly Reset / Recurring Tasks')}
     ${sRow('G','Grid lines (debug)')}
     ${sRow('GG','Help overlay')}
@@ -7230,8 +7232,14 @@ function getOvRecurring(){
       seen.add(_dk);
       if(!v.done&&v.due_date<today){out.push(v);}
     });
-    // wrec (`is_weekly_reset` on st.recurring, the legacy WR path) is excluded here — it's not
-    // wired into the two WR overdue cases below and stays purely a `renderRecOv`-container thing.
+    // wrec (`is_weekly_reset` on st.recurring, the legacy WR path): check all past-week overrides,
+    // same as the WR-rule loops below but keyed off st.recurring/_recId instead of st.wrRules/_ruleId.
+    {const wkKey=getWkKey(w);
+    st.recurring.filter(r=>(r.is_weekly_reset===true||r.is_weekly_reset==='true')&&r._dateOverrides&&r._dateOverrides[wkKey]&&r._dateOverrides[wkKey]!=='__skip__'&&!wrRecHandled.has(String(r.id))).forEach(r=>{
+      if(r._dateOverrides[wkKey]<=today)wrRecHandled.add(String(r.id));// only block older-week lookback when date is today or past (not future)
+      const _wk='wrec-'+r.id+'::'+wkKey;
+      if(!(r._doneByWk&&r._doneByWk[wkKey])&&r._dateOverrides[wkKey]<today&&!seen.has(_wk)){seen.add(_wk);out.push({id:'rec-virt-'+r.id,name:r.name,category:'Recurring',due_date:r._dateOverrides[wkKey],done:false,_recId:r.id,_virtual:true,_wkKey:wkKey,_isWrec:true});}
+    });}
   }
   const curWk=getWkKey(0);
   // WR rule pinned to a day THIS week that's already passed and isn't done — no other "move to

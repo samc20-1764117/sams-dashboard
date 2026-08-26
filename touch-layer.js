@@ -71,15 +71,21 @@
     var scrollTimer = null;
     var lastTapT = 0, lastTapX = 0, lastTapY = 0, lastTapEl = null;
 
+    // Backing store for the synthetic dataTransfer below, shared across every dndEvent
+    // fired within one drag gesture (reset in beginDrag) so a setData on dragstart is
+    // still readable by getData on drop — most handlers read the global `dragId` instead,
+    // but some (e.g. meal-planning drag/drop) use real dataTransfer.setData/getData.
+    var _dtData = {};
+
     // Synthetic drag event the desktop handlers can't tell apart from a mouse one.
-    // All overview handlers read the global `dragId`, but we attach a dataTransfer
-    // stub anyway so any handler that touches it doesn't throw.
     function dndEvent(type, x, y) {
       var ev = new MouseEvent(type, { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y });
       try {
         Object.defineProperty(ev, 'dataTransfer', { value: {
-          setData: function () {}, getData: function () { return ''; },
-          setDragImage: function () {}, effectAllowed: 'move', dropEffect: 'move', types: [], files: []
+          setData: function (fmt, val) { _dtData[fmt] = String(val); },
+          getData: function (fmt) { return _dtData[fmt] || ''; },
+          setDragImage: function () {}, effectAllowed: 'move', dropEffect: 'move',
+          get types() { return Object.keys(_dtData); }, files: []
         } });
       } catch (e) {}
       return ev;
@@ -90,7 +96,7 @@
     }
     // Don't start a drag from an interactive control (checkbox, delete button, etc.)
     function isInteractive(el) {
-      return !!(el.closest && el.closest('input,button,a,select,textarea,.chk-wrap,.delbtn,.wr-ov-move'));
+      return !!(el.closest && el.closest('input,button,a,select,textarea,.chk-wrap,.delbtn,.wr-ov-move,.dlbl.ov'));
     }
 
     function makeGhost(el, x, y) {
@@ -150,6 +156,7 @@
 
     function beginDrag(x, y) {
       dragging = true; movedFar = false;
+      _dtData = {};
       // Runs the element's own dragstart handler (inline dStart(...) or a listener) —
       // that sets the global dragId exactly like a mouse drag.
       try { srcEl.dispatchEvent(dndEvent('dragstart', x, y)); } catch (e) {}

@@ -132,7 +132,7 @@ async function sbReq(method,table,body,qs='',_retried=false){
   if(!cfg.url||!cfg.key)return null;
   if(method!=='POST'&&/eq\.t-/.test(qs))return null;
   const _wrTbl=(table==='wr_recurring_rules'||table==='wr_recurring_overrides')&&method!=='GET';
-  if(_wrTbl)_wrPatchInFlight++;
+  const _wrKey=_wrTbl?_wrPatchBegin(table,body,qs):null;
   try{
     const prefer=method==='DELETE'?'return=minimal':'return=representation';
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{method,headers:{'apikey':cfg.key,'Authorization':`Bearer ${_getAuthToken()}`,'Content-Type':'application/json','Prefer':prefer},body:body?JSON.stringify(body):null});
@@ -152,7 +152,7 @@ async function sbReq(method,table,body,qs='',_retried=false){
     if(!_sbNetToastTimer){showToast('⚠️ Save failed — check connection','#ef4444',4000);_sbNetToastTimer=setTimeout(()=>{_sbNetToastTimer=null;},10000);}
     return null;
   }finally{
-    if(_wrTbl)_wrPatchInFlight--;
+    if(_wrTbl)_wrPatchFinish(_wrKey);
   }
 }
 // localOverrides: map of taskId -> partial fields that always win over DB on sync
@@ -196,9 +196,33 @@ const pendingShopIds=new Set();
 // Block ids created/saved locally but not yet confirmed in the DB. Only these are preserved
 // across a sync — a block missing from the DB that ISN'T pending was deleted elsewhere.
 const pendingBlockIds=new Set();
-// Count of in-flight writes to wr_recurring_rules/wr_recurring_overrides. Used to bound how
-// long a sync's "keep the local _dateOverrides" protection lasts — see syncAll's WR merge.
-let _wrPatchInFlight=0;
+// In-flight writes to wr_recurring_rules/wr_recurring_overrides, keyed by the WR rule id each
+// write belongs to (falls back to '*' — treated as "every rule" — when the rule id can't be
+// determined from the call, e.g. an override DELETE that only carries its own row id). Used to
+// bound how long a sync's "keep the local _dateOverrides" protection lasts — see syncAll's WR
+// merge. Keyed per-rule (not a single global counter) so an in-flight write to one rule can't
+// make the merge discard a genuine concurrent update to a DIFFERENT rule arriving from sync.
+let _wrPatchInFlight=new Map();
+function _wrPatchKey(table,body,qs){
+  if(table==='wr_recurring_rules'){
+    const m=/[?&]id=eq\.([^&]+)/.exec(qs||'');
+    if(m)return decodeURIComponent(m[1]);
+  } else if(table==='wr_recurring_overrides'&&body&&body.rule_id!=null){
+    return String(body.rule_id);
+  }
+  return '*';
+}
+function _wrPatchBegin(table,body,qs){
+  const k=_wrPatchKey(table,body,qs);
+  _wrPatchInFlight.set(k,(_wrPatchInFlight.get(k)||0)+1);
+  return k;
+}
+function _wrPatchFinish(k){
+  if(k==null)return;
+  const n=(_wrPatchInFlight.get(k)||1)-1;
+  if(n<=0)_wrPatchInFlight.delete(k);else _wrPatchInFlight.set(k,n);
+}
+function _wrInFlight(id){return _wrPatchInFlight.has('*')||_wrPatchInFlight.has(String(id));}
 let deletedRecIds=new Set();
 let deletedPupSessIds=new Set();
 // ── Supabase silent request (no toast on failure) ────────────────────────────
@@ -206,7 +230,7 @@ async function sbReqSilent(method,table,body,qs='',_retried=false){
   if(!cfg.url||!cfg.key)return null;
   if(method!=='POST'&&/eq\.t-/.test(qs))return null;
   const _wrTbl=(table==='wr_recurring_rules'||table==='wr_recurring_overrides')&&method!=='GET';
-  if(_wrTbl)_wrPatchInFlight++;
+  const _wrKey=_wrTbl?_wrPatchBegin(table,body,qs):null;
   try{
     const r=await fetch(`${cfg.url}/rest/v1/${table}${qs}`,{
       method,
@@ -219,7 +243,7 @@ async function sbReqSilent(method,table,body,qs='',_retried=false){
     const t=await r.text();_egAdd(t.length);return t?JSON.parse(t):[];
   }catch(e){console.warn('sbReqSilent error',method,table,e);return null;}
   finally{
-    if(_wrTbl)_wrPatchInFlight--;
+    if(_wrTbl)_wrPatchFinish(_wrKey);
   }
 }
 
@@ -422,13 +446,14 @@ async function syncAll(silent=false){
       // Non-WR → keep forward carries; only clamp backward (earlier-than-week) dates, which are stale bad data.
       const _normOvs=(o,del)=>{Object.keys(o).forEach(k=>{let v=o[k];if(!v||v==='__skip__'||!/^\d{4}-\d{2}-\d{2}$/.test(String(v))||!/^\d{4}-\d{2}-\d{2}$/.test(k))return;const sun=new Date(k+'T12:00');sun.setDate(sun.getDate()+6);const sunDs=d2s(sun);if(v>=k&&v<=sunDs)return;if(del){delete o[k];return;}if(v>sunDs)return;while(v<k){const d=new Date(v+'T12:00');d.setDate(d.getDate()+7);v=d2s(d);}o[k]=v;});return o;};
       st.wrRules=wrRules.filter(_isWR);
-      // Only keep the local value over the freshly-fetched DB value while a write is
-      // genuinely in flight (_wrPatchInFlight>0) — otherwise a value cached from one
-      // sync gets silently re-preferred forever, and a change made on another device
-      // (e.g. desktop moving a task to a different day) never becomes visible here.
+      // Only keep the local value over the freshly-fetched DB value while a write to THIS rule is
+      // genuinely in flight (_wrInFlight(r.id)) — otherwise a value cached from one sync gets
+      // silently re-preferred forever, and a change made on another device (e.g. desktop moving
+      // a task to a different day) never becomes visible here. Scoped per-rule so an in-flight
+      // write to one rule can't clobber a genuine concurrent update to a different rule.
       st.wrRules.forEach(r=>{
-        const dbOvs={...(r.date_overrides||{})};const prevOvs=_wrPatchInFlight>0?prevPins[String(r.id)]:null;if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dbOvs[k]==='__skip__')return;dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs,true);
-        const prevSched=_wrPatchInFlight>0?prevSchedule[String(r.id)]:null;
+        const dbOvs={...(r.date_overrides||{})};const prevOvs=_wrInFlight(r.id)?prevPins[String(r.id)]:null;if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dbOvs[k]==='__skip__')return;dbOvs[k]=prevOvs[k];});}r._dateOverrides=_normOvs(dbOvs,true);
+        const prevSched=_wrInFlight(r.id)?prevSchedule[String(r.id)]:null;
         if(prevSched){r.starting_date=prevSched.starting_date;r.day_of_week=prevSched.day_of_week;r.monthly_nth=prevSched.monthly_nth;r.monthly_weekday=prevSched.monthly_weekday;r.monthly_date=prevSched.monthly_date;}
       });
       const nonWR=wrRules.filter(r=>!_isWR(r));
@@ -443,13 +468,13 @@ async function syncAll(silent=false){
           const dbwk=r.done_by_week||{};
           const isDone=!!(dbwk[getWkKey(0)]);
           const dateOvs={...(r.date_overrides||{})};
-          // Only preserve the local value while a write is genuinely in flight
-          // (_wrPatchInFlight>0) — see the matching comment on the wrRules merge above.
-          const prevOvs=_wrPatchInFlight>0?prevRecOvs[String(r.id)]:null;
+          // Only preserve the local value while a write to THIS rule is genuinely in flight
+          // (_wrInFlight(r.id)) — see the matching comment on the wrRules merge above.
+          const prevOvs=_wrInFlight(r.id)?prevRecOvs[String(r.id)]:null;
           if(prevOvs){Object.keys(prevOvs).forEach(k=>{if(dateOvs[k]==='__skip__')return;dateOvs[k]=prevOvs[k];});}
           // Same reasoning as the wrRules schedule-field protection above — an all-future move
           // (_recMoveAllFuture) touches starting_date/appears_on_date too, not just date_overrides.
-          const prevSched=_wrPatchInFlight>0?prevRecSchedule[String(r.id)]:null;
+          const prevSched=_wrInFlight(r.id)?prevRecSchedule[String(r.id)]:null;
           const schedOverride=prevSched?{starting_date:prevSched.starting_date,appears_on_date:prevSched.appears_on_date}:null;
           return{...r,...schedOverride,_doneByWk:dbwk,_done:isDone,_dateOverrides:_normOvs(dateOvs)};
         }),
@@ -1429,8 +1454,10 @@ document.addEventListener('keydown',e=>{
   if(e.key==='h'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')&&!(typeof _sKeyTimer!=='undefined'&&_sKeyTimer)){
     e.preventDefault();if(activePg==='holidays')showPage('overview');else showPage('holidays');
   }
+  // B = birthdays (skip if video popup is open — it uses B for adding a "Big" video)
   if(e.key==='b'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
-    e.preventDefault();if(activePg==='birthdays')showPage('overview');else showPage('birthdays');
+    const _vpB=document.getElementById('vidOvPanel');
+    if(!(_vpB&&_vpB.style.display==='block')){e.preventDefault();if(activePg==='birthdays')showPage('overview');else showPage('birthdays');}
   }
   // GG to close help overlay when open
   if(e.key==='g'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('helpOverlay').classList.contains('open')){
@@ -1454,7 +1481,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')&&!(_vPanel&&_vPanel.style.display==='block')){
     e.preventDefault();if(activePg==='guide')showPage('overview');else showPage('guide');return;
   }
-  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
+  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     e.preventDefault();if(typeof toggleDark==='function')toggleDark();
   }
   // M to toggle month view on overview (skip if video popup is open — it uses M for its own calendar)

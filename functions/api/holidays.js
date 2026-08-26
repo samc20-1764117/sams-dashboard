@@ -144,8 +144,13 @@ export async function onRequest(context) {
   if (KV && !forceRefresh) {
     const cooldown = await KV.get(cooldownKey);
     if (cooldown) {
+      // Always return during cooldown — never retry the live fetch, even with no `good` cache yet
+      // (e.g. a fresh deployment/new year), otherwise every request in the cooldown window just
+      // re-attempts the failing fetch and the cooldown never actually suppresses anything.
       const good = await KV.get(goodKey, 'json');
       if (good) return new Response(JSON.stringify(good), { headers: jsonHeaders });
+      const fallback = { year, holidays: [...computeFederalFallback(year), ...cultural].sort((a, b) => a.date.localeCompare(b.date)), fetchedAt: new Date().toISOString(), fallback: true };
+      return new Response(JSON.stringify(fallback), { headers: jsonHeaders });
     }
   }
 

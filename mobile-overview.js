@@ -221,7 +221,7 @@ function togWrRule(ruleId, isDone, wkKey) {
     const ov = {rule_id: String(ruleId), wk_key: wkKey, override_type: 'complete', done: true};
     st.wrOverrides.push(ov);
     if (st.blocks) st.blocks.filter(b => typeof dsToWkKey === 'function' && dsToWkKey(b.ds) === wkKey && (String(b.ruleId) === String(ruleId) || String(b.recId) === String(ruleId))).forEach(b => { b._done = true; });
-    save(); mRenderToday();
+    save(); renderAll();  // renderAll (not just Today) so the Week tab refreshes live too
     sbReqSilent('POST', 'wr_recurring_overrides', ov, '').then(sv => {
       if (sv && sv[0]) { const i = st.wrOverrides.indexOf(ov); if (i > -1) st.wrOverrides[i] = sv[0]; save(); }
     });
@@ -230,7 +230,7 @@ function togWrRule(ruleId, isDone, wkKey) {
     if (!existing) return;
     st.wrOverrides = st.wrOverrides.filter(o => o !== existing);
     if (st.blocks) st.blocks.filter(b => typeof dsToWkKey === 'function' && dsToWkKey(b.ds) === wkKey && (String(b.ruleId) === String(ruleId) || String(b.recId) === String(ruleId))).forEach(b => { b._done = false; });
-    save(); mRenderToday();
+    save(); renderAll();  // renderAll (not just Today) so the Week tab refreshes live too
     if (existing.id) sbReqSilent('DELETE', 'wr_recurring_overrides', null, `?id=eq.${existing.id}`);
   }
 }
@@ -397,6 +397,12 @@ function mSortDayTasks(tasks, ds) {
 // ── Gather today's tasks ──────────────────────────────────────────────────────
 function mGetTodayTasks() {
   const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
+  // Week offset of the day being viewed (0 = this week, +N = N weeks ahead) — matches desktop's
+  // _wkHi (overview.js) so swiping the Today tab forward into a future week still finds
+  // recurring/WR items pinned there instead of only ever looking at week 0 and back.
+  const _mDayWkOff = Math.round((new Date(dsToWkKey(ds) + 'T00:00:00') - new Date(getWkKey(0) + 'T00:00:00')) / (7 * 86400000));
+  const _mWkHi = Math.max(0, _mDayWkOff);
+  const _mWkLo = Math.min(0, _mDayWkOff) - 4;
 
   const ts = st.tasks.filter(t => {
     if (!t.due_date || t.category === 'Weekly Goals') return false;
@@ -407,7 +413,7 @@ function mGetTodayTasks() {
   });
 
   const allRecVirt = [];
-  for (let w = 0; w >= -4; w--) {
+  for (let w = _mWkHi; w >= _mWkLo; w--) {
     getRecurringWeekTasks(w).forEach(v => {
       const _rec = st.recurring.find(x => String(x.id) === String(v._recId));
       if (_rec && _rec._dateOverrides) {
@@ -435,7 +441,7 @@ function mGetTodayTasks() {
   // otherwise a stale past-week override falsely reads as overdue.
   const _wrecSeen = new Set();
   const wrecToday = [];
-  for (let _w = 0; _w >= -4; _w--) {
+  for (let _w = _mWkHi; _w >= _mWkLo; _w--) {
     const _wkKey = getWkKey(_w);
     st.recurring
       .filter(r =>
@@ -456,7 +462,7 @@ function mGetTodayTasks() {
   // WR rules — same 4-week lookback + stale-override guard as WR recurring above
   const _wrRulesSeen = new Set();
   const wrRulesToday = [];
-  for (let _w = 0; _w >= -4; _w--) {
+  for (let _w = _mWkHi; _w >= _mWkLo; _w--) {
     const _wkKey = getWkKey(_w);
     st.wrRules
       .filter(r =>
@@ -638,8 +644,10 @@ async function _mAddTravel(name, destination, start, end, mode) {
   pushUndo(() => { st.travel = st.travel.filter(x => x.id !== tv.id); save(); renderAll(); sbReq('DELETE', 'travel', null, `?id=eq.${tv.id}`); }, 'Added trip');
   const sv = await sbReq('POST', 'travel', {name, destination: destination || null, start_date: start, end_date: end || null, travel_mode: mode || null, notes: null});
   if (sv && sv[0]) {
-    const i = st.travel.findIndex(x => x.id === tv.id);
-    if (i > -1) { st.travel[i] = sv[0]; save(); renderAll(); }
+    // Mutate tv in place (rather than replacing the array entry) so tv.id — captured by the
+    // pushUndo closure above — reflects the real DB id if Undo is tapped after this resolves.
+    Object.assign(tv, sv[0]);
+    save(); renderAll();
   }
 }
 
