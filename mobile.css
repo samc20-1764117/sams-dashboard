@@ -20,6 +20,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
    (same green as the desktop progress donut). */
 .m-prog{font-size:12px;font-weight:700;color:#a16207;background:rgba(234,179,8,.15);padding:3px 8px;border-radius:20px;white-space:nowrap}
 .m-prog.m-prog-complete{color:#15803d;background:rgba(34,197,94,.15)}
+/* Light-mode text colors above are too dark to read against a near-black dark bg. */
+body.dark .m-prog{color:#fde68a}
+body.dark .m-prog.m-prog-complete{color:#86efac}
 .m-reload-btn{background:none;border:none;font-size:18px;color:var(--sub);cursor:pointer;padding:4px;line-height:1;opacity:.6}
 
 /* ── Main scroll area ─────────────────────────────────────────────────────── */
@@ -428,6 +431,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* Overdue → Today pill (today list) */
 .m-mv-today{flex-shrink:0;border:1px solid #ef4444;color:#ef4444;background:#fff0f0;border-radius:12px;font-size:11px;font-weight:600;padding:4px 9px;margin-left:4px;font-family:inherit;white-space:nowrap}
 .m-mv-today:active{background:#ef4444;color:#fff}
+/* Light-mode's near-white pill bg would glow against a near-black dark bg. */
+body.dark .m-mv-today{color:#fca5a5;background:rgba(239,68,68,.15)}
+body.dark .m-mv-today:active{background:#ef4444;color:#fff}
 
 /* Trip banner row (week view): full-row tint, no checkbox/emoji */
 .m-wk-travel{padding:9px 16px;border-top:1px solid var(--border);font-size:13px}

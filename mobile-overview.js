@@ -540,7 +540,7 @@ function mTaskRow(t) {
   const noCheck = t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday';
   const ov = !noCheck && isOv(t.due_date) && !t.done;
   const catKey = t._isWrRule || t._isWrec ? 'weekly_reset' : t._type === 'shop' ? 'shopping' : t._type === 'travel' ? 'travel' : t._type === 'birthday' ? 'birthday' : t._type === 'holiday' ? 'holiday' : (t.category || '');
-  const s = ov ? OV : (t.important && !t.done) ? IMP : gc(catKey);
+  const s = ov ? (_isDk() ? OV_DARK : OV) : (t.important && !t.done) ? (_isDk() ? IMP_DARK : IMP) : gc(catKey);
   const canEdit = !t._virtual && !t._type;
 
   let onchange = '';
@@ -3462,8 +3462,31 @@ function mMonthTapDay(ds) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+// Wraps the shared toggleDark() (features.js) — that function toggles body.dark/html.init-dark
+// and re-renders, but has no idea about mobile.css's `html.init-dark{--bg:...}` variable
+// block being shadowed by the inline --bg style features.js's initTheme()/applyTheme() sets
+// on <html> (see mInit's comment). Switching TO dark needs that inline value cleared so the
+// CSS var cascades through; switching back to light is already handled (toggleDark() calls
+// applyTheme() in that branch, which re-sets --bg itself).
+function mToggleDark() {
+  toggleDark();
+  if (document.body.classList.contains('dark')) document.documentElement.style.removeProperty('--bg');
+}
+
 async function mInit() {
   load();
+  // Apply dark mode immediately after load() restores cfg.dark — mirrors desktop's init()
+  // (features.js). Must also clear the inline --bg custom property that features.js's
+  // initTheme()/applyTheme() (script-top-level, runs before this) unconditionally sets on
+  // <html> regardless of cfg.dark — an inline style always outranks mobile.css's
+  // `html.init-dark{--bg:...}` rule, so without removing it dark mode would silently never
+  // show through on the page background.
+  if (cfg.dark) {
+    document.body.classList.add('dark');
+    document.documentElement.classList.add('init-dark');
+    document.documentElement.style.removeProperty('--bg');
+    document.body.style.background = '';
+  }
   _fetchHolidays();
   // Clear stale local overrides on mobile — always trust Supabase as source of truth
   if (typeof localOverrides !== 'undefined') { for (const k in localOverrides) delete localOverrides[k]; }
