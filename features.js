@@ -7178,6 +7178,7 @@ function toggleDark(){
   cfg.dark=isDark;save();
   if(!isDark){const key=localStorage._dashTheme||'peach';applyTheme(key,true);}
   else{document.body.style.background='';void document.body.offsetHeight;}
+  const tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute('content',isDark?'#111113':'#fdf8f4');
   const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent=isDark?'☀️':'🌙';
   const lb=document.getElementById('darkToggleLabel');if(lb)lb.textContent=isDark?'Light Mode':'Night Mode';
   if(typeof renderAll==='function')renderAll();
