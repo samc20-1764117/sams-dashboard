@@ -4925,14 +4925,55 @@ function _vidOvHighlight(){const rows=_vidOvGetRows();rows.forEach(r=>{r.classLi
 // into that system, so they get a separate lightweight .vid-cross-sel outline instead.
 function _vidCrossSyncSel(){
   if(typeof selectedTasks!=='undefined'){
-    [...selectedTasks].forEach(id=>{if(id.startsWith('vid-ov-'))selectedTasks.delete(id);});
-    _vidOvSelSet.forEach(id=>selectedTasks.add('vid-ov-'+id));
+    // Clear our own previous echo (both namespaces) before re-adding — never touches unrelated
+    // task selections (blk-, wrec-, rec-virt-, etc).
+    [...selectedTasks].forEach(id=>{if(id.startsWith('vid-ov-')||id.startsWith('vidstep-'))selectedTasks.delete(id);});
+    const sMap=typeof _vidStepDayMap==='function'?_vidStepDayMap():{};
+    _vidOvSelSet.forEach(vid=>{
+      selectedTasks.add('vid-ov-'+vid);
+      // Pending stage tasks for this video: applySelHighlight's .tb-block branch matches the
+      // dateless 'vidstep-<vid>-<step>' form, while its .ti/.chip branch matches the exact rendered
+      // id including the day ('vidstep-<vid>-<step>-<ds>') — add both forms for every step/day.
+      Object.keys(sMap).forEach(key=>{
+        if(!key.startsWith(vid+'::'))return;
+        const step=key.split('::')[1];
+        const e=sMap[key];if(!e)return;
+        selectedTasks.add('vidstep-'+vid+'-'+step);
+        [e.ds,...(e.extraDays||[])].filter(Boolean).forEach(ds=>selectedTasks.add('vidstep-'+vid+'-'+step+'-'+ds));
+      });
+    });
     if(typeof applySelHighlight==='function')applySelHighlight();
   }
   document.querySelectorAll('.vid-cross-sel').forEach(el=>el.classList.remove('vid-cross-sel'));
   const id=_vidOvSelVid;
   if(!id)return;
   document.querySelectorAll(`[data-vid="${id}"],[data-alldrag="${id}"]`).forEach(el=>el.classList.add('vid-cross-sel'));
+}
+// Reverse direction: a click elsewhere (Today list, week/day timeblock chips) that lands on a
+// 'vid-ov-<id>' or 'vidstep-<id>-<step>[-<ds>]' entry in the shared selectedTasks set should also
+// highlight that video in the Overview panel list, its calendar chip, and the Videos-page/All
+// Videos-panel echo — called from the tail of applySelHighlight so it stays in lockstep with every
+// selection change regardless of where it originated. Never touches selectedTasks itself (that
+// would re-enter applySelHighlight from inside its own call).
+function _vidOvSyncFromGlobalSel(){
+  if(typeof selectedTasks==='undefined'||typeof _vidOvSelSet==='undefined')return;
+  const vids=new Set();
+  selectedTasks.forEach(id=>{
+    if(id.startsWith('vid-ov-'))vids.add(id.replace('vid-ov-',''));
+    else if(id.startsWith('vidstep-')){
+      const m=id.replace('vidstep-','').match(/^(.+?)-step_/);
+      if(m)vids.add(m[1]);
+    }
+  });
+  const same=vids.size===_vidOvSelSet.size&&[...vids].every(v=>_vidOvSelSet.has(v));
+  if(same)return;
+  _vidOvSelSet.clear();vids.forEach(v=>_vidOvSelSet.add(v));
+  _vidOvSelVid=vids.size?[...vids][vids.size-1]:null;
+  const panel=document.getElementById('vidOvPanel');
+  if(panel)panel.querySelectorAll('[data-vidrow]').forEach(r=>{r.classList.toggle('vid-sel',_vidOvSelSet.has(r.dataset.vidrow));});
+  if(typeof _vidCalHighlightChip==='function')_vidCalHighlightChip(_vidOvSelVid);
+  document.querySelectorAll('.vid-cross-sel').forEach(el=>el.classList.remove('vid-cross-sel'));
+  if(_vidOvSelVid)document.querySelectorAll(`[data-vid="${_vidOvSelVid}"],[data-alldrag="${_vidOvSelVid}"]`).forEach(el=>el.classList.add('vid-cross-sel'));
 }
 function _vidOvRestoreSel(){
   if(!_vidOvSelVid&&!_vidOvSelSet.size)return;
@@ -5151,7 +5192,9 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _ctxAttr=`oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')"`;
   const _hovBg=_dk()?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';
   const _hov=`onmouseenter="this.style.background='${_hovBg}'" onmouseleave="this.style.background='none'" onclick="_vidOvClickSelect(this,event)"`;
-  const _map=_vidDayMap();
+  const _map=_vidDayMap();const _onCal=!!_map[sid];
+  const _btnAccent=_onCal||_isFocused;
+  const _addBtn=`<div onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',null,null,this.closest('[data-vidrow]'))" style="width:12px;min-width:12px;max-width:12px;height:12px;min-height:12px;max-height:12px;display:flex;align-items:center;justify-content:center;align-self:center;border-radius:2px;border:1px solid ${_btnAccent?'var(--accent)':'var(--border)'};background:var(--bg);color:${_btnAccent?'var(--accent)':'var(--muted)'};cursor:pointer;flex-shrink:0;flex-grow:0;box-sizing:border-box;overflow:hidden" title="Add small video"><svg width="6" height="6" viewBox="0 0 6 6" style="display:block;flex-shrink:0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><line x1="3" y1="1" x2="3" y2="5"/><line x1="1" y1="3" x2="5" y2="3"/></svg></div>`;
   const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvXClick('${sid}',this)" title="Actions">✕</button>`;
   const _postDate=v.post_date?_vidOvPostStr(v.post_date):'';
   const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
@@ -5159,7 +5202,7 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _focusCls=_isFocused?' vid-ov-focus':'';
   const _titleField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${sid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${v.title?escHtml(v.title):''}</span>`:'';
   const _commentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:16px;display:block;min-height:16px">${v.comment?escHtml(v.comment):''}</span>`:'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}</span><span style="flex-shrink:0;width:13px"></span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}</span><span style="flex-shrink:0;width:13px"></span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;text-align:center;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:center;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   // Keep a published small visible (shown done) under its big until the whole group is complete.
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='idea'&&(c.status!=='published'||!_vidGroupFullyComplete(c))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));

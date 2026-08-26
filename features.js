@@ -6255,6 +6255,9 @@ function applySelHighlight(){
   document.querySelectorAll('.atb-block[data-atb-id]').forEach(el=>{
     el.classList.toggle('sel-atb',selAtbIds.has(el.dataset.atbId));
   });
+  // Keep the Overview video panel's own selection in lockstep with whatever's selected here —
+  // selecting a video's task or stage-task anywhere else should show it selected in the panel too.
+  if(typeof _vidOvSyncFromGlobalSel==='function')_vidOvSyncFromGlobalSel();
 }
 
 function clearSelection(){
