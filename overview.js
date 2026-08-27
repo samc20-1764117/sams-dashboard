@@ -5022,8 +5022,12 @@ function _vidOvKeyNav(e){
   if(_vidOvAllOpen)return false;
   if(_vidCalOpen&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))return false;
   const rows=_vidOvGetRows();if(!rows.length)return false;
-  // Cmd+Up/Down: reorder videos
-  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowUp'||e.key==='ArrowDown')&&_vidOvSelSet.size>0){
+  // Cmd+Up/Down: reorder videos — gated on _lastSelSurface same as plain Up/Down below, so a
+  // leftover _vidOvSelSet from an earlier click into the popup doesn't hijack the reorder keystroke
+  // away from the weekly view/today list when the user has since clicked a video/vidstep chip there
+  // (2026-08-27 fix: this branch checked only _vidOvSelSet.size>0, so it always won for video/vidstep
+  // items specifically — the exact case where the popup usually has a stale selection sitting around).
+  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowUp'||e.key==='ArrowDown')&&_vidOvSelSet.size>0&&_lastSelSurface==='vidOv'){
     e.preventDefault();const dir=e.key==='ArrowUp'?-1:1;
     // Check if any selected is a child video
     const selIds=[..._vidOvSelSet];
