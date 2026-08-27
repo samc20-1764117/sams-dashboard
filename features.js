@@ -27,14 +27,14 @@ function openQA(ctx,btn,ds='',kcat=''){
   let title='Add Task',extra='';
   if(ctx==='pup'){
     title='Add Skill';
-    const selStyle='width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none';
+    const selStyle='width:100%;padding:5px 7px;border-radius:var(--rs);border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none';
     extra=`<div class="qa-field"><label>Pup</label><select id="qaPup" style="${selStyle}"><option value="Both">Both</option><option value="Mochi">Mochi only</option><option value="Sunny">Sunny only</option></select></div>
     <div class="qa-field"><label>Level</label><select id="qaLevel" style="${selStyle}"><option value="">—</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></div>
     <div class="qa-field"><label>Stage</label><select id="qaStage" style="${selStyle}"><option value="Not Started">Not Started</option><option value="In Progress">In Progress</option><option value="Mastered">Mastered</option></select></div>`;
   } else if(ctx==='shop'){
     title='Add Item';
     const _shopStores=[...new Set(['Online','HEB',...st.shopping.map(x=>x.store).filter(Boolean)])].filter(x=>x!=='Other');
-    const _sStyle='width:100%;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none';
+    const _sStyle='width:100%;padding:5px 7px;border-radius:var(--rs);border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none';
     extra=`<div class="qa-field"><label>Store</label><select id="qaStore" style="${_sStyle}" onchange="if(this.value==='__custom'){this.style.display='none';const ci=document.getElementById('qaStoreCustom');ci.style.display='';ci.focus();}">${_shopStores.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('')}<option value="__custom">Custom…</option></select><input id="qaStoreCustom" placeholder="Type store name…" style="${_sStyle};display:none" onkeydown="if(event.key==='Enter')event.stopPropagation()"></div>`;
   } else if(ctx==='rec'){
     title='Add Recurring Task';extra='';
@@ -42,8 +42,8 @@ function openQA(ctx,btn,ds='',kcat=''){
     const def=(ctx==='kanban'||ctx==='wkc')&&kcat?kcat:'Home';
     const defaultDate=ctx==='today'?d2s(getDayDate(dayOff)):(ds||'');
     extra=`<div class="qa-field"><label style="margin-bottom:5px">Type</label>${catSelHTML('qaCat',def)}</div>
-    <div class="qa-field"><label>Due</label><div style="display:flex;align-items:center;gap:8px"><input id="qaDue" type="date" value="${defaultDate}" style="flex:1;padding:5px 7px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaImp').focus();}"><div class="qa-imp-row"><label for="qaImp" title="Important">⭐</label><input type="checkbox" id="qaImp" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaNotes').focus();}"></div></div></div>
-    <div class="qa-field" style="margin-top:6px"><label>Notes</label><textarea id="qaNotes" placeholder="Add notes…" style="resize:vertical;min-height:60px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none;box-sizing:border-box"></textarea></div>`;
+    <div class="qa-field"><label>Due</label><div style="display:flex;align-items:center;gap:8px"><input id="qaDue" type="date" value="${defaultDate}" style="flex:1;padding:5px 7px;border-radius:var(--rs);border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaImp').focus();}"><div class="qa-imp-row"><label for="qaImp" title="Important">⭐</label><input type="checkbox" id="qaImp" onkeydown="if(event.key==='Tab'&&!event.shiftKey){event.preventDefault();document.getElementById('qaNotes').focus();}"></div></div></div>
+    <div class="qa-field"><label>Notes</label><textarea id="qaNotes" placeholder="Add notes…" style="resize:vertical;min-height:60px;width:100%;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:var(--rs);border:1px solid var(--border);color:var(--text);outline:none;box-sizing:border-box"></textarea></div>`;
   }
   document.getElementById('qaTitle').textContent=title;
   document.getElementById('qaExtra').innerHTML=extra;
