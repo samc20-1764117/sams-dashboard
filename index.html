@@ -463,7 +463,7 @@ if(sessionStorage._mReloaded===BUILD);else{
       <div class="ch">
         <div class="ct"><span id="cinemaUpNextCount">0</span> up next</div>
         <div style="flex:1"></div>
-        <button class="btn-plus" onclick="openCinemaAddForm()">+</button>
+        <button class="btn-plus" onclick="openCinemaModal()">+</button>
       </div>
       <div id="cinemaUpNextContent" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
     </div>
@@ -578,6 +578,19 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div class="mfield"><label>Birthday *</label><input id="bdDate" type="text" placeholder="MM/DD or MM/DD/YYYY" autocomplete="off"><div id="bdDateHint" style="font-size:9px;color:var(--muted);margin-top:3px"></div></div>
     <div class="mfield"><label>Gift idea <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="bdPresent" placeholder="e.g. Flowers, book…"></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('bdayModal')">Cancel</button><button class="btn btn-dark" onclick="saveBdayModal()">Save</button></div>
+  </div>
+</div>
+
+<!-- Cinema Modal -->
+<div class="overlay" id="cinemaModal" onclick="closeMod('cinemaModal',event)" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();event.stopPropagation();saveCinemaModal();}if(event.key==='Escape'){event.stopPropagation();closeMod('cinemaModal');}">
+  <div class="modal task-modal" style="width:340px">
+    <div class="mt" id="cinemaMTitle">Add Movie/Show</div>
+    <div class="mfield"><label>Title *</label><input id="cinemaTitleInput" placeholder="e.g. Breaking Bad"></div>
+    <div class="mfield"><label>Type</label><select id="cinemaTypeInput"><option value="movie">Movie</option><option value="show">Show</option></select></div>
+    <div class="mfield"><label>Genre <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="cinemaGenreInput" placeholder="e.g. Drama"></div>
+    <div class="mfield"><label>Where to watch <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="cinemaWhereInput" placeholder="e.g. Netflix"></div>
+    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="cinemaNotesInput" placeholder="Add notes…" style="resize:none;min-height:52px;width:100%;box-sizing:border-box;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none"></textarea></div>
+    <div class="mact"><button class="btn btn-ghost" onclick="closeMod('cinemaModal')">Cancel</button><button class="btn btn-dark" id="cinemaSaveBtn" onclick="saveCinemaModal()">Add</button></div>
   </div>
 </div>
 

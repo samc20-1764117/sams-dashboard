@@ -2163,7 +2163,7 @@ function _cinemaUpNextRow(item){
       <span style="font-size:13px;color:var(--text)">${escHtml(item.title)}</span>
       ${_cinemaMeta(item)}
     </div>
-    <button onclick="editCinemaItem('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px">Edit</button>
+    <button onclick="openCinemaModal('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px">Edit</button>
     <button onclick="moveCinemaToWatched('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px">Watched</button>
     <button onclick="deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px">✕</button>
   `,true);
@@ -2176,7 +2176,7 @@ function _cinemaWatchedRow(item){
       ${_cinemaMeta(item)}
     </div>
     <input type="number" min="1" max="10" value="${item.rating??''}" placeholder="–" onchange="setCinemaRating('${item.id}',this.value)" title="Your rating (1-10)" style="width:38px;text-align:center;padding:3px 4px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:12px">
-    <button onclick="editCinemaItem('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px">Edit</button>
+    <button onclick="openCinemaModal('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px">Edit</button>
     <button onclick="moveCinemaToUpNext('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px" title="Move back to Up Next — e.g. a new season dropped">Up Next</button>
     <button onclick="deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px">✕</button>
   `);
@@ -2191,57 +2191,23 @@ function _cinemaTopRow(item,rank){
     <span style="font-size:12px;font-weight:600;color:var(--accent)">${item.rating}/10</span>
   `);
 }
-function _cinemaFormFields(v){
-  v=v||{};
-  const dk=document.body.classList.contains('dark');
-  const inputBg=dk?'rgba(255,255,255,.06)':'rgba(255,255,255,.6)';
-  const inp=(id,ph,val)=>`<input id="${id}" placeholder="${ph}" value="${val?escHtml(val):''}" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:${inputBg};font-size:12px;font-family:inherit;color:var(--text);outline:none">`;
-  return`
-    <div style="display:flex;gap:8px">
-      <input id="cinemaTitleInput" placeholder="Title" value="${v.title?escHtml(v.title):''}" style="flex:2;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:${inputBg};font-size:12px;font-family:inherit;color:var(--text);outline:none">
-      <select id="cinemaTypeInput" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:${inputBg};font-size:12px;font-family:inherit;color:var(--text)">
-        <option value="movie" ${v.type==='show'?'':'selected'}>Movie</option>
-        <option value="show" ${v.type==='show'?'selected':''}>Show</option>
-      </select>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:6px">
-      ${inp('cinemaGenreInput','Genre (optional)',v.genre)}
-      ${inp('cinemaWhereInput','Where to watch (optional)',v.where_to_watch)}
-    </div>
-    <textarea id="cinemaNotesInput" placeholder="Notes (optional)" style="width:100%;box-sizing:border-box;margin-top:6px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:${inputBg};font-size:12px;font-family:inherit;color:var(--text);resize:vertical;min-height:44px;outline:none">${v.notes?escHtml(v.notes):''}</textarea>
-    <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">
-      <button onclick="renderCinemaPage()" class="btn btn-ghost btn-xs" style="font-size:11px">Cancel</button>
-      <button onclick="${v.id?`saveCinemaEdit('${v.id}')`:'saveNewCinemaItem()'}" style="font-size:11px;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:inherit">Save</button>
-    </div>`;
+let _cinemaModalEditId=null;
+function openCinemaModal(editId){
+  _cinemaModalEditId=editId||null;
+  const item=editId?st.cinemaItems.find(i=>String(i.id)===String(editId)):null;
+  document.getElementById('cinemaMTitle').textContent=editId?'Edit Movie/Show':'Add Movie/Show';
+  document.getElementById('cinemaSaveBtn').textContent=editId?'Save':'Add';
+  document.getElementById('cinemaTitleInput').value=item?item.title:'';
+  document.getElementById('cinemaTypeInput').value=item?item.type:'movie';
+  document.getElementById('cinemaGenreInput').value=item?(item.genre||''):'';
+  document.getElementById('cinemaWhereInput').value=item?(item.where_to_watch||''):'';
+  document.getElementById('cinemaNotesInput').value=item?(item.notes||''):'';
+  document.getElementById('cinemaModal').classList.add('open');
+  setTimeout(()=>{const el=document.getElementById('cinemaTitleInput');if(el)el.focus();},80);
 }
-function _cinemaFormKeydown(e,onSave){
-  const tag=e.target.tagName;
-  if(e.key==='Enter'&&tag!=='TEXTAREA'){e.preventDefault();onSave();return;}
-  if(e.key==='Escape'){renderCinemaPage();return;}
-  e.stopPropagation();
-}
-function openCinemaAddForm(){
-  const wrap=document.getElementById('cinemaUpNextContent');if(!wrap)return;
-  if(document.getElementById('cinemaForm'))return;
-  const dk=document.body.classList.contains('dark');
-  const form=document.createElement('div');form.id='cinemaForm';
-  form.style.cssText=`padding:10px 12px;margin-bottom:8px;border-radius:8px;background:${dk?'rgba(236,72,153,.08)':'rgba(236,72,153,.06)'};border:1px solid ${dk?'rgba(236,72,153,.15)':'rgba(236,72,153,.18)'}`;
-  form.innerHTML=_cinemaFormFields(null);
-  wrap.prepend(form);
-  document.getElementById('cinemaTitleInput').focus();
-  form.addEventListener('keydown',e=>_cinemaFormKeydown(e,saveNewCinemaItem));
-}
-function editCinemaItem(id){
-  if(document.getElementById('cinemaForm'))return;
-  const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
-  const row=document.querySelector(`[data-cinema-id="${id}"]`);if(!row)return;
-  const dk=document.body.classList.contains('dark');
-  const form=document.createElement('div');form.id='cinemaForm';
-  form.style.cssText=`padding:10px 12px;margin-bottom:8px;border-radius:8px;background:${dk?'rgba(236,72,153,.08)':'rgba(236,72,153,.06)'};border:1px solid ${dk?'rgba(236,72,153,.15)':'rgba(236,72,153,.18)'}`;
-  form.innerHTML=_cinemaFormFields(item);
-  row.replaceWith(form);
-  document.getElementById('cinemaTitleInput').focus();
-  form.addEventListener('keydown',e=>_cinemaFormKeydown(e,()=>saveCinemaEdit(id)));
+function saveCinemaModal(){
+  closeMod('cinemaModal');
+  if(_cinemaModalEditId)saveCinemaEdit(_cinemaModalEditId);else saveNewCinemaItem();
 }
 async function saveNewCinemaItem(){
   const title=(document.getElementById('cinemaTitleInput')||{}).value?.trim()||'';
