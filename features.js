@@ -3214,11 +3214,12 @@ function openFinPointsDetails(){
   if(!card||!rightCol)return;
   const cardRect=card.getBoundingClientRect();
   const rightRect=rightCol.getBoundingClientRect();
-  // Mirrors openFinInvDetails: opens over the Recurring Expenses column, capped to a
-  // compact content-sized width rather than stretching to that column's full width.
-  const popWidth=Math.min(360,rightRect.width);
+  // Wider than Purchase History (more columns: Amount+Type, Expires, $ Value all on one
+  // line) and full right-column height instead of just the short Personal Finances card,
+  // so more rows are visible without scrolling.
+  const popWidth=Math.min(480,rightRect.width);
   pop=document.createElement('div');pop.id='finPointsPop';pop.className='fin-details-pop';
-  pop.style.cssText=`position:fixed;top:${cardRect.top}px;left:${rightRect.left}px;width:${popWidth}px;height:${cardRect.height}px;z-index:100`;
+  pop.style.cssText=`position:fixed;top:${cardRect.top}px;left:${rightRect.left}px;width:${popWidth}px;height:${rightRect.height}px;z-index:100`;
   _finRenderPointsContent(pop);
   document.body.appendChild(pop);
   requestAnimationFrame(()=>pop.classList.add('open'));
