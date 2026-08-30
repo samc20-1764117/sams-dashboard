@@ -2115,6 +2115,8 @@ function renderBdayPage(){
 // ── Cinema ───────────────────────────────────────────────────────────────────
 let _cinemaDragId=null;
 let _cinemaTop10Type=localStorage.getItem('_cinemaTop10Type')||'movie';
+let _cinemaGenreFilterVal='';
+let _cinemaLastUpNext=[];
 
 function renderCinemaPage(){
   const upEl=document.getElementById('cinemaUpNextContent');
@@ -2122,16 +2124,22 @@ function renderCinemaPage(){
   const watchEl=document.getElementById('cinemaWatchedContent');
   const topEl=document.getElementById('cinemaTop10Content');
   const toggleEl=document.getElementById('cinemaTop10Toggle');
+  const genreFilterEl=document.getElementById('cinemaGenreFilter');
 
-  const upNext=st.cinemaItems.filter(i=>i.status==='up_next').sort((a,b)=>(a.sort_order??9999)-(b.sort_order??9999));
+  const upNextAll=st.cinemaItems.filter(i=>i.status==='up_next').sort((a,b)=>(a.sort_order??9999)-(b.sort_order??9999));
+  const genres=[...new Set(upNextAll.map(i=>i.genre).filter(Boolean))].sort();
+  if(!genres.includes(_cinemaGenreFilterVal))_cinemaGenreFilterVal='';
+  if(genreFilterEl)genreFilterEl.innerHTML='<option value="">All genres</option>'+genres.map(g=>`<option value="${escHtml(g)}" ${g===_cinemaGenreFilterVal?'selected':''}>${escHtml(g)}</option>`).join('');
+  const upNext=_cinemaGenreFilterVal?upNextAll.filter(i=>i.genre===_cinemaGenreFilterVal):upNextAll;
+  _cinemaLastUpNext=upNext;
   const watched=st.cinemaItems.filter(i=>i.status==='watched').sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
   const top10=st.cinemaItems.filter(i=>i.status==='watched'&&i.type===_cinemaTop10Type&&i.rating!=null).sort((a,b)=>b.rating-a.rating).slice(0,10);
 
   const upCnt=document.getElementById('cinemaUpNextCount');if(upCnt)upCnt.textContent=upNext.length;
   const watchCnt=document.getElementById('cinemaWatchedCount');if(watchCnt)watchCnt.textContent=watched.length;
 
-  upEl.innerHTML=upNext.length?`<div id="cinemaUpNextList">${upNext.map(_cinemaUpNextRow).join('')}</div>`:_cinemaEmpty('Nothing queued yet. Click + to add a movie or show.');
-  watchEl.innerHTML=watched.length?watched.map(_cinemaWatchedRow).join(''):_cinemaEmpty('Nothing watched yet.');
+  upEl.innerHTML=upNext.length?`<div id="cinemaUpNextList">${upNext.map(_cinemaUpNextRow).join('')}</div>`:_cinemaEmpty(upNextAll.length?'No items match this genre.':'Nothing queued yet. Click + or double-click here to add a movie or show.');
+  watchEl.innerHTML=watched.length?watched.map(_cinemaWatchedRow).join(''):_cinemaEmpty('Nothing watched yet. Double-click here to add one.');
   topEl.innerHTML=top10.length?top10.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty(`Rate some watched ${_cinemaTop10Type==='movie'?'movies':'shows'} to build this list.`);
   if(toggleEl){
     const toggleBtn=(val,label)=>`<button onclick="_cinemaTop10Type='${val}';localStorage.setItem('_cinemaTop10Type','${val}');renderCinemaPage()" style="padding:3px 9px;border-radius:6px;border:none;font-family:inherit;font-size:10px;cursor:pointer;background:${_cinemaTop10Type===val?'var(--accent)':'transparent'};color:${_cinemaTop10Type===val?'#fff':'var(--muted)'}">${label}</button>`;
@@ -2151,22 +2159,21 @@ function _cinemaTitleLine(item){
   const sub=subBits.length?` <span style="color:var(--muted);font-weight:400">— ${subBits.join(' · ')}</span>`:'';
   return`<span style="flex:1;min-width:0;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.title)}${sub}</span>`;
 }
-function _cinemaRowShell(item,inner,draggable){
+function _cinemaRowShell(item,inner,draggable,extraAttrs){
   const dk=document.body.classList.contains('dark');
   const bg=dk?'rgba(255,255,255,.06)':'rgba(255,255,255,.85)';
   const bdr=dk?'rgba(255,255,255,.08)':'rgba(210,205,228,.3)';
   const dragAttrs=draggable?`draggable="true" ondragstart="_cinemaDragStart(event,'${item.id}')" ondragend="_cinemaDragEnd(event)"`:'';
-  return`<div class="cinema-row" data-cinema-id="${item.id}" ${dragAttrs} style="padding:6px 10px;margin-bottom:6px;border-radius:8px;background:${bg};border:1px solid ${bdr};display:flex;align-items:center;gap:8px;${draggable?'cursor:grab':''}">${inner}</div>`;
+  return`<div class="cinema-row" data-cinema-id="${item.id}" ${dragAttrs} ${extraAttrs||''} style="padding:6px 10px;margin-bottom:6px;border-radius:8px;background:${bg};border:1px solid ${bdr};display:flex;align-items:center;gap:8px;${draggable?'cursor:grab':''}">${inner}</div>`;
 }
 function _cinemaUpNextRow(item){
   return _cinemaRowShell(item,`
     <span style="color:var(--muted);font-size:12px;flex-shrink:0">⠿</span>
     ${_cinemaTypeBadge(item.type)}
     ${_cinemaTitleLine(item)}
-    <button onclick="openCinemaModal('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px;flex-shrink:0">Edit</button>
-    <button onclick="moveCinemaToWatched('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px;flex-shrink:0">Watched</button>
-    <button onclick="deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0">✕</button>
-  `,true);
+    <button onclick="event.stopPropagation();moveCinemaToWatched('${item.id}')" title="Mark watched" style="flex-shrink:0;width:19px;height:19px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center" onmouseover="this.style.borderColor='#22c55e';this.style.color='#22c55e'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+    <button onclick="event.stopPropagation();deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0;opacity:0;transition:opacity .15s">✕</button>
+  `,true,`ondblclick="if(!event.target.closest('button')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
 }
 function _cinemaWatchedRow(item){
   return _cinemaRowShell(item,`
@@ -2186,13 +2193,20 @@ function _cinemaTopRow(item,rank){
   `);
 }
 let _cinemaModalEditId=null;
-function openCinemaModal(editId){
+let _cinemaModalDefaultStatus='up_next';
+function _cinemaContainerDblClick(e,status){
+  if(e.target.closest('.cinema-row'))return;
+  openCinemaModal(null,status);
+}
+function openCinemaModal(editId,defaultStatus){
   _cinemaModalEditId=editId||null;
+  _cinemaModalDefaultStatus=defaultStatus||'up_next';
   const item=editId?st.cinemaItems.find(i=>String(i.id)===String(editId)):null;
   document.getElementById('cinemaMTitle').textContent=editId?'Edit Movie/Show':'Add Movie/Show';
   document.getElementById('cinemaSaveBtn').textContent=editId?'Save':'Add';
   document.getElementById('cinemaTitleInput').value=item?item.title:'';
   document.getElementById('cinemaTypeInput').value=item?item.type:'movie';
+  document.getElementById('cinemaRatingInput').value=item?(item.rating??''):'';
   document.getElementById('cinemaGenreInput').value=item?(item.genre||''):'';
   document.getElementById('cinemaWhereInput').value=item?(item.where_to_watch||''):'';
   document.getElementById('cinemaNotesInput').value=item?(item.notes||''):'';
@@ -2203,31 +2217,39 @@ function saveCinemaModal(){
   closeMod('cinemaModal');
   if(_cinemaModalEditId)saveCinemaEdit(_cinemaModalEditId);else saveNewCinemaItem();
 }
+function _cinemaReadRatingInput(){
+  let rating=parseInt((document.getElementById('cinemaRatingInput')||{}).value,10);
+  if(!rating||rating<1)rating=null;else if(rating>10)rating=10;
+  return rating;
+}
 async function saveNewCinemaItem(){
   const title=(document.getElementById('cinemaTitleInput')||{}).value?.trim()||'';
   const type=(document.getElementById('cinemaTypeInput')||{}).value||'movie';
+  const rating=_cinemaReadRatingInput();
   const genre=(document.getElementById('cinemaGenreInput')||{}).value?.trim()||null;
   const where_to_watch=(document.getElementById('cinemaWhereInput')||{}).value?.trim()||null;
   const notes=(document.getElementById('cinemaNotesInput')||{}).value?.trim()||null;
   if(!title){renderCinemaPage();return;}
+  const status=_cinemaModalDefaultStatus==='watched'?'watched':'up_next';
   const upNext=st.cinemaItems.filter(i=>i.status==='up_next');
   const sort_order=upNext.length?Math.max(...upNext.map(i=>i.sort_order??0))+1:0;
   const localId='l-'+Date.now();
-  const row={id:localId,title,type,status:'up_next',rating:null,genre,where_to_watch,notes,sort_order,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+  const row={id:localId,title,type,status,rating,genre,where_to_watch,notes,sort_order,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
   st.cinemaItems.push(row);renderCinemaPage();save();
-  const sv=await sbReq('POST','cinema_items',{title,type,status:'up_next',sort_order,genre,where_to_watch,notes});
+  const sv=await sbReq('POST','cinema_items',{title,type,status,rating,sort_order,genre,where_to_watch,notes});
   if(sv&&sv[0]){const idx=st.cinemaItems.findIndex(i=>i.id===localId);if(idx>=0)st.cinemaItems[idx]=sv[0];save();}
 }
 async function saveCinemaEdit(id){
   const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
   const title=(document.getElementById('cinemaTitleInput')||{}).value?.trim()||item.title;
   const type=(document.getElementById('cinemaTypeInput')||{}).value||item.type;
+  const rating=_cinemaReadRatingInput();
   const genre=(document.getElementById('cinemaGenreInput')||{}).value?.trim()||null;
   const where_to_watch=(document.getElementById('cinemaWhereInput')||{}).value?.trim()||null;
   const notes=(document.getElementById('cinemaNotesInput')||{}).value?.trim()||null;
-  Object.assign(item,{title,type,genre,where_to_watch,notes,updated_at:new Date().toISOString()});
+  Object.assign(item,{title,type,rating,genre,where_to_watch,notes,updated_at:new Date().toISOString()});
   renderCinemaPage();save();
-  if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{title,type,genre,where_to_watch,notes},`?id=eq.${id}`);
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{title,type,rating,genre,where_to_watch,notes},`?id=eq.${id}`);
 }
 async function moveCinemaToWatched(id){
   const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
@@ -2282,7 +2304,7 @@ function _cinemaSetupDrag(){
     const rows=[...list.querySelectorAll('.cinema-row')];
     let dropIdx=rows.length;
     for(let i=0;i<rows.length;i++){const rc=rows[i].getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){dropIdx=i;break;}}
-    const items=st.cinemaItems.filter(i=>i.status==='up_next').sort((a,b)=>(a.sort_order??9999)-(b.sort_order??9999));
+    const items=_cinemaLastUpNext.slice();
     const origIds=items.map(i=>String(i.id));
     const prevOrders=items.map(i=>({id:i.id,order:i.sort_order}));
     const dragIdx=items.findIndex(i=>String(i.id)===String(_cinemaDragId));
@@ -2585,8 +2607,10 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
     const excCls=a.exclude?' fin-legend-excluded':'';
     html+=`<div class="fin-legend-row${excCls}" data-fin-id="${a.id}" onmouseenter="_finHover('${a.id}')" onmouseleave="_finHover(null)">
       <span class="fin-legend-dot" style="background-color:${colorSolid};cursor:pointer" onclick="_finOpenColorPicker(event,'${a.name.replace(/'/g,"\\'")}','${colorSolid}')" title="Change color"></span>
-      <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
-      ${_isPtsAcct(a)?`<button class="fin-excl-btn fin-pts-btn" onclick="event.stopPropagation();openFinPointsDetails()" title="Points &amp; Flight Credits">&#9992;</button>`:''}
+      <span class="fin-legend-name-wrap">
+        <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
+        ${_isPtsAcct(a)?`<button class="fin-pts-btn" onclick="event.stopPropagation();openFinPointsDetails()" title="Points &amp; Flight Credits">&#8594;</button>`:''}
+      </span>
       <span class="fin-legend-amt">${_isPtsAcct(a)?_finFmtRound(a.amount||0):_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}</span>
       ${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
@@ -3281,9 +3305,15 @@ function _finRenderPointsContent(pop){
 function _finPointsRefresh(){const pop=document.getElementById('finPointsPop');if(pop)_finRenderPointsContent(pop);}
 function addFinPoint(){
   const row={id:'l-'+Date.now(),name:'',unit:'usd',amount:0,expires_on:null,note:null,sort_order:0,_unsaved:true};
-  st.finPoints.unshift(row);
+  st.finPoints.push(row); // append — new entries with no expiry sort to the bottom of the list
   _finPointsRefresh();
-  setTimeout(()=>{_finPointsEdit(row.id);const el=document.querySelector(`#finPointsPop tr[data-fin-id="${row.id}"] input`);if(el)el.focus();},30);
+  setTimeout(()=>{
+    _finPointsEdit(row.id);
+    const el=document.querySelector(`#finPointsPop tr[data-fin-id="${row.id}"] input`);
+    if(el)el.focus();
+    const scroll=document.querySelector('#finPointsPop .fin-details-scroll');
+    if(scroll)scroll.scrollTop=scroll.scrollHeight;
+  },30);
 }
 // Tab through name → amount → unit → expires; Tab on the last field of the last row adds
 // a new one (same as pressing +) instead of doing nothing — mirrors a spreadsheet's
@@ -3311,8 +3341,8 @@ function _finPointsEdit(id){
   nameTd.innerHTML=`<input type="text" class="fin-ph-date-text" value="${escHtml(row.name||'')}" placeholder="Name"
     onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
     onblur="_finPointsSave('${id}','name',this.value)">`;
-  amtTd.innerHTML=`<span style="display:flex;gap:6px;align-items:center;justify-content:flex-end">
-    <input type="number" step="1" class="fin-ph-amt-input" style="width:70px" value="${Math.abs(row.amount||0)}"
+  amtTd.innerHTML=`<span style="display:flex;gap:6px;align-items:center">
+    <input type="number" step="1" class="fin-ph-amt-input" style="flex:1;min-width:0;text-align:right" value="${Math.abs(row.amount||0)}"
       onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
       onblur="_finPointsSave('${id}','amount',this.value)">
     <select class="fin-pts-unit-sel" onchange="_finPointsSave('${id}','unit',this.value)" onkeydown="event.stopPropagation();if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}">

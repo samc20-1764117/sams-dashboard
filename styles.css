@@ -299,6 +299,7 @@ body.dark .menu-open:hover{background:rgba(40,40,46,.95)}
 .ideas-card{background:rgba(255,255,255,.38)!important;backdrop-filter:blur(32px)!important;-webkit-backdrop-filter:blur(32px)!important;border-color:rgba(210,205,228,.12)!important}
 body.dark .ideas-card{background:rgba(24,24,28,.35)!important;backdrop-filter:blur(32px)!important;-webkit-backdrop-filter:blur(32px)!important}
 .idea-row:hover .idea-x-btn{opacity:1!important}.idea-x-btn:hover{color:#ef4444!important}
+.cinema-row:hover .idea-x-btn{opacity:1!important}
 
 /* Undo toast */
 .back-btn{display:none}
@@ -1685,6 +1686,13 @@ body.dark .fin-hist-btn:hover{background:rgba(109,95,230,.16);border-color:rgba(
 .fin-legend-dot{width:10px;height:10px;min-width:10px;min-height:10px;border-radius:50%;flex-shrink:0;align-self:center;border:1.5px solid rgba(0,0,0,.08);background-image:radial-gradient(circle at 32% 28%,rgba(255,255,255,.75),rgba(255,255,255,0) 55%);box-shadow:inset 0 -1px 2px rgba(0,0,0,.25),inset 0 1px 1px rgba(255,255,255,.4),0 1px 2px rgba(0,0,0,.15)}
 body.dark .fin-legend-dot{border-color:rgba(255,255,255,.15)}
 .fin-legend-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:2px}
+/* Wraps name+the Points-account button in ONE flex:1 slot so that button doesn't consume its
+   own top-level flex slot in .fin-legend-row — otherwise it shifts fin-legend-amt rightward
+   on just this one row, breaking the $ column's alignment across every other account row. */
+.fin-legend-name-wrap{flex:1;min-width:0;display:flex;align-items:center;gap:2px}
+.fin-legend-name-wrap .fin-legend-name{padding-left:0}
+.fin-pts-btn{border:none;background:none;cursor:pointer;font-size:12px;color:var(--muted);opacity:.55;padding:0 2px;border-radius:4px;transition:opacity .15s,color .15s;line-height:1;flex-shrink:0}
+.fin-pts-btn:hover{opacity:1;color:var(--text)}
 .fin-legend-amt{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text);text-align:right;min-width:80px;flex-shrink:0;margin-right:4px}
 .fin-legend-pct{color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums;font-size:13px;width:44px;flex-shrink:0;text-align:right;margin-left:-6px;margin-right:10px}
 .fin-legend-del{font-size:10px}
@@ -1812,7 +1820,10 @@ body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,25
    height jumping between display and edit — force one line + ellipsis so both modes agree. */
 .fin-pts-col-name{padding-left:16px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fin-pts-col-val{padding-right:8px!important}
-.fin-pts-unit-sel{font-size:11px;border:1px solid rgba(200,200,215,.25);border-radius:5px;background:transparent;color:var(--text);padding:1px 2px}
+/* Native <select> has no explicit height by default — it was rendering taller than the 20px
+   text/number inputs beside it, making the Amount cell (and therefore the whole row) taller
+   in edit mode than in display mode. box-sizing:border-box so the border doesn't add on top. */
+.fin-pts-unit-sel{height:20px;box-sizing:border-box;font-size:11px;border:1px solid rgba(200,200,215,.25);border-radius:5px;background:transparent;color:var(--text);padding:0 2px}
 body.dark .fin-pts-unit-sel{border-color:rgba(255,255,255,.12)}
 .fin-chart-hit{cursor:pointer}
 .fin-donut circle{cursor:pointer;pointer-events:all}

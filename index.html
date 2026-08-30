@@ -462,10 +462,11 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div class="card" style="min-height:0;grid-row:1 / span 2">
       <div class="ch">
         <div class="ct"><span id="cinemaUpNextCount">0</span> up next</div>
+        <select id="cinemaGenreFilter" onchange="_cinemaGenreFilterVal=this.value;renderCinemaPage()" style="margin-left:8px;padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:10px;max-width:110px"><option value="">All genres</option></select>
         <div style="flex:1"></div>
         <button class="btn-plus" onclick="openCinemaModal()">+</button>
       </div>
-      <div id="cinemaUpNextContent" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
+      <div id="cinemaUpNextContent" ondblclick="_cinemaContainerDblClick(event,'up_next')" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
     </div>
     <div class="card" style="min-height:0">
       <div class="ch">
@@ -477,7 +478,7 @@ if(sessionStorage._mReloaded===BUILD);else{
     </div>
     <div class="card" style="min-height:0">
       <div class="ch"><div class="ct"><span id="cinemaWatchedCount">0</span> watched</div></div>
-      <div id="cinemaWatchedContent" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
+      <div id="cinemaWatchedContent" ondblclick="_cinemaContainerDblClick(event,'watched')" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
     </div>
   </div>
 </div>
@@ -586,7 +587,10 @@ if(sessionStorage._mReloaded===BUILD);else{
   <div class="modal task-modal" style="width:340px">
     <div class="mt" id="cinemaMTitle">Add Movie/Show</div>
     <div class="mfield"><label>Title *</label><input id="cinemaTitleInput" placeholder="e.g. Breaking Bad"></div>
-    <div class="mfield"><label>Type</label><select id="cinemaTypeInput"><option value="movie">Movie</option><option value="show">Show</option></select></div>
+    <div class="mfield" style="display:flex;gap:8px">
+      <div style="flex:1"><label>Type</label><select id="cinemaTypeInput"><option value="movie">Movie</option><option value="show">Show</option></select></div>
+      <div style="flex:1"><label>My rating <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="cinemaRatingInput" type="number" min="1" max="10" placeholder="1–10"></div>
+    </div>
     <div class="mfield"><label>Genre <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="cinemaGenreInput" placeholder="e.g. Drama"></div>
     <div class="mfield"><label>Where to watch <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="cinemaWhereInput" placeholder="e.g. Netflix"></div>
     <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="cinemaNotesInput" placeholder="Add notes…" style="resize:none;min-height:52px;width:100%;box-sizing:border-box;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none"></textarea></div>
