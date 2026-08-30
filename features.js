@@ -3341,7 +3341,7 @@ function _finPointsEdit(id){
   nameTd.innerHTML=`<input type="text" class="fin-ph-date-text" value="${escHtml(row.name||'')}" placeholder="Name"
     onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
     onblur="_finPointsSave('${id}','name',this.value)">`;
-  amtTd.innerHTML=`<span style="display:flex;gap:6px;align-items:center">
+  amtTd.innerHTML=`<span class="fin-pts-amt-wrap">
     <input type="number" step="1" class="fin-ph-amt-input" style="flex:1;min-width:0;text-align:right" value="${Math.abs(row.amount||0)}"
       onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
       onblur="_finPointsSave('${id}','amount',this.value)">
