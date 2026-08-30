@@ -2114,81 +2114,75 @@ function renderBdayPage(){
 
 // ── Cinema ───────────────────────────────────────────────────────────────────
 let _cinemaDragId=null;
+let _cinemaTop10Type=localStorage.getItem('_cinemaTop10Type')||'movie';
 
 function renderCinemaPage(){
   const upEl=document.getElementById('cinemaUpNextContent');
   if(!upEl)return;
   const watchEl=document.getElementById('cinemaWatchedContent');
-  const topMEl=document.getElementById('cinemaTop10MoviesContent');
-  const topSEl=document.getElementById('cinemaTop10ShowsContent');
+  const topEl=document.getElementById('cinemaTop10Content');
+  const toggleEl=document.getElementById('cinemaTop10Toggle');
 
   const upNext=st.cinemaItems.filter(i=>i.status==='up_next').sort((a,b)=>(a.sort_order??9999)-(b.sort_order??9999));
   const watched=st.cinemaItems.filter(i=>i.status==='watched').sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
-  const topMovies=st.cinemaItems.filter(i=>i.status==='watched'&&i.type==='movie'&&i.rating!=null).sort((a,b)=>b.rating-a.rating).slice(0,10);
-  const topShows=st.cinemaItems.filter(i=>i.status==='watched'&&i.type==='show'&&i.rating!=null).sort((a,b)=>b.rating-a.rating).slice(0,10);
+  const top10=st.cinemaItems.filter(i=>i.status==='watched'&&i.type===_cinemaTop10Type&&i.rating!=null).sort((a,b)=>b.rating-a.rating).slice(0,10);
 
   const upCnt=document.getElementById('cinemaUpNextCount');if(upCnt)upCnt.textContent=upNext.length;
   const watchCnt=document.getElementById('cinemaWatchedCount');if(watchCnt)watchCnt.textContent=watched.length;
 
   upEl.innerHTML=upNext.length?`<div id="cinemaUpNextList">${upNext.map(_cinemaUpNextRow).join('')}</div>`:_cinemaEmpty('Nothing queued yet. Click + to add a movie or show.');
   watchEl.innerHTML=watched.length?watched.map(_cinemaWatchedRow).join(''):_cinemaEmpty('Nothing watched yet.');
-  topMEl.innerHTML=topMovies.length?topMovies.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty('Rate some watched movies to build this list.');
-  topSEl.innerHTML=topShows.length?topShows.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty('Rate some watched shows to build this list.');
+  topEl.innerHTML=top10.length?top10.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty(`Rate some watched ${_cinemaTop10Type==='movie'?'movies':'shows'} to build this list.`);
+  if(toggleEl){
+    const toggleBtn=(val,label)=>`<button onclick="_cinemaTop10Type='${val}';localStorage.setItem('_cinemaTop10Type','${val}');renderCinemaPage()" style="padding:3px 9px;border-radius:6px;border:none;font-family:inherit;font-size:10px;cursor:pointer;background:${_cinemaTop10Type===val?'var(--accent)':'transparent'};color:${_cinemaTop10Type===val?'#fff':'var(--muted)'}">${label}</button>`;
+    toggleEl.innerHTML=toggleBtn('movie','Movies')+toggleBtn('show','Shows');
+  }
   _cinemaSetupDrag();
 }
 function _cinemaEmpty(msg){return`<div style="text-align:center;color:var(--muted);padding:30px 0;font-size:12px">${msg}</div>`;}
 function _cinemaTypeBadge(type){
   const isMovie=type==='movie';
-  return`<span style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding:2px 6px;border-radius:4px;background:${isMovie?'rgba(236,72,153,.12)':'rgba(14,165,233,.12)'};color:${isMovie?'#ec4899':'#0ea5e9'}">${isMovie?'Movie':'Show'}</span>`;
+  return`<span style="flex-shrink:0;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding:2px 6px;border-radius:4px;background:${isMovie?'rgba(236,72,153,.12)':'rgba(14,165,233,.12)'};color:${isMovie?'#ec4899':'#0ea5e9'}">${isMovie?'Movie':'Show'}</span>`;
 }
-function _cinemaMeta(item){
-  const bits=[];
-  if(item.genre)bits.push(escHtml(item.genre));
-  if(item.where_to_watch)bits.push(escHtml(item.where_to_watch));
-  if(!bits.length)return'';
-  return`<div style="font-size:10px;color:var(--muted);margin-top:2px">${bits.join(' · ')}</div>`;
+function _cinemaTitleLine(item){
+  const subBits=[];
+  if(item.genre)subBits.push(escHtml(item.genre));
+  if(item.where_to_watch)subBits.push(escHtml(item.where_to_watch));
+  const sub=subBits.length?` <span style="color:var(--muted);font-weight:400">— ${subBits.join(' · ')}</span>`:'';
+  return`<span style="flex:1;min-width:0;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.title)}${sub}</span>`;
 }
 function _cinemaRowShell(item,inner,draggable){
   const dk=document.body.classList.contains('dark');
   const bg=dk?'rgba(255,255,255,.06)':'rgba(255,255,255,.85)';
   const bdr=dk?'rgba(255,255,255,.08)':'rgba(210,205,228,.3)';
   const dragAttrs=draggable?`draggable="true" ondragstart="_cinemaDragStart(event,'${item.id}')" ondragend="_cinemaDragEnd(event)"`:'';
-  return`<div class="cinema-row" data-cinema-id="${item.id}" ${dragAttrs} style="padding:10px 12px;margin-bottom:8px;border-radius:8px;background:${bg};border:1px solid ${bdr};display:flex;align-items:flex-start;gap:10px;${draggable?'cursor:grab':''}">${inner}</div>`;
+  return`<div class="cinema-row" data-cinema-id="${item.id}" ${dragAttrs} style="padding:6px 10px;margin-bottom:6px;border-radius:8px;background:${bg};border:1px solid ${bdr};display:flex;align-items:center;gap:8px;${draggable?'cursor:grab':''}">${inner}</div>`;
 }
 function _cinemaUpNextRow(item){
   return _cinemaRowShell(item,`
-    <span style="color:var(--muted);font-size:12px;margin-top:2px">⠿</span>
+    <span style="color:var(--muted);font-size:12px;flex-shrink:0">⠿</span>
     ${_cinemaTypeBadge(item.type)}
-    <div style="flex:1;min-width:0">
-      <span style="font-size:13px;color:var(--text)">${escHtml(item.title)}</span>
-      ${_cinemaMeta(item)}
-    </div>
-    <button onclick="openCinemaModal('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px">Edit</button>
-    <button onclick="moveCinemaToWatched('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px">Watched</button>
-    <button onclick="deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px">✕</button>
+    ${_cinemaTitleLine(item)}
+    <button onclick="openCinemaModal('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px;flex-shrink:0">Edit</button>
+    <button onclick="moveCinemaToWatched('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px;flex-shrink:0">Watched</button>
+    <button onclick="deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0">✕</button>
   `,true);
 }
 function _cinemaWatchedRow(item){
   return _cinemaRowShell(item,`
     ${_cinemaTypeBadge(item.type)}
-    <div style="flex:1;min-width:0">
-      <span style="font-size:13px;color:var(--text)">${escHtml(item.title)}</span>
-      ${_cinemaMeta(item)}
-    </div>
-    <input type="number" min="1" max="10" value="${item.rating??''}" placeholder="–" onchange="setCinemaRating('${item.id}',this.value)" title="Your rating (1-10)" style="width:38px;text-align:center;padding:3px 4px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:12px">
-    <button onclick="openCinemaModal('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px">Edit</button>
-    <button onclick="moveCinemaToUpNext('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px" title="Move back to Up Next — e.g. a new season dropped">Up Next</button>
-    <button onclick="deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px">✕</button>
+    ${_cinemaTitleLine(item)}
+    <input type="number" min="1" max="10" value="${item.rating??''}" placeholder="–" onchange="setCinemaRating('${item.id}',this.value)" title="Your rating (1-10)" style="width:34px;flex-shrink:0;text-align:center;padding:2px 3px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:12px">
+    <button onclick="openCinemaModal('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px;flex-shrink:0">Edit</button>
+    <button onclick="moveCinemaToUpNext('${item.id}')" class="btn btn-ghost btn-xs" style="font-size:10px;flex-shrink:0" title="Move back to Up Next — e.g. a new season dropped">Up Next</button>
+    <button onclick="deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0">✕</button>
   `);
 }
 function _cinemaTopRow(item,rank){
   return _cinemaRowShell(item,`
-    <span style="font-size:13px;font-weight:700;color:var(--muted);width:20px">${rank}</span>
-    <div style="flex:1;min-width:0">
-      <span style="font-size:13px;color:var(--text)">${escHtml(item.title)}</span>
-      ${_cinemaMeta(item)}
-    </div>
-    <span style="font-size:12px;font-weight:600;color:var(--accent)">${item.rating}/10</span>
+    <span style="font-size:12px;font-weight:700;color:var(--muted);width:16px;flex-shrink:0">${rank}</span>
+    ${_cinemaTitleLine(item)}
+    <span style="font-size:12px;font-weight:600;color:var(--accent);flex-shrink:0">${item.rating}/10</span>
   `);
 }
 let _cinemaModalEditId=null;
