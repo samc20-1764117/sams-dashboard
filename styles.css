@@ -534,6 +534,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .sum-metric-lbl{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .sum-divider{width:1px;height:24px;background:rgba(210,205,228,.3);flex-shrink:0;align-self:center}
 .tod-tb-header{display:flex;align-items:center;gap:4px;padding:0 10px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:31px;box-sizing:border-box;background:rgba(255,255,255,.06)}
+.vid-cal-header{background:color-mix(in srgb,var(--accent) 9%,transparent)!important}
 .tod-tb-center{flex:1;text-align:center}
 .tod-tb-right{display:flex;align-items:center;gap:3px;flex-shrink:0}
 .tod-tb-body{flex:1;min-height:0;display:flex;flex-direction:row;overflow:hidden}

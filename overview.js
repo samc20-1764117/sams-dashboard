@@ -5146,6 +5146,12 @@ function _renderVidOvMenu(){
         if(!k.startsWith(String(vid.id)+'::'))continue;
         const e=_sMap[k];if(!e)continue;
         const step=k.split('::')[1];
+        // The video record's own v[step] is the authoritative "is this stage done" answer (it's what
+        // the stage dots in the popup itself show) — a day-map scheduling entry can go stale and keep
+        // reading not-done (e.g. `{ds,done:false}` with no doneDays, left over from before the stage
+        // was completed some other way) even after the record says done. Trusting the day-map instance
+        // over the record kept fully-published videos in focus forever (2026-09-01 fix).
+        if(vid[step]==='done'||vid[step]==='na')continue;
         const days=[e.ds,...(e.extraDays||[])].filter(Boolean);
         for(const d of days){if(_inWk(d)&&!_vidStepComputeDone(vid.id,step,d,e))return true;}
       }
@@ -5189,12 +5195,19 @@ function _renderVidOvMenu(){
   listHtml+='<div style="width:12px;flex-shrink:0"></div>';
   listHtml+='<span style="flex:1;min-width:0"></span>';
   listHtml+='<span style="flex-shrink:0;width:13px"></span>';
-  if(_vidOvTitleMode)listHtml+='<span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700">Title</span><span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700">Comment</span><button onclick="_vidOvCloseTitleMode()" style="background:none;border:none;cursor:pointer;padding:0;width:14px;height:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Close edit titles"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button>';
+  if(_vidOvTitleMode)listHtml+='<span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700;line-height:12px">Title</span><span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700;line-height:12px">Comment</span>';
   listHtml+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center">';
   listHtml+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0">${(labels[s]||s).charAt(0)}</div>`).join('');
   listHtml+='</div>';
   listHtml+='<span style="width:28px;flex-shrink:0"></span>';
   listHtml+='<span style="width:14px;flex-shrink:0;margin-left:12px"></span>';
+  // Close button is the LAST element in the row (flush right), same as the main popup's own close
+  // button and the schedule header's — lining the three up vertically is what makes it read as
+  // "closes only this sub-view" rather than another exit for the whole popup.
+  // margin-right:-9px corrects for this row's wider 19px right padding (vs the main popup header's
+  // 10px) so the button's right EDGE lands at the same 10px offset as the main close button and the
+  // schedule's — verified by measuring both in an isolated test box at the real panel width.
+  if(_vidOvTitleMode)listHtml+='<button onclick="_vidOvCloseTitleMode()" style="background:none;border:none;cursor:pointer;padding:0;width:12px;height:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;margin-left:2px;margin-right:-9px" title="Close edit titles (doesn\'t close the videos popup)"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button>';
   listHtml+='</div>';
 
   vids.forEach(v=>{listHtml+=_vidOvMenuItem(v,steps,_focusSet);});
@@ -5830,14 +5843,20 @@ function _vidOvRenderCal(){
   const _search=window._vidCalSearch||'';
   // Header
   const _ib='background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex-shrink:0';
-  let html=`<div class="tod-tb-header" style="position:relative">
-    <button onclick="_vidCalMonth--;if(_vidCalMonth<0){_vidCalMonth=11;_vidCalYear--};_vidOvRenderCal()" style="${_ib};color:var(--muted)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+  // Prev/next-month arrows removed (2026-09-01): _vidOvRenderCal always shows the full continuous
+  // month range and never reads _vidCalMonth/_vidCalYear for scroll position, so those buttons were
+  // dead weight \u2014 clicking them changed no visible state (pre-existing bug, see rules/videos.md).
+  // Header gets its own tint (`.vid-cal-header`) so it visually reads as a sub-panel of the main
+  // popup, not another instance of the same bar; the close button is the last flex child, same as
+  // the main popup's own close button, so the two line up vertically \u2014 a visual cue this X closes
+  // only the schedule.
+  let html=`<div class="tod-tb-header vid-cal-header" style="position:relative">
     <button onclick="_vidCalToggleYear()" style="${_ib};color:${_vidCalYearView?'var(--accent)':'var(--muted)'}" title="Yearly overview (Y)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
-    <span style="flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px">Schedule</span>
+    <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px;pointer-events:none">Schedule</span>
+    <div style="flex:1"></div>
     <div style="position:relative;flex-shrink:0;display:flex;align-items:center"><input id="vidCalSearchInput" type="text" autocomplete="off" placeholder="Search..." value="${_search.replace(/"/g,'&quot;')}" oninput="window._vidCalSearch=this.value;_vidOvRenderCal()" onkeydown="event.stopPropagation();if(event.key==='Escape'){window._vidCalSearch='';this.value='';_vidOvRenderCal();}" style="padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:10px;background:var(--bg);color:var(--text);outline:none;width:100px">${_search?'<button onclick="_vidCalClearSearch()" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:9px;color:var(--muted);padding:0">\u2715</button>':''}</div>
     <button onclick="var n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal()" style="${_ib};font-size:9px;font-weight:600;color:var(--muted);width:auto;padding:0 4px" title="Back to today (T)">Today</button>
-    <button onclick="_vidCalMonth++;if(_vidCalMonth>11){_vidCalMonth=0;_vidCalYear++};_vidOvRenderCal()" style="${_ib};color:var(--muted)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-    <button onclick="_vidOvCloseCal()" style="${_ib};color:var(--muted);margin-left:2px" title="Close schedule"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button>
+    <button onclick="_vidOvCloseCal()" style="${_ib};color:var(--muted);margin-left:2px" title="Close schedule (doesn't close the videos popup)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button>
   </div>`;
   if(_vidCalYearView){
     html+=_vidCalRenderYearView(allVids,today);
