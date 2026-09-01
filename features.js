@@ -3294,10 +3294,11 @@ function _finRenderPointsContent(pop){
   });
   let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Points &amp; Flight Credits</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn fin-ph-icon-btn" onclick="addFinPoint()" title="Add">+</button><button class="fin-add-btn fin-ph-icon-btn fin-ph-close-btn" onclick="closeFinPointsDetails()" style="opacity:.6" title="Close">&#x2715;</button></div></div>`;
   html+=`<div style="padding:2px 16px 8px;font-size:11px;color:var(--muted)">Total: <span style="font-weight:600;font-size:13px;color:var(--text)">${_finFmt(_finPtsTotal())}</span></div>`;
-  html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))addFinPoint()"><table class="fin-tbl fin-ph-tbl fin-pts-tbl"><colgroup><col class="fin-pts-c-name"/><col class="fin-pts-c-amt"/><col class="fin-pts-c-exp"/><col class="fin-pts-c-val"/><col class="fin-ph-c-del"/><col/></colgroup><thead><tr><th style="text-align:left" class="fin-pts-col-name">Name</th><th style="text-align:right" class="fin-pts-col-amt">Amount</th><th style="text-align:right" class="fin-ph-col-date fin-pts-col-exp">Expires</th><th style="text-align:right" class="fin-pts-col-val">$ Value</th><th class="fin-ph-col-del"></th><th></th></tr></thead><tbody>`;
+  html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))addFinPoint()"><table class="fin-tbl fin-ph-tbl fin-pts-tbl"><colgroup><col class="fin-pts-c-name"/><col class="fin-pts-c-amt"/><col class="fin-pts-c-exp"/><col class="fin-pts-c-remind"/><col class="fin-pts-c-val"/><col class="fin-ph-c-del"/><col/></colgroup><thead><tr><th style="text-align:left" class="fin-pts-col-name">Name</th><th style="text-align:right" class="fin-pts-col-amt">Amount</th><th style="text-align:right" class="fin-ph-col-date fin-pts-col-exp">Expires</th><th style="text-align:right" class="fin-pts-col-remind">Remind</th><th style="text-align:right" class="fin-pts-col-val">$ Value</th><th class="fin-ph-col-del"></th><th></th></tr></thead><tbody>`;
   pts.forEach(p=>{
     const soon=p.expires_on&&(new Date(p.expires_on+'T00:00')-new Date())<1000*60*60*24*90;
-    html+=`<tr class="fin-row" data-fin-id="${p.id}" ondblclick="if(!event.target.closest('button'))_finPointsEdit('${p.id}')"><td class="fin-pts-col-name">${escHtml(p.name||'')}</td><td style="text-align:right" class="fin-num fin-pts-col-amt">${_finPtsAmtLabel(p)}</td><td style="text-align:right${soon?';color:#ef4444;font-weight:600':''}" class="fin-num fin-ph-col-date fin-pts-col-exp">${_finPHDateDisplay(p.expires_on)}</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-pts-col-val">${_finFmt(_finPtsValue(p))}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPoint('${p.id}')">&#x2715;</button></td><td></td></tr>`;
+    const remindDays=Number.isFinite(p.remind_days_before)?p.remind_days_before:90;
+    html+=`<tr class="fin-row" data-fin-id="${p.id}" ondblclick="if(!event.target.closest('button'))_finPointsEdit('${p.id}')"><td class="fin-pts-col-name">${escHtml(p.name||'')}</td><td style="text-align:right" class="fin-num fin-pts-col-amt">${_finPtsAmtLabel(p)}</td><td style="text-align:right${soon?';color:#ef4444;font-weight:600':''}" class="fin-num fin-ph-col-date fin-pts-col-exp">${_finPHDateDisplay(p.expires_on)}</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-pts-col-remind" title="Remind this many days before it expires">${remindDays}d</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-pts-col-val">${_finFmt(_finPtsValue(p))}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPoint('${p.id}')">&#x2715;</button></td><td></td></tr>`;
   });
   html+=`</tbody></table></div>`;
   if(!pts.length)html+=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No points or flight credits yet</div>`;
@@ -3338,7 +3339,7 @@ function _finPointsEdit(id){
   const row=st.finPoints.find(r=>String(r.id)===String(id));if(!row)return;
   const tr=document.querySelector(`#finPointsPop tr[data-fin-id="${id}"]`);if(!tr||tr.classList.contains('fin-ph-editing'))return;
   tr.classList.add('fin-ph-editing');
-  const[nameTd,amtTd,expTd]=tr.children;
+  const[nameTd,amtTd,expTd,remindTd]=tr.children;
   nameTd.innerHTML=`<input type="text" class="fin-ph-date-text" value="${escHtml(row.name||'')}" placeholder="Name"
     onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
     onblur="_finPointsSave('${id}','name',this.value)">`;
@@ -3361,6 +3362,8 @@ function _finPointsEdit(id){
       <input type="date" class="fin-ph-date-hidden" value="${row.expires_on||''}" tabindex="-1"
         onchange="_finPointsDatePicked('${id}',this)">
     </span>
+  </span>`;
+  remindTd.innerHTML=`<span class="fin-pts-remind-wrap">
     <input type="number" step="1" class="fin-pts-remind-input" title="Remind N days before it expires" value="${Number.isFinite(row.remind_days_before)?row.remind_days_before:90}"
       onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
       onblur="_finPointsSave('${id}','remind_days_before',this.value)">
