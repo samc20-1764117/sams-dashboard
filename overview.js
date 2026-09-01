@@ -3910,6 +3910,7 @@ function wrAddSetType(type){
   document.getElementById('wrAddPupField').style.display=type==='wr'?'block':'none';
   document.getElementById('wrAddTimeField').style.display=type==='sch'?'block':'none';
   updateWrRuleCadenceUI('wrAdd');
+  document.getElementById('wrAddName').focus();
 }
 
 // ── Unified edit WR modal ─────────────────────────────────────────────────────
