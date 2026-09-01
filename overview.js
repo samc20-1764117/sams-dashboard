@@ -5191,10 +5191,10 @@ function _renderVidOvMenu(){
   const _calListW=_vidCalOpen?menu.dataset.calListW:null;
   let listHtml=`<div id="vidOvContent" style="padding:4px 10px 0;${_calListW?`width:${_calListW};flex-shrink:0`:'flex:1;min-width:0'};min-height:0;overflow-y:auto" ondragover="event.preventDefault();_vidOvDragIndicator(event)" ondragleave="_vidOvClearIndicator()" ondrop="_vidOvContentDrop(event)">`;
   // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
-  listHtml+='<div style="display:flex;align-items:center;padding:3px 19px 3px 6px;gap:5px">';
+  listHtml+='<div style="display:flex;align-items:center;padding:3px 19px 3px 6px;gap:5px;position:relative">';
   listHtml+='<div style="width:12px;flex-shrink:0"></div>';
   listHtml+='<span style="flex:1;min-width:0"></span>';
-  listHtml+='<span style="flex-shrink:0;width:13px"></span>';
+  listHtml+='<span style="flex-shrink:0;width:10px"></span>';
   if(_vidOvTitleMode)listHtml+='<span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700;line-height:12px">Title</span><span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700;line-height:12px">Comment</span>';
   listHtml+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center">';
   listHtml+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0">${(labels[s]||s).charAt(0)}</div>`).join('');
@@ -5207,7 +5207,11 @@ function _renderVidOvMenu(){
   // margin-right:-9px corrects for this row's wider 19px right padding (vs the main popup header's
   // 10px) so the button's right EDGE lands at the same 10px offset as the main close button and the
   // schedule's — verified by measuring both in an isolated test box at the real panel width.
-  if(_vidOvTitleMode)listHtml+='<button onclick="_vidOvCloseTitleMode()" style="background:none;border:none;cursor:pointer;padding:0;width:12px;height:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;margin-left:2px;margin-right:-9px" title="Close edit titles (doesn\'t close the videos popup)"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button>';
+  // position:absolute (not a flex sibling) so it takes zero space in the row — as an in-flow flex
+  // item it was consuming space that data rows don't have, shifting this header's stage-dot columns
+  // out of alignment with the actual per-video rows below it (2026-09-01 fix, found live: header's
+  // stage-dot column measured 10px left of the data rows' until this was pulled out of flow).
+  if(_vidOvTitleMode)listHtml+='<button onclick="_vidOvCloseTitleMode()" style="position:absolute;top:50%;right:0;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:0;width:12px;height:12px;display:flex;align-items:center;justify-content:center;color:var(--muted)" title="Close edit titles (doesn\'t close the videos popup)"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button>';
   listHtml+='</div>';
 
   vids.forEach(v=>{listHtml+=_vidOvMenuItem(v,steps,_focusSet);});
@@ -5261,7 +5265,7 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _focusCls=_isFocused?' vid-ov-focus':'';
   const _titleField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${sid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${v.title?escHtml(v.title):''}</span>`:'';
   const _commentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${v.comment?escHtml(v.comment):''}</span>`:'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}</span><span style="flex-shrink:0;width:13px"></span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}</span><span style="flex-shrink:0;width:10px"></span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   // Keep a published small visible (shown done) under its big until the whole group is complete.
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='idea'&&(c.status!=='published'||!_vidGroupFullyComplete(c))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
