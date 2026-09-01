@@ -6572,8 +6572,10 @@ document.addEventListener('keydown',async e=>{
           const recId=sid.replace('rec-virt-','');
           const r=st.recurring.find(x=>String(x.id)===recId);if(!r)continue;
           const wkKey=getWkKey(wkOff);if(!r._dateOverrides)r._dateOverrides={};
-          const curDs=r._dateOverrides[wkKey];if(!curDs||curDs==='__skip__')continue;
-          const prev=curDs;const newDs=_shiftDs(curDs,dir);
+          const wkTask=getRecurringWeekTasks(wkOff).find(t=>String(t._recId)===recId);
+          const curDs=r._dateOverrides[wkKey]||(wkTask&&wkTask.due_date);
+          if(!curDs||curDs==='__skip__')continue;
+          const prev=r._dateOverrides[wkKey];const newDs=_shiftDs(curDs,dir);
           r._dateOverrides[wkKey]=newDs;
           sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${recId}`);
           undos.push(()=>{r._dateOverrides[wkKey]=prev;sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},`?id=eq.${recId}`);});
@@ -8144,9 +8146,15 @@ document.addEventListener('keydown',e=>{
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   if(e.key==='n'){const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block')return;if(typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)return;e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
   if(e.key==='r'){e.preventDefault();location.reload();}
-  // S = toggle sidebar; S then H (within 400ms) = shopping/grocery modal
+  // S = toggle sidebar; S then H (within 400ms) = shopping/grocery modal. When the videos popup is
+  // open, S instead toggles its Schedule (calendar) sub-view — checked first, same pattern as 'n'
+  // above — and skips the sidebar/chord entirely so the two meanings never collide.
   if(e.key==='h'&&_sKeyTimer){clearTimeout(_sKeyTimer);_sKeyTimer=null;if(activePg==='overview'){e.preventDefault();const gm=document.getElementById('groceryModal');if(gm&&gm.open)gm.close();else openGroceryModal();}return;}
-  if(e.key==='s'){e.preventDefault();if(_sKeyTimer)clearTimeout(_sKeyTimer);_sKeyTimer=setTimeout(()=>{_sKeyTimer=null;if(sbOpen)closeSB();else openSB();},400);}
+  if(e.key==='s'){
+    const _vp=document.getElementById('vidOvPanel');
+    if(_vp&&_vp.style.display==='block'){e.preventDefault();_vidOvToggleCal();return;}
+    e.preventDefault();if(_sKeyTimer)clearTimeout(_sKeyTimer);_sKeyTimer=setTimeout(()=>{_sKeyTimer=null;if(sbOpen)closeSB();else openSB();},400);
+  }
 });
 // Arrow keys: move selected TB blocks ±30 min
 window.addEventListener('keydown',e=>{

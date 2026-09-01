@@ -1576,6 +1576,7 @@ function _showHelpOverlay(){
       ['Shift+Click','Multi-select range'],
       ['Drag','Reorder / reschedule tasks'],
       ['E (vid panel)','Toggle edit titles/comments'],
+      ['S (vid panel)','Toggle schedule (else: sidebar)'],
       ['↑/↓ (vid panel)','Navigate videos'],
       ['Delete (vid panel)','Remove video from calendar'],
       ['Enter (vid panel)','Edit selected video'],
