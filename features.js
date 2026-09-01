@@ -2611,7 +2611,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
         <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
         ${_isPtsAcct(a)?`<button class="fin-pts-btn" onclick="event.stopPropagation();openFinPointsDetails()" title="Points &amp; Flight Credits">&#8594;</button>`:''}
       </span>
-      <span class="fin-legend-amt">${_isPtsAcct(a)?_finFmtRound(a.amount||0):_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}</span>
+      <span class="fin-legend-amt">${_isPtsAcct(a)?`<span class="fin-legend-edit-amt">${_finFmtRound(a.amount||0)}</span>`:_finEditable(a.id,'amount',a.amount||0,'fin-legend-edit-amt',true)}</span><span class="fin-legend-pct">${pctStr}</span>
       ${a.exclude?`<button class="fin-excl-btn active" onclick="_finToggleExclude('${a.id}')" title="Include in total">&#x21a9;</button>`:`<button class="fin-excl-btn" onclick="_finToggleExclude('${a.id}')" title="Exclude from total">&#x2212;</button>`}
       <button class="delbtn fin-legend-del" onclick="delFin('${a.id}')">&#x2715;</button>
     </div>`;
@@ -5732,7 +5732,7 @@ function renderGuidePage(){
     ${secT('Global Shortcuts')}
     <table style="width:100%;border-collapse:collapse;font-size:12px">
     ${tHead('Key','Action')}
-    ${sRow('⌘ ←/→','Switch between pages')}
+    ${sRow('⌘ ←/→','Switch between pages (or move selected task ±1 day if something\'s selected)')}
     ${sRow('O','Overview')}
     ${sRow('V','Videos')}
     ${sRow('F','Finance')}
@@ -5760,9 +5760,9 @@ function renderGuidePage(){
     ${sRow('M','Month view toggle')}
     ${sRow('F (month view)','Toggle Filters panel')}
     ${sRow('O (month view)','Toggle Objectives panel')}
-    ${sRow('←/→','Previous / next day')}
+    ${sRow('←/→','Previous / next day (always, selection or not)')}
     ${sRow('W + ←/→','Previous / next week')}
-    ${sRow('←/→ (selected)','Move task ±1 day')}
+    ${sRow('⌘ ←/→ (selected)','Move task ±1 day')}
     ${sRow('↑/↓ (TB)','Move block ±30 min')}
     ${sRow('⌘ ↑/↓ (TB)','Resize block ±30 min')}
     ${sRow('↑/↓ (list)','Select prev/next in Today list or a weekly-cal day column — past the top/bottom edge, moves to the prev/next day')}
@@ -5785,7 +5785,7 @@ function renderGuidePage(){
     ${sRow('Shift + Click','Range-select in same container')}
     ${sRow('Drag → day','Moves ALL selected to that day')}
     ${sRow('Drag → timeblock','Creates blocks for all selected')}
-    ${sRow('Arrow keys','Move all selected ±1 day')}
+    ${sRow('⌘ Arrow keys','Move all selected ±1 day')}
     ${sRow('Change week (← →)','Selection persists — a selected weekly-reset/recurring task stays highlighted in every week it appears')}
     ${sRow('Right-click selected WR/recurring','Context menu applies to ALL selected (header shows "N selected"): skip, move next/prev, all-future shifts, delete')}
     </table>
@@ -6537,15 +6537,20 @@ document.addEventListener('keydown',async e=>{
   }
   // w + Arrow: shift week on overview
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'&&!document.querySelector('.atb-mgr')){e.preventDefault();_wUsedForChord=true;shiftWk(e.key==='ArrowLeft'?-1:1);return;}
-  // Arrow left/right: shift day on overview when nothing selected
+  // Arrow left/right: always shift the viewed day on overview, selection or not (day-to-day nav).
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')){
-    if(!selectedTasks.size){e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;}
     // If a single auto-block is selected (not blk/vidstep which should move days), cycle like Tab
     if(selectedTasks.size===1&&lastSelectedId){
       const sid=lastSelectedId;
       const isTBCycleOnly=sid.startsWith('atb::')||sid.startsWith('pup-sess-');
       if(isTBCycleOnly&&typeof _tbTabCycle==='function'){e.preventDefault();_tbTabCycle(e.key==='ArrowLeft');return;}
     }
+    e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;
+  }
+  // Cmd/Ctrl + left/right: with a selection, move the selected items ±1 day (this used to be plain
+  // Left/Right — moved behind Cmd so plain arrows are always day-to-day nav). With nothing selected,
+  // don't preventDefault so the browser's native back/forward (page switch) still fires as before.
+  if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&(e.metaKey||e.ctrlKey)&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')&&selectedTasks.size){
     // Move selected tasks ±1 day on weekly cal
     if(!document.querySelector('.tb-col')||document.querySelector('.tb-col')){
       const dir=e.key==='ArrowLeft'?-1:1;

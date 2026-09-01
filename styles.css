@@ -1802,7 +1802,7 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
    edit stops it from ever influencing column widths — it just floats over the row instead. */
 .fin-details-pop .fin-tbl tr.fin-ph-editing td.fin-ph-col-date{position:relative}
 .fin-ph-icon-btn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;padding:0!important;line-height:1}
-.fin-ph-close-btn{font-size:10px}
+.fin-ph-close-btn{font-size:14px}
 .fin-ph-col-date{padding-left:16px!important;font-variant-numeric:tabular-nums;white-space:nowrap}
 .fin-ph-col-amt{padding-right:12px!important}
 .fin-ph-col-cum{padding-right:14px!important}
