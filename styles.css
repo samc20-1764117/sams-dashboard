@@ -1824,6 +1824,12 @@ body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,25
    was fighting the select for a too-narrow column. Taking it out of flow during edit fixes both. */
 .fin-details-pop .fin-tbl tr.fin-ph-editing td.fin-pts-col-amt{position:relative}
 .fin-pts-amt-wrap{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:150px;display:flex;gap:6px;align-items:center;z-index:5}
+/* Same out-of-flow technique for the Expires cell — now holds the date field PLUS the new
+   "remind N days before" input, wider than the visual column allows. */
+.fin-pts-exp-wrap{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:170px;display:flex;gap:4px;align-items:center;z-index:5}
+.fin-pts-remind-input{width:32px;height:20px;box-sizing:border-box;font-size:11px;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 3px;color:var(--text);background:transparent;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+body.dark .fin-pts-remind-input{border-color:rgba(255,255,255,.12)}
+.fin-pts-remind-suffix{font-size:9px;color:var(--muted);flex-shrink:0}
 /* Wrapped display text (2 lines) vs a single-line edit input was the real cause of the row
    height jumping between display and edit — force one line + ellipsis so both modes agree. */
 .fin-pts-col-name{padding-left:16px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

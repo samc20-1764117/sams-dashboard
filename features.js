@@ -2939,15 +2939,17 @@ function _finCancelTasksForDate(ds){
     const sid='flight-'+p.id;
     if(_finCancelDone.has(sid))return; // dismissed — stays hidden until unchecked (removes from the set)
     const expDate=new Date(p.expires_on+'T00:00:00');
-    const reminderDate=new Date(expDate);reminderDate.setDate(reminderDate.getDate()-90);
+    const leadDays=Number.isFinite(p.remind_days_before)?p.remind_days_before:90;
+    const reminderDate=new Date(expDate);reminderDate.setDate(reminderDate.getDate()-leadDays);
     const reminderStr=d2s(reminderDate);
-    // Unlike the subscription reminders above (single day, recurs monthly so a missed day
-    // isn't lost for good), a flight credit's expiration is one-shot — show it on every day
-    // in the window, not just the exact 90-days-before date, or missing that one day means
-    // never seeing the alert again.
-    if(ds>=reminderStr&&ds<=p.expires_on){
+    // Single exact day, same as the subscription reminders above — NOT a multi-day range.
+    // The range version showed the same reminder on every day of the window across week/month
+    // views (looked like it was "repeating"), which is exactly what a one-time expiry alert
+    // shouldn't do. important:true (not just _type==='fin-cancel') so every view that renders
+    // task importance generically — not just Today's list — picks up the correct styling.
+    if(ds===reminderStr){
       const expLabel=_FIN_MONTHS[expDate.getMonth()]+' '+expDate.getDate();
-      tasks.push({id:'fin-cancel-'+sid,name:'Flight credit expiring: '+p.name+' — '+_finPtsAmtLabel(p)+' (exp '+expLabel+')',category:'Home',due_date:reminderStr,done:false,_subId:sid,_virtual:true,_type:'fin-cancel'});
+      tasks.push({id:'fin-cancel-'+sid,name:'Flight credit expiring: '+p.name+' — '+_finPtsAmtLabel(p)+' (exp '+expLabel+')',category:'Home',due_date:reminderStr,done:false,important:true,_subId:sid,_virtual:true,_type:'fin-cancel'});
     }
   });
   return tasks;
@@ -3304,7 +3306,7 @@ function _finRenderPointsContent(pop){
 }
 function _finPointsRefresh(){const pop=document.getElementById('finPointsPop');if(pop)_finRenderPointsContent(pop);}
 function addFinPoint(){
-  const row={id:'l-'+Date.now(),name:'',unit:'usd',amount:0,expires_on:null,note:null,sort_order:0,_unsaved:true};
+  const row={id:'l-'+Date.now(),name:'',unit:'usd',amount:0,expires_on:null,remind_days_before:90,note:null,sort_order:0,_unsaved:true};
   st.finPoints.push(row); // append — new entries with no expiry sort to the bottom of the list
   _finPointsRefresh();
   setTimeout(()=>{
@@ -3321,7 +3323,7 @@ function addFinPoint(){
 // Expenses (_finPHTabNext / _finSubTabNext).
 function _finPointsTabNext(id,fromEl){
   const tr=fromEl.closest('tr');if(!tr)return;
-  const focusable=[...tr.querySelectorAll('input.fin-ph-date-text,input.fin-ph-amt-input,select.fin-pts-unit-sel')];
+  const focusable=[...tr.querySelectorAll('input.fin-ph-date-text,input.fin-ph-amt-input,select.fin-pts-unit-sel,input.fin-pts-remind-input')];
   const idx=focusable.indexOf(fromEl);
   if(idx>=0&&idx<focusable.length-1){const nxt=focusable[idx+1];nxt.focus();if(nxt.select)nxt.select();return;}
   const nextRow=tr.nextElementSibling;
@@ -3351,13 +3353,19 @@ function _finPointsEdit(id){
       <option value="points"${row.unit==='points'?' selected':''}>pts</option>
     </select>
   </span>`;
-  expTd.innerHTML=`<span style="position:relative;display:block">
-    <input type="text" class="fin-ph-date-text" value="${_finPHDateDisplay(row.expires_on)}" placeholder="MM/DD/YY"
-      onfocus="const h=this.nextElementSibling;if(h&&h.showPicker)try{h.showPicker();}catch(e){}"
+  expTd.innerHTML=`<span class="fin-pts-exp-wrap">
+    <span style="position:relative;flex:1;min-width:0">
+      <input type="text" class="fin-ph-date-text" value="${_finPHDateDisplay(row.expires_on)}" placeholder="MM/DD/YY"
+        onfocus="const h=this.nextElementSibling;if(h&&h.showPicker)try{h.showPicker();}catch(e){}"
+        onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
+        onblur="_finPointsSaveDateText('${id}',this.value)">
+      <input type="date" class="fin-ph-date-hidden" value="${row.expires_on||''}" tabindex="-1"
+        onchange="_finPointsDatePicked('${id}',this)">
+    </span>
+    <input type="number" step="1" class="fin-pts-remind-input" title="Remind N days before it expires" value="${Number.isFinite(row.remind_days_before)?row.remind_days_before:90}"
       onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
-      onblur="_finPointsSaveDateText('${id}',this.value)">
-    <input type="date" class="fin-ph-date-hidden" value="${row.expires_on||''}" tabindex="-1"
-      onchange="_finPointsDatePicked('${id}',this)">
+      onblur="_finPointsSave('${id}','remind_days_before',this.value)">
+    <span class="fin-pts-remind-suffix">d</span>
   </span>`;
   nameTd.querySelector('input').focus();
 }
@@ -3378,7 +3386,7 @@ function _finPointsSaveDateText(id,text){
 }
 async function _finPointsSave(id,field,val){
   const row=st.finPoints.find(r=>String(r.id)===String(id));if(!row)return;
-  const parsed=field==='amount'?Math.abs(_finParseNum(String(val))):val;
+  const parsed=field==='amount'?Math.abs(_finParseNum(String(val))):field==='remind_days_before'?(Math.abs(Math.round(_finParseNum(String(val))))||90):val;
   const finishIfDone=()=>{
     const tr=document.querySelector(`#finPointsPop tr[data-fin-id="${id}"]`);
     if(tr&&tr.contains(document.activeElement))return;
