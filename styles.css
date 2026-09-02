@@ -1822,7 +1822,9 @@ body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,25
 .fin-pts-tbl col.fin-pts-c-amt{width:100px}
 .fin-pts-tbl col.fin-pts-c-exp{width:88px}
 .fin-pts-tbl col.fin-pts-c-remind{width:52px}
+.fin-pts-tbl col.fin-pts-c-remdate{width:68px}
 .fin-pts-tbl col.fin-pts-c-val{width:80px}
+.fin-pts-col-remdate{padding-right:6px!important}
 /* The trailing spacer col (extends the row divider to the right edge) has no width either,
    so with table-layout:fixed it was splitting leftover space 50/50 with the Name column
    instead of Name getting all of it — pin it small so Name gets the rest. */
@@ -1836,12 +1838,13 @@ body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,25
 /* Same out-of-flow technique for the Expires cell. */
 .fin-pts-exp-wrap{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:96px;display:flex;gap:4px;align-items:center;z-index:5}
 /* Remind is its own dedicated column (to the right of Expires, always visible in both
-   display and edit mode) rather than an overlay — it's a plain number input with no
-   intrinsic-minimum-width issue, so it can stay in normal flow. */
+   display and edit mode). The number input's native spinner arrows have an intrinsic
+   minimum width like the date/select fields did, so — same fix as those — take it out
+   of flow during edit so it can never grow the column or shove neighboring columns. */
 .fin-pts-col-remind{padding-right:6px!important}
-.fin-details-pop .fin-tbl tr.fin-ph-editing td.fin-pts-col-remind{padding:2px 4px!important}
-.fin-pts-remind-wrap{display:flex;gap:2px;align-items:center;justify-content:flex-end;width:100%}
-.fin-pts-remind-input{width:28px;height:20px;box-sizing:border-box;font-size:11px;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 3px;color:var(--text);background:transparent;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+.fin-details-pop .fin-tbl tr.fin-ph-editing td.fin-pts-col-remind{position:relative}
+.fin-pts-remind-wrap{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:48px;display:flex;gap:3px;align-items:center;justify-content:flex-end;z-index:5}
+.fin-pts-remind-input{width:36px;height:22px;box-sizing:border-box;font-size:12px;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 3px;color:var(--text);background:transparent;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
 body.dark .fin-pts-remind-input{border-color:rgba(255,255,255,.12)}
 .fin-pts-remind-suffix{font-size:9px;color:var(--muted);flex-shrink:0}
 /* Wrapped display text (2 lines) vs a single-line edit input was the real cause of the row
