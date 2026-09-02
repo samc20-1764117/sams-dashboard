@@ -1880,11 +1880,14 @@ function renderWkCal(){
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
       const s=ov?_OV():imp?_IMP():(t._type==='fin-cancel'&&!t.done)?_IMP():t._type==='vid'?gc('videos'):t._type==='vidstep'?gc('videos'):t._type==='pup'?_pupSessStyle():gc(_chipCat);
       const _chipRule=t._isWrRule?(st.wrRules||[]).find(x=>String(x.id)===String(t._ruleId)):(t._recId?(st.recurring||[]).find(x=>String(x.id)===String(t._recId)):null);
-      const _chipNoteText=!t._virtual?((t.notes&&!t.notes.startsWith('_vid:')&&t.notes.trim())||''):(t._wkNote||(_chipRule&&_chipRule.notes&&_chipRule.notes.trim())||'');
-      const _chipHasNotes=!!_chipNoteText;
+      // Border indicator is regular-tasks-only (recurring/WR "notes" are a different concept — this
+      // week's custom note or the rule's permanent note — so they get the hover tooltip below but no
+      // visual border, matching the Today-list treatment).
+      const _chipRegularNote=!t._virtual?((t.notes&&!t.notes.startsWith('_vid:')&&t.notes.trim())||''):'';
+      const _chipNoteText=_chipRegularNote||(t._virtual?(t._wkNote||(_chipRule&&_chipRule.notes&&_chipRule.notes.trim())||''):'');
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(t._type==='fin-cancel'&&!t.done?' imp-row':'');
-      chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}${_chipHasNotes?`;border-left:3px solid ${s.d}`:''}`;
-      if(_chipHasNotes)chip.dataset.note=_chipNoteText;
+      chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}${_chipRegularNote?`;border-left:2px solid ${s.d}80`:''}`;
+      if(_chipNoteText)chip.dataset.note=_chipNoteText;
       if(!t._virtual)chip.dataset.tid=String(t.id);
       else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
       else if(t._isWrRule)chip.dataset.tid='wrrule-virt-'+t._ruleId;
