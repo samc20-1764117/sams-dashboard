@@ -3305,9 +3305,9 @@ function _finPtsUpdateRemindPreview(id){
 }
 function _finRenderPointsContent(pop){
   const pts=[...st.finPoints].sort((a,b)=>{
-    if(!a.expires_on&&!b.expires_on)return 0;
+    if(!a.expires_on&&!b.expires_on)return(a.sort_order||0)-(b.sort_order||0)||String(a.id).localeCompare(String(b.id));
     if(!a.expires_on)return 1;
-    if(!b.expires_on)return -1;
+    if(!b.expires_on)return-1;
     return a.expires_on.localeCompare(b.expires_on);
   });
   let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Points &amp; Flight Credits</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn fin-ph-icon-btn" onclick="addFinPoint()" title="Add">+</button><button class="fin-add-btn fin-ph-icon-btn fin-ph-close-btn" onclick="closeFinPointsDetails()" style="opacity:.6" title="Close">&#x2715;</button></div></div>`;
@@ -3324,7 +3324,12 @@ function _finRenderPointsContent(pop){
 }
 function _finPointsRefresh(){const pop=document.getElementById('finPointsPop');if(pop)_finRenderPointsContent(pop);}
 function addFinPoint(){
-  const row={id:'l-'+Date.now(),name:'',unit:'usd',amount:0,expires_on:null,remind_days_before:90,note:null,sort_order:0,_unsaved:true};
+  // sort_order must be unique/increasing, not a fixed 0 — every row previously shared the
+  // same value, which (combined with all having no expires_on) left Postgres's ORDER BY
+  // with nothing to break the tie on, so a resync after any edit could return them in a
+  // different physical order and the whole list would visibly reshuffle mid-edit.
+  const nextSort=(st.finPoints||[]).reduce((m,p)=>Math.max(m,p.sort_order||0),0)+1;
+  const row={id:'l-'+Date.now(),name:'',unit:'usd',amount:0,expires_on:null,remind_days_before:90,note:null,sort_order:nextSort,_unsaved:true};
   st.finPoints.push(row); // append — new entries with no expiry sort to the bottom of the list
   _finPointsRefresh();
   setTimeout(()=>{
