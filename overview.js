@@ -1065,11 +1065,13 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
   const _wkKeyAttr=t._wkKey||getWkKey(wkOff);
   const _dblClick=t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${_wkKeyAttr}','this')`:`tiDblRec(event,'${_recIdAttr}','${_wkKeyAttr}')`;
   const _ctxMenu=t._isWrRule?`showWrRuleCtx(event,'${t._ruleId}','${_wkKeyAttr}')`:t._isWrec||t._virtual?`showWrRuleCtx(event,'${_recIdAttr}','${_wkKeyAttr}')`:`showCtx(event,'${t.id}',true,'${_recIdAttr}')`;
+  const _rule=t._isWrRule?(st.wrRules||[]).find(x=>String(x.id)===String(t._ruleId)):(t._recId?(st.recurring||[]).find(x=>String(x.id)===String(t._recId)):null);
+  const _hasNotes=!!(t._wkNote||(_rule&&_rule.notes&&_rule.notes.trim()));
 
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" style="${!ov&&!noColor?`background:${s.bg}`:''}" id="ti-${t.id}" draggable="true" ondragstart="if(event.target.closest('.dlbl.ov')){event.preventDefault();return;}dragId='${_dragId}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="selTask(event,'${t.id}')" ondblclick="${_dblClick}" oncontextmenu="${_ctxMenu}">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${_chk}"></label>
-    ${_hebBadge(t.name,t._wkKey)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span style="opacity:.5;font-size:9px">@${escHtml(t._wkNote)}</span>`:''}</span>
-    ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
+    ${_hebBadge(t.name,t._wkKey)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span class="wk-note">@${escHtml(t._wkNote)}</span>`:''}</span>
+    ${!ov?`<span class="cat-dot-wrap"${_hasNotes?` style="border-bottom:1.5px solid ${ps.d}"`:''}><svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg></span>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     ${ov&&t.due_date?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_ovRowMoveClick(event,'${t._isWrRule?'wrrule':'rec'}','${t._isWrRule?t._ruleId:t._recId}','${t._wkKey||getWkKey(0)}')`):''}
     <button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
@@ -1876,8 +1878,10 @@ function renderWkCal(){
       const ov=isOv(t.due_date)&&!t.done,imp=t.important&&!ov&&!t.done;
       const _chipCat=(t._isWrec||t._isWrRule)?'weekly_reset':(t._virtual&&t._recId?'recurring':t.category);
       const s=ov?_OV():imp?_IMP():(t._type==='fin-cancel'&&!t.done)?_IMP():t._type==='vid'?gc('videos'):t._type==='vidstep'?gc('videos'):t._type==='pup'?_pupSessStyle():gc(_chipCat);
+      const _chipRule=t._isWrRule?(st.wrRules||[]).find(x=>String(x.id)===String(t._ruleId)):(t._recId?(st.recurring||[]).find(x=>String(x.id)===String(t._recId)):null);
+      const _chipHasNotes=!t._virtual?!!(t.notes&&t.notes.trim()&&!t.notes.startsWith('_vid:')):!!(t._wkNote||(_chipRule&&_chipRule.notes&&_chipRule.notes.trim()));
       const chip=document.createElement('div');chip.className='chip'+(t.done?' done-chip':'')+(t._type==='fin-cancel'&&!t.done?' imp-row':'');
-      chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}`;
+      chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b}${_chipHasNotes?`;border-left:3px solid ${s.d}`:''}`;
       if(!t._virtual)chip.dataset.tid=String(t.id);
       else if(t._type==='shop')chip.dataset.tid='shop-cal-'+t._shopId;
       else if(t._isWrRule)chip.dataset.tid='wrrule-virt-'+t._ruleId;
@@ -4199,15 +4203,18 @@ function _todListKeyNav(e){
 }
 // Advances the Today list's viewed day (shiftDay already syncs wkOff/wrRecOff across week
 // boundaries) and lands selection on the first/last item of the next non-empty day, skipping
-// empty days — bounded so a long empty stretch can't hang the keypress.
-function _todAdvanceDay(dir){
+// empty days — bounded so a long empty stretch can't hang the keypress. forceTop=true always
+// picks the day's first item regardless of dir (used by plain Left/Right with a selection —
+// "select the top task in the prev/next day" — as opposed to the Up/Down list-edge-crossing
+// case below it, which continues the scroll direction by landing on the far end).
+function _todAdvanceDay(dir,forceTop=false){
   let tries=0;
   while(tries<60){
     shiftDay(dir);
     const container=document.getElementById('todList');
     const rows=container?[...container.querySelectorAll('.ti[id^="ti-"]')]:[];
     if(rows.length){
-      const targetEl=dir<0?rows[rows.length-1]:rows[0];
+      const targetEl=forceTop?rows[0]:(dir<0?rows[rows.length-1]:rows[0]);
       const targetId=targetEl.id.slice(3);
       selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
       applySelHighlight();
@@ -4294,7 +4301,9 @@ function _wkcColKeyNav(e){
 // shiftWk when it runs past Monday/Sunday) and lands selection on the first/last chip of the
 // next non-empty day, skipping empty days — bounded so a long empty stretch can't hang the
 // keypress. Works in date-space rather than DOM indices since shiftWk fully re-renders #wkcCols.
-function _wkcAdvanceDay(dir,ds){
+// forceTop=true always picks the day's first chip regardless of dir (plain Left/Right with a
+// selection); omitted, it continues the Up/Down scroll direction by landing on the far end.
+function _wkcAdvanceDay(dir,ds,forceTop=false){
   let cur=new Date(ds+'T00:00:00');
   let tries=0;
   while(tries<60){
@@ -4309,7 +4318,7 @@ function _wkcAdvanceDay(dir,ds){
     const col=[...document.querySelectorAll('#wkcCols .wkc-col')].find(c=>c.dataset.ds===newDs);
     const chips=col?[...col.querySelectorAll('.chip[data-tid]')]:[];
     if(chips.length){
-      const targetChip=dir<0?chips[chips.length-1]:chips[0];
+      const targetChip=forceTop?chips[0]:(dir<0?chips[chips.length-1]:chips[0]);
       const targetId=targetChip.dataset.tid;
       selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
       _lastSelWkcDs=newDs; // keep the tracked column in sync as we cross into a new day
@@ -6880,7 +6889,7 @@ function tRowWk(t){
       :`showWrScopePicker(event,'⊘  Skip this week only','✕  Delete recurring task',()=>skipRecVirtThisWk('${t._recId}','${t._wkKey||getWkKey(wkOff)}'),()=>delRec('${t._recId}'))`;
     return`<div class="ti ${t.done?'done':''}" style="background:${s.bg}" id="ti-${t.id}" onclick="selTask(event,'${t.id}')" ondblclick="${t._isWrRule?`event.stopPropagation();openWrEditModal('${t._ruleId}','${t._wkKey||getWkKey(wkOff)}','this')`:`tiDblRec(event,'${t._recId}','${t._wkKey||getWkKey(wkOff)}')`}" oncontextmenu="${_wkCtxMenu}">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="${t._isWrec?`togRec('${t._recId}',this.checked)`:`togRecVirt('${t._recId}',this.checked,'${t._wkKey||getWkKey(wkOff)}')`}"></label>
-      ${_hebBadge(t.name,t._wkKey)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span style="opacity:.5;font-size:9px">@${escHtml(t._wkNote)}</span>`:''}</span>
+      ${_hebBadge(t.name,t._wkKey)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span class="wk-note">@${escHtml(t._wkNote)}</span>`:''}</span>
       <span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">Recurring</span>
       <span class="dlbl">${fmtD(t.due_date)}</span>
       <button class="delbtn" onclick="event.stopPropagation();${_wkXBtn}">✕</button>
@@ -6943,10 +6952,10 @@ function tRow(t,o={}){
   const sl=ov?'ov':imp?'imp':slug(t.category);
   const _dblHandler=_isPostTab?`if(typeof openVidEdit==='function')openVidEdit('${t.notes.replace('_vid:','')}')`:`tiDbl(event,'${t.id}')`;
   const _hasNotes=!_isPostTab&&t.notes&&t.notes.trim();
-  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg};`:''}${_hasNotes?'border-left:3px solid var(--accent);':''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="${_dblHandler}" oncontextmenu="showCtx(event,'${t.id}')">
+  return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}" ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="${_dblHandler}" oncontextmenu="showCtx(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
     <span class="tn">${tmIcon(t)}${escHtml(t.name)}</span>
-    ${o.cat?(o.catDot&&!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:(!o.catDot?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${escHtml(t.category||'?')}</span>`:'')):''}
+    ${o.cat?(o.catDot&&!ov?`<span class="cat-dot-wrap"${_hasNotes?` style="border-bottom:1.5px solid ${s.d}"`:''}><svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg></span>`:(!o.catDot?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${escHtml(t.category||'?')}</span>`:'')):''}
     ${o.tbArrow?'<span class="tb-arrow">›</span>':''}
     ${o.flag?'<span class="flag-u">📅</span>':''}
     ${!o.flag&&(!o.noDate||ov)&&t.due_date?ov?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_taskMoveToToday('${t.id}')`):`<span class="dlbl" style="cursor:pointer" onclick="openInlineDatePicker(event,'${t.id}','${t.due_date}')">${fmtD(t.due_date)} <span class="date-clr" title="Clear date" onclick="event.stopPropagation();clearTaskDate('${t.id}',event)">×</span></span>`:''}

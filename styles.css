@@ -433,6 +433,8 @@ body.dark .chip.sel-row{outline-color:color-mix(in srgb,var(--sel-d) 55%,transpa
 /* green checkbox option: #a3c41a */
 .chk:checked::after{background:rgba(200,195,210,.35);box-shadow:inset 0 0 0 1px rgba(200,195,210,.35);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-position:center}
 .tn{flex:1;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;letter-spacing:-.01em}
+.wk-note{opacity:.5;font-size:9px}
+.cat-dot-wrap{display:inline-flex;line-height:0}
 .tn:hover{color:var(--accent)}
 .cpill{font-size:9px;font-weight:600;padding:2px 7px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,0.6);white-space:nowrap;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.7)}
 .cat-dot{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;overflow:visible;transition:opacity .1s}
@@ -559,6 +561,7 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
    baseline asymmetry (more space above cap-height than below baseline) specifically at this
    font-size/checkbox-size pairing; recalibrated live after the first pass overshot by ~1px. */
 .tod-tb-body.tb-list-only .tod-list-row #todList .tn{font-size:14px;line-height:1;transform:translateY(-.005em)}
+.tod-tb-body.tb-list-only .tod-list-row #todList .wk-note{font-size:14px}
 .tod-tb-body.tb-list-only .tod-list-row #todList .cat-dot{width:12px;height:12px}
 .tod-tb-body.tb-list-only .tod-list-row #todList .dlbl.ov{right:11px}
 .tod-tb-body.tb-list-only .tod-list-row #todList .heb-cnt,.tod-tb-body.tb-list-only .tod-list-row #todList .pup-link-badge{top:2px}
@@ -967,11 +970,11 @@ body.dark .rt-heat-cell.rt-heat-wr-col{background:rgba(59,130,246,.07)}
 /* Quick Notes */
 #qnBtn{position:fixed;bottom:20px;right:20px;z-index:950;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.6);box-shadow:0 4px 18px rgba(0,0,0,.1),0 8px 32px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .18s}
 #qnBtn:hover{background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.14),0 12px 40px rgba(0,0,0,.08);transform:translateY(-2px)}
-body.dark #qnBtn{background:rgba(255,240,230,.08);border-color:rgba(255,220,200,.15)}
+body.dark #qnBtn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15)}
 /* Panel — glass card like .card but notepad shaped */
 #qnPanel{position:fixed;bottom:70px;right:20px;z-index:949;width:340px;height:480px;display:flex;flex-direction:column;border-radius:var(--r);overflow:visible;box-shadow:var(--shadow-lg),inset 0 1.5px 0 rgba(255,255,255,1),inset 1px 0 0 rgba(255,255,255,.6),inset -1px 0 0 rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.72);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);transform:translateY(16px) scale(.97);opacity:0;pointer-events:none;transition:transform .22s cubic-bezier(.34,1.56,.64,1),opacity .18s ease}
 #qnPanel.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
-body.dark #qnPanel{background:rgba(40,22,14,.75);border-color:rgba(255,220,200,.12);box-shadow:0 20px 50px rgba(0,0,0,.5),0 4px 12px rgba(0,0,0,.35)}
+body.dark #qnPanel{background:rgba(24,24,28,.85);border-color:rgba(255,255,255,.08);box-shadow:0 20px 50px rgba(0,0,0,.5),0 4px 12px rgba(0,0,0,.35)}
 /* Spiral binding — left strip */
 /* Header — matches .ch style */
 .qn-header{display:flex;align-items:center;gap:6px;padding:5px 13px;border-bottom:1px solid rgba(210,205,228,.22);flex-shrink:0;min-height:28px}
@@ -1010,7 +1013,7 @@ body.dark .qn-item:hover{background:rgba(255,255,255,.07)}
 body.dark .qn-input-row{background:rgba(255,255,255,.03)}
 .qn-input{flex:1;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--text);background:rgba(255,255,255,.8);border:1px solid rgba(210,205,228,.35);border-radius:var(--rxs);padding:5px 9px;outline:none;transition:border-color .15s}
 .qn-input:focus{border-color:rgba(194,107,79,.45);box-shadow:0 0 0 2px rgba(194,107,79,.1)}
-body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,220,200,.12)}
+body.dark .qn-input{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)}
 
 /* ── Recipes Page ── */
 .rec-tbl{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed}

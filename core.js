@@ -1503,8 +1503,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='o'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('mModal')?.classList.contains('open')){e.preventDefault();toggleMoGoals();return;}
   // Enter closes the settings popup if it's open
   if(e.key==='Enter'&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&document.getElementById('settingsPopup')?.classList.contains('open')){e.preventDefault();toggleSettingsPopup();return;}
-  // Cmd+Left/Right to switch between pages
-  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+  // Cmd+Left/Right to switch between pages — skipped when a task is selected on overview, where
+  // Cmd+Arrow instead moves the selection ±1 day (features.js's keydown handler owns that case).
+  if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowLeft'||e.key==='ArrowRight')&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')&&!(activePg==='overview'&&typeof selectedTasks!=='undefined'&&selectedTasks.size)){
     e.preventDefault();
     if(_pgNavLock)return;_pgNavLock=true;setTimeout(()=>{_pgNavLock=false;},150);
     const _pgOrder=['overview','videos','pups','recipes','finance','birthdays','ideas','packing'];

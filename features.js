@@ -5763,7 +5763,7 @@ function renderGuidePage(){
     ${sRow('M','Month view toggle')}
     ${sRow('F (month view)','Toggle Filters panel')}
     ${sRow('O (month view)','Toggle Objectives panel')}
-    ${sRow('←/→','Previous / next day (always, selection or not)')}
+    ${sRow('←/→','Previous / next day (nothing selected) — or select the top task in the prev/next day if something is)')}
     ${sRow('W + ←/→','Previous / next week')}
     ${sRow('⌘ ←/→ (selected)','Move task ±1 day')}
     ${sRow('↑/↓ (TB)','Move block ±30 min')}
@@ -6540,7 +6540,9 @@ document.addEventListener('keydown',async e=>{
   }
   // w + Arrow: shift week on overview
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'&&!document.querySelector('.atb-mgr')){e.preventDefault();_wUsedForChord=true;shiftWk(e.key==='ArrowLeft'?-1:1);return;}
-  // Arrow left/right: always shift the viewed day on overview, selection or not (day-to-day nav).
+  // Arrow left/right: nothing selected = shift the viewed day. Something selected = jump to the
+  // TOP task of the prev/next day instead (selection rule, not a plain day-view shift) — moving
+  // the selected item's own date lives on Cmd+Arrow below.
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')){
     // If a single auto-block is selected (not blk/vidstep which should move days), cycle like Tab
     if(selectedTasks.size===1&&lastSelectedId){
@@ -6548,7 +6550,13 @@ document.addEventListener('keydown',async e=>{
       const isTBCycleOnly=sid.startsWith('atb::')||sid.startsWith('pup-sess-');
       if(isTBCycleOnly&&typeof _tbTabCycle==='function'){e.preventDefault();_tbTabCycle(e.key==='ArrowLeft');return;}
     }
-    e.preventDefault();shiftDay(e.key==='ArrowLeft'?-1:1);return;
+    e.preventDefault();
+    const dir=e.key==='ArrowLeft'?-1:1;
+    if(!selectedTasks.size){shiftDay(dir);return;}
+    if(_lastSelSurface==='todList')_todAdvanceDay(dir,true);
+    else if(_lastSelSurface==='wkcCol'&&_lastSelWkcDs)_wkcAdvanceDay(dir,_lastSelWkcDs,true);
+    else shiftDay(dir);
+    return;
   }
   // Cmd/Ctrl + left/right: with a selection, move the selected items ±1 day (this used to be plain
   // Left/Right — moved behind Cmd so plain arrows are always day-to-day nav). With nothing selected,
