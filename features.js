@@ -18,7 +18,7 @@ function _catSelKey(e,id){if(e.key==='ArrowDown'||e.key===' '||e.key==='Enter'){
 function _catOptKey(e,id,idx){const drop=document.getElementById(id+'Drop');const opts=drop.querySelectorAll('.cat-sel-opt');if(e.key==='ArrowDown'){e.preventDefault();e.stopPropagation();if(opts[idx+1])opts[idx+1].focus();}else if(e.key==='ArrowUp'){e.preventDefault();e.stopPropagation();if(idx===0)document.getElementById(id+'Trigger').focus();else if(opts[idx-1])opts[idx-1].focus();}else if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();pickCat(id,opts[idx].dataset.val,true);}else if(e.key==='Escape'){e.stopPropagation();drop.classList.remove('open');document.getElementById(id+'Trigger').focus();}else if(e.key==='Tab'){drop.classList.remove('open');}}
 const _CAT_OPT_LIST=[{v:'Home'},{v:'My work'},{v:'Work'},{v:'Social'},{v:'Travel'},{v:'Weekly Goals'}];
 function catSelHTML(id,def){const ds=_catStyle(def);const opts=_CAT_OPT_LIST.map((c,i)=>{const s=_catStyle(c.v);return`<div class="cat-sel-opt" tabindex="-1" data-val="${c.v}" style="background:${s.bg};color:${s.t}" onclick="pickCat('${id}','${c.v}')" onkeydown="_catOptKey(event,'${id}',${i})">${c.v}</div>`;}).join('');return `<div class="cat-sel-wrap" id="${id}Wrap"><input type="hidden" id="${id}" value="${def}"><div class="cat-sel-trigger" id="${id}Trigger" tabindex="0" style="background:${ds.bg};color:${ds.t};border-color:${ds.b}" onclick="toggleCatDrop('${id}')" onkeydown="_catSelKey(event,'${id}')"><span id="${id}Lbl">${def}</span><span style="opacity:.5;font-size:9px;margin-left:2px">▾</span></div><div class="cat-sel-drop" id="${id}Drop">${opts}</div></div>`;}
-document.addEventListener('click',e=>{if(!e.target.closest('.cat-sel-wrap'))document.querySelectorAll('.cat-sel-drop.open').forEach(d=>d.classList.remove('open'));if(!e.target.closest('#dailyHabitPopup')&&!e.target.closest('#dailyHabitsSection'))closeDailyHabitPopup();});
+document.addEventListener('click',e=>{if(!e.target.closest('.cat-sel-wrap'))document.querySelectorAll('.cat-sel-drop.open').forEach(d=>d.classList.remove('open'));});
 
 // ── Quick-add popup ────────────────────────────────────────────────────────────
 function openQA(ctx,btn,ds='',kcat=''){
@@ -2322,6 +2322,163 @@ function _cinemaSetupDrag(){
       save();renderCinemaPage();
     },'Reordered Up Next');
   });
+}
+// ══════════════════════════════════════════════════════════════════════════════
+// ── HABITS PAGE ──────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+let _habitsView='board';try{_habitsView=localStorage.getItem('_habitsView')||'board';}catch(e){}
+const _HABIT_STAGES=[['future','Future'],['building','Building'],['established','Established']];
+function _habitEmpty(msg){return`<div style="text-align:center;color:var(--muted);padding:20px 0;font-size:12px">${msg}</div>`;}
+function _habitRowShell(h,inner,extraAttrs){
+  const dk=document.body.classList.contains('dark');
+  const bg=dk?'rgba(255,255,255,.06)':'rgba(255,255,255,.85)';
+  const bdr=dk?'rgba(255,255,255,.08)':'rgba(210,205,228,.3)';
+  return`<div class="habit-row" data-habit-id="${h.id}" ${extraAttrs||''} style="padding:6px 10px;margin-bottom:6px;border-radius:8px;background:${bg};border:1px solid ${bdr};display:flex;align-items:center;gap:6px">${inner}</div>`;
+}
+function _habitStageSelect(h){
+  return`<select onchange="event.stopPropagation();setHabitStage('${h.id}',this.value)" onclick="event.stopPropagation()" style="flex-shrink:0;font-size:10px;padding:2px 4px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit">${_HABIT_STAGES.map(([v,l])=>`<option value="${v}" ${h.stage===v?'selected':''}>${l}</option>`).join('')}</select>`;
+}
+function _habitBoardRow(h){
+  const anchor=h.anchor_habit_id?st.habits.find(x=>String(x.id)===String(h.anchor_habit_id)):null;
+  const sub=anchor?`<div style="font-size:10px;color:var(--muted)">${h.anchor_position==='before'?'before':'after'} ${escHtml(anchor.name)}</div>`:'';
+  const time=h.scheduled_time?`<span style="font-size:10px;color:var(--muted);flex-shrink:0">${_habitFmtTime(h.scheduled_time)}</span>`:'';
+  return _habitRowShell(h,`
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(h.name)}</div>
+      ${sub}
+    </div>
+    ${time}
+    ${_habitStageSelect(h)}
+    <button onclick="event.stopPropagation();deleteHabit('${h.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0">✕</button>
+  `,`ondblclick="if(!event.target.closest('button,select')){event.stopPropagation();openHabitModal('${h.id}')}"`);
+}
+function renderHabitsPage(){
+  const toggleEl=document.getElementById('habitsViewToggle');
+  if(toggleEl){
+    const btn=(val,label)=>`<button onclick="_habitsView='${val}';localStorage.setItem('_habitsView','${val}');renderHabitsPage()" style="padding:3px 9px;border-radius:6px;border:none;font-family:inherit;font-size:10px;cursor:pointer;background:${_habitsView===val?'var(--accent)':'transparent'};color:${_habitsView===val?'#fff':'var(--muted)'}">${label}</button>`;
+    toggleEl.innerHTML=btn('board','Board')+btn('schedule','Schedule');
+  }
+  const boardEl=document.getElementById('habitsBoardView');
+  const schedEl=document.getElementById('habitsScheduleView');
+  if(!boardEl||!schedEl)return;
+  if(_habitsView==='board'){
+    boardEl.style.display='grid';schedEl.style.display='none';
+    boardEl.innerHTML=_HABIT_STAGES.map(([stage,label])=>{
+      const items=st.habits.filter(h=>h.stage===stage&&h.is_enabled!==false).sort((a,b)=>(a.sort_order??0)-(b.sort_order??0)||(a.name||'').localeCompare(b.name||''));
+      return`<div class="card" style="min-height:0">
+        <div class="ch"><div class="ct">${label}</div><div style="flex:1"></div><span style="font-size:10px;color:var(--muted)">${items.length}</span></div>
+        <div ondblclick="if(!event.target.closest('.habit-row'))openHabitModal(null,'${stage}')" style="flex:1;min-height:0;overflow-y:auto;padding:12px">${items.length?items.map(_habitBoardRow).join(''):_habitEmpty('Double-click to add')}</div>
+      </div>`;
+    }).join('');
+  }else{
+    boardEl.style.display='none';schedEl.style.display='block';
+    const all=st.habits.filter(h=>h.is_enabled!==false);
+    const topLevel=all.filter(h=>!h.anchor_habit_id).sort((a,b)=>{
+      if(!a.scheduled_time&&b.scheduled_time)return 1;
+      if(a.scheduled_time&&!b.scheduled_time)return -1;
+      if(a.scheduled_time&&b.scheduled_time)return a.scheduled_time.localeCompare(b.scheduled_time);
+      return(a.name||'').localeCompare(b.name||'');
+    });
+    const childrenOf=id=>all.filter(h=>String(h.anchor_habit_id)===String(id));
+    const stageColor={future:'#94a3b8',building:'#f59e0b',established:'#22c55e'};
+    const schedRow=(h,indent)=>{
+      const kids=childrenOf(h.id);
+      return`<div style="margin-left:${indent}px;display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:4px;border-radius:8px;background:${document.body.classList.contains('dark')?'rgba(255,255,255,.06)':'rgba(255,255,255,.85)'};border:1px solid ${document.body.classList.contains('dark')?'rgba(255,255,255,.08)':'rgba(210,205,228,.3)'}">
+        <span style="width:7px;height:7px;border-radius:50%;background:${stageColor[h.stage]};flex-shrink:0" title="${h.stage}"></span>
+        <input type="time" value="${h.scheduled_time||''}" onchange="setHabitTime('${h.id}',this.value)" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;width:88px">
+        <span style="flex:1;min-width:0;font-size:13px;color:var(--text);cursor:pointer" ondblclick="openHabitModal('${h.id}')">${escHtml(h.name)}</span>
+        <button onclick="deleteHabit('${h.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0">✕</button>
+      </div>${kids.map(k=>schedRow(k,indent+24)).join('')}`;
+    };
+    schedEl.innerHTML=all.length?topLevel.map(h=>schedRow(h,0)).join(''):_habitEmpty('No habits yet. Click + to add one.');
+  }
+}
+function _habitFmtTime(t){
+  if(!t)return'';
+  const[h,m]=t.split(':').map(Number);
+  const ap=h>=12?'PM':'AM';const h12=h%12||12;
+  return`${h12}:${String(m).padStart(2,'0')}${ap}`;
+}
+let _habitModalEditId=null;
+let _habitModalDefaultStage='future';
+function openHabitModal(editId,defaultStage){
+  _habitModalEditId=editId||null;
+  _habitModalDefaultStage=defaultStage||'future';
+  const h=editId?st.habits.find(x=>String(x.id)===String(editId)):null;
+  document.getElementById('habitMTitle').textContent=editId?'Edit Habit':'Add Habit';
+  document.getElementById('habitSaveBtn').textContent=editId?'Save':'Add';
+  document.getElementById('habitDelBtn').style.display=editId?'':'none';
+  document.getElementById('habitNameInput').value=h?h.name:'';
+  document.getElementById('habitStageInput').value=h?h.stage:_habitModalDefaultStage;
+  document.getElementById('habitTimeInput').value=h?(h.scheduled_time||''):'';
+  document.getElementById('habitAnchorPosInput').value=h?(h.anchor_position||''):'';
+  const anchorSel=document.getElementById('habitAnchorInput');
+  const opts=st.habits.filter(x=>String(x.id)!==String(editId)&&String(x.anchor_habit_id)!==String(editId));
+  anchorSel.innerHTML='<option value="">—</option>'+opts.map(x=>`<option value="${x.id}" ${h&&String(h.anchor_habit_id)===String(x.id)?'selected':''}>${escHtml(x.name)}</option>`).join('');
+  document.getElementById('habitNotesInput').value=h?(h.notes||''):'';
+  document.getElementById('habitModal').classList.add('open');
+  setTimeout(()=>{const el=document.getElementById('habitNameInput');if(el)el.focus();},80);
+}
+function saveHabitModal(){
+  closeMod('habitModal');
+  if(_habitModalEditId)saveHabitEdit(_habitModalEditId);else saveNewHabit();
+}
+function _habitReadModalFields(){
+  const name=(document.getElementById('habitNameInput')||{}).value?.trim()||'';
+  const stage=(document.getElementById('habitStageInput')||{}).value||'future';
+  const scheduled_time=(document.getElementById('habitTimeInput')||{}).value||null;
+  const anchor_position=(document.getElementById('habitAnchorPosInput')||{}).value||null;
+  const anchor_habit_id=(document.getElementById('habitAnchorInput')||{}).value||null;
+  const notes=(document.getElementById('habitNotesInput')||{}).value?.trim()||null;
+  return{name,stage,scheduled_time,anchor_position:anchor_habit_id?anchor_position:null,anchor_habit_id,notes};
+}
+async function saveNewHabit(){
+  const f=_habitReadModalFields();
+  if(!f.name){renderHabitsPage();return;}
+  const items=st.habits.filter(h=>h.stage===f.stage);
+  const sort_order=items.length?Math.max(...items.map(h=>h.sort_order??0))+1:0;
+  const localId='l-'+Date.now();
+  const row={id:localId,...f,sort_order,is_enabled:true,stage_changed_at:new Date().toISOString(),created_at:new Date().toISOString()};
+  st.habits.push(row);renderHabitsPage();renderHabitsHighlight();save();
+  const sv=await sbReq('POST','habits',{name:f.name,stage:f.stage,scheduled_time:f.scheduled_time,anchor_position:f.anchor_position,anchor_habit_id:f.anchor_habit_id,notes:f.notes,sort_order});
+  if(sv&&sv[0]){const idx=st.habits.findIndex(h=>h.id===localId);if(idx>=0)st.habits[idx]=sv[0];save();renderHabitsPage();renderHabitsHighlight();}
+}
+async function saveHabitEdit(id){
+  const h=st.habits.find(x=>String(x.id)===String(id));if(!h)return;
+  const f=_habitReadModalFields();
+  const stageChanged=f.stage!==h.stage;
+  Object.assign(h,f,stageChanged?{stage_changed_at:new Date().toISOString()}:{});
+  renderHabitsPage();renderHabitsHighlight();save();
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','habits',{name:f.name,stage:f.stage,scheduled_time:f.scheduled_time,anchor_position:f.anchor_position,anchor_habit_id:f.anchor_habit_id,notes:f.notes,...(stageChanged?{stage_changed_at:h.stage_changed_at}:{})},`?id=eq.${id}`);
+}
+async function setHabitStage(id,stage){
+  const h=st.habits.find(x=>String(x.id)===String(id));if(!h)return;
+  const prevStage=h.stage,prevChangedAt=h.stage_changed_at;
+  h.stage=stage;h.stage_changed_at=new Date().toISOString();
+  renderHabitsPage();renderHabitsHighlight();save();
+  pushUndo(()=>{h.stage=prevStage;h.stage_changed_at=prevChangedAt;renderHabitsPage();renderHabitsHighlight();save();if(!String(id).startsWith('l-'))sbReqSilent('PATCH','habits',{stage:prevStage,stage_changed_at:prevChangedAt},`?id=eq.${id}`);},'Moved "'+h.name+'" to '+stage);
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','habits',{stage,stage_changed_at:h.stage_changed_at},`?id=eq.${id}`);
+}
+async function setHabitTime(id,val){
+  const h=st.habits.find(x=>String(x.id)===String(id));if(!h)return;
+  h.scheduled_time=val||null;save();renderHabitsPage();
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','habits',{scheduled_time:h.scheduled_time},`?id=eq.${id}`);
+}
+async function deleteHabit(id){
+  const old=st.habits.find(h=>String(h.id)===String(id));if(!old)return;
+  const removedLogs=st.habitLogs.filter(l=>String(l.habit_id)===String(id));
+  st.habits=st.habits.filter(h=>String(h.id)!==String(id));
+  st.habitLogs=st.habitLogs.filter(l=>String(l.habit_id)!==String(id));
+  // Un-anchor any habits that were stacked on this one rather than leaving a dangling reference
+  st.habits.filter(h=>String(h.anchor_habit_id)===String(id)).forEach(h=>{h.anchor_habit_id=null;h.anchor_position=null;});
+  renderHabitsPage();renderHabitsHighlight();save();
+  pushUndo(()=>{st.habits.push(old);st.habitLogs.push(...removedLogs);renderHabitsPage();renderHabitsHighlight();save();},'Deleted "'+old.name+'"');
+  if(!String(id).startsWith('l-'))await sbReq('DELETE','habits',null,`?id=eq.${id}`);
+}
+function deleteHabitFromModal(){
+  if(!_habitModalEditId)return;
+  closeMod('habitModal');
+  deleteHabit(_habitModalEditId);
 }
 // ── Holidays ─────────────────────────────────────────────────────────────────
 function _holidayDateForYear(key,yr){
@@ -5910,7 +6067,7 @@ function showPage(id){
   const pageEl=document.getElementById('page-'+id);if(pageEl)pageEl.classList.add('active');
   document.querySelectorAll(`.nav-item[data-page="${id}"]`).forEach(n=>n.classList.add('active'));
   const mainEl=document.getElementById('main');if(mainEl){mainEl.scrollTop=0;}
-  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='holidays')renderHolidaysPage();if(id==='cinema')renderCinemaPage();if(id==='ideas')renderIdeasPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='guide')renderGuidePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
+  if(id==='weekly'){renderWeeklyPage();}if(id==='travel')renderTravelPage();if(id==='birthdays')renderBdayPage();if(id==='holidays')renderHolidaysPage();if(id==='cinema')renderCinemaPage();if(id==='habits')renderHabitsPage();if(id==='ideas')renderIdeasPage();if(id==='pups')renderPupsPage();if(id==='recipes')renderRecipesPage();if(id==='packing')renderPackingPage();if(id==='finance')renderFinancePage();if(id==='guide')renderGuidePage();if(id==='videos'){if(!_vidPageInit&&_prevPg!=='videos'){_vidView='dashboard';localStorage.setItem('_vidView','dashboard');}_vidPageInit=false;renderVideosPage();}if(id==='overview'){renderShopOv();renderRecOv();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();}else{const _tbSc=document.getElementById('tbScroll');if(_tbSc)_tbSc._scrollDay=null;}
   const backBtn=document.getElementById('backToOv');if(backBtn)backBtn.style.display=id==='overview'?'none':'flex';
   renderUnassigned();
   history.replaceState(null,'','#'+id);

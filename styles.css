@@ -1884,13 +1884,13 @@ html.init-sb .ov-topbar{left:186px!important;}
 /* 3. softer, rounder cards */
 #page-overview .card{border-radius:18px;box-shadow:0 12px 36px rgba(0,0,0,.07),0 2px 8px rgba(0,0,0,.04),inset 0 1px 0 rgba(255,255,255,.8),inset 1px 0 0 rgba(255,255,255,.5),inset -1px 0 0 rgba(255,255,255,.5)}
 body.dark #page-overview .card{box-shadow:0 2px 12px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.03)}
-/* 7. daily habits as pill chips */
-#page-overview #dailyHabitsSection>div:nth-child(2){display:flex;flex-wrap:wrap;gap:4px;padding:3px 10px 7px!important}
-#page-overview #dailyHabitsSection>div:nth-child(2) .ti{display:inline-flex;width:auto;margin:0;padding:2px 19px 2px 7px;border-radius:999px;border:1px solid rgba(210,205,228,.35);background:rgba(255,255,255,.5)}
-#page-overview #dailyHabitsSection>div:nth-child(2) .ti .tn{flex:none;font-size:11px}
-#page-overview #dailyHabitsSection>div:nth-child(2) .ti.done{background:rgba(194,107,79,.08);border-color:rgba(194,107,79,.25)}
-body.dark #page-overview #dailyHabitsSection>div:nth-child(2) .ti{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1)}
-body.dark #page-overview #dailyHabitsSection>div:nth-child(2) .ti.done{background:rgba(194,107,79,.16);border-color:rgba(194,107,79,.3)}
+/* 7. habits highlight as pill chips */
+#page-overview #habitsHighlight>div:nth-child(2){display:flex;flex-wrap:wrap;gap:4px;padding:3px 10px 7px!important}
+#page-overview #habitsHighlight>div:nth-child(2) .ti{display:inline-flex;width:auto;margin:0;padding:2px 19px 2px 7px;border-radius:999px;border:1px solid rgba(210,205,228,.35);background:rgba(255,255,255,.5)}
+#page-overview #habitsHighlight>div:nth-child(2) .ti .tn{flex:none;font-size:11px}
+#page-overview #habitsHighlight>div:nth-child(2) .ti.done{background:rgba(194,107,79,.08);border-color:rgba(194,107,79,.25)}
+body.dark #page-overview #habitsHighlight>div:nth-child(2) .ti{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1)}
+body.dark #page-overview #habitsHighlight>div:nth-child(2) .ti.done{background:rgba(194,107,79,.16);border-color:rgba(194,107,79,.3)}
 
 /* ── Overview Batch B+C micro-interactions — delete this block to fully revert ── */
 /* 8a. checkbox pop on toggle (class added by JS, never on re-render) */

@@ -258,7 +258,7 @@ function renderToday(){
   }).join('');
   updateOvBanner();
   renderPupSkillsHighlight();
-  renderDailyHabits();
+  renderHabitsHighlight();
   _attachListRubberBand(document.getElementById('todList'));
   _attachTBEdgeRubberBand();
   _attachWkcRubberBand();
@@ -771,65 +771,56 @@ function showPupSkillTip(el,id){
 function hidePupSkillTip(){
   _pupTipTimer=setTimeout(()=>{const t=document.getElementById('_pupSkillTip');if(t)t.style.display='none';},80);
 }
-// ── Daily Habits ──────────────────────────────────────────────────────────────
-function renderDailyHabits(){
-  const el=document.getElementById('dailyHabitsSection');if(!el)return;
+// ── Habits Highlight (Overview) ─────────────────────────────────────────────
+// Shows only stage==='building' habits — the 1-3 you're actively working into
+// routine right now. Established/future habits live entirely on the Habits page.
+function renderHabitsHighlight(){
+  const el=document.getElementById('habitsHighlight');if(!el)return;
   const ds=d2s(getDayDate(dayOff));
-  const habits=[...st.recurring.filter(r=>r.cadence==='daily'&&r.is_weekly_reset===false)].sort((a,b)=>{
-    const ad=!!(a._doneByWk&&a._doneByWk[ds]),bd=!!(b._doneByWk&&b._doneByWk[ds]);
-    if(ad&&!bd)return 1;if(!ad&&bd)return -1;
-    return(a.name||'').localeCompare(b.name||'');
-  });
-  const doneCount=habits.filter(r=>r._doneByWk&&r._doneByWk[ds]).length;
-  const rows=habits.map(r=>{
-    const done=!!(r._doneByWk&&r._doneByWk[ds]);
+  const building=st.habits.filter(h=>h.stage==='building'&&h.is_enabled!==false)
+    .sort((a,b)=>(a.sort_order??0)-(b.sort_order??0)||(a.name||'').localeCompare(b.name||''));
+  if(!building.length){el.innerHTML='';el.style.cssText='display:none';return;}
+  el.style.cssText='display:block';
+  const rows=building.map(h=>{
+    const done=_habitDoneOn(h.id,ds);
+    const streak=_habitStreak(h.id,ds);
+    const anchor=h.anchor_habit_id?st.habits.find(x=>String(x.id)===String(h.anchor_habit_id)):null;
+    const sub=anchor?`<span style="color:var(--muted);font-weight:400;font-size:10px"> — ${h.anchor_position==='before'?'before':'after'} ${escHtml(anchor.name)}</span>`:'';
     return`<div class="ti${done?' done':''}" style="${done?'opacity:.5':''}">
-      <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togDailyHabit('${r.id}',this.checked,'${ds}')"></label>
-      <span class="tn">${escHtml(r.name)}</span>
-      <button class="delbtn" onclick="event.stopPropagation();delRec('${r.id}')">✕</button>
+      <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togHabitDone('${h.id}',this.checked,'${ds}')"></label>
+      <span class="tn">${escHtml(h.name)}${sub}</span>
+      ${streak>1?`<span style="font-size:10px;color:var(--muted);flex-shrink:0;margin-right:4px">🔥${streak}</span>`:''}
     </div>`;
   }).join('');
-  const dk=_dk();
-  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px;border-top:1px solid ${dk?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)'};margin-top:2px">
-    <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;flex:1">Daily</span>
-    ${habits.length?`<span style="font-size:10px;color:var(--muted);font-weight:500">${doneCount}/${habits.length}</span>`:''}
-    <button class="btn btn-ghost btn-xs" onclick="openAddDailyHabit(this)" style="padding:1px 6px;font-size:11px;line-height:1.4">+</button>
-  </div>${rows?`<div style="padding:0 0 4px">${rows}</div>`:''}`;
+  el.innerHTML=`<div style="display:flex;align-items:center;padding:4px 10px 2px;gap:6px;border-top:1px solid ${_dk()?'rgba(255,255,255,.04)':'rgba(0,0,0,.06)'};margin-top:2px">
+    <span style="font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;flex:1">Building</span>
+    <span style="font-size:10px;color:var(--muted);font-weight:500">${building.filter(h=>_habitDoneOn(h.id,ds)).length}/${building.length}</span>
+    <button class="btn btn-ghost btn-xs" onclick="showPage('habits')" style="padding:1px 6px;font-size:11px;line-height:1.4" title="Open Habits page">↗</button>
+  </div><div style="padding:0 0 4px">${rows}</div>`;
 }
-function togDailyHabit(recId,done,ds){
-  const r=st.recurring.find(x=>String(x.id)===String(recId));if(!r)return;
-  if(!r._doneByWk)r._doneByWk={};
-  const prev=!!r._doneByWk[ds];
-  if(done)r._doneByWk[ds]=true;else delete r._doneByWk[ds];
-  save();renderDailyHabits();
-  const _isTemp=String(recId).startsWith('rec-tmp-')||String(recId).startsWith('rec-local-');
-  if(!_isTemp)sbReq('PATCH','wr_recurring_rules',{done_by_week:r._doneByWk},recQs(recId));
-  pushUndo(()=>{
-    if(!r._doneByWk)r._doneByWk={};
-    if(prev)r._doneByWk[ds]=true;else delete r._doneByWk[ds];
-    save();renderDailyHabits();
-    if(!_isTemp)sbReq('PATCH','wr_recurring_rules',{done_by_week:r._doneByWk},recQs(recId));
-  },(done?'Checked':'Unchecked')+' daily habit');
+function _habitDoneOn(habitId,ds){return st.habitLogs.some(l=>String(l.habit_id)===String(habitId)&&l.date===ds);}
+function _habitStreak(habitId,fromDs){
+  const dates=new Set(st.habitLogs.filter(l=>String(l.habit_id)===String(habitId)).map(l=>l.date));
+  let n=0,cur=new Date(fromDs+'T12:00:00');
+  while(dates.has(d2s(cur))){n++;cur.setDate(cur.getDate()-1);}
+  return n;
 }
-function openAddDailyHabit(btn){
-  closeDailyHabitPopup();
-  const p=document.getElementById('dailyHabitPopup');
-  if(btn){const r=btn.getBoundingClientRect();let top=r.bottom+5,left=r.left,pw=220;if(left+pw>window.innerWidth-6)left=window.innerWidth-pw-6;if(top+120>window.innerHeight)top=r.top-124;p.style.top=top+'px';p.style.left=left+'px';p.style.transform='';}
-  else{p.style.top='50%';p.style.left='50%';p.style.transform='translate(-50%,-50%)';}
-  p.classList.add('open');
-  document.getElementById('dhName').value='';
-  setTimeout(()=>document.getElementById('dhName').focus(),50);
-}
-function closeDailyHabitPopup(){document.getElementById('dailyHabitPopup').classList.remove('open');}
-async function submitDailyHabit(){
-  const name=document.getElementById('dhName').value.trim();if(!name)return;
-  const notes=(document.getElementById('dhNotes')?.value||'').trim()||null;
-  closeDailyHabitPopup();
-  const tmp='rec-tmp-'+Date.now();
-  st.recurring.push({id:tmp,name,notes,cadence:'daily',is_weekly_reset:false,is_enabled:true,_doneByWk:{},_dateOverrides:{}});
-  save();renderDailyHabits();
-  const res=await sbReqSilent('POST','wr_recurring_rules',{name,notes,cadence:'daily',is_weekly_reset:false,is_enabled:true},'');
-  if(res&&res[0]){const idx=st.recurring.findIndex(x=>x.id===tmp);if(idx>=0)st.recurring[idx]={...st.recurring[idx],...res[0],_doneByWk:{},_dateOverrides:{}};save();renderDailyHabits();}
+async function togHabitDone(habitId,done,ds){
+  const wasDone=_habitDoneOn(habitId,ds);
+  if(done&&!wasDone){
+    const localId='l-'+Date.now();
+    st.habitLogs.push({id:localId,habit_id:habitId,date:ds});
+    save();renderHabitsHighlight();if(typeof renderHabitsPage==='function'&&activePg==='habits')renderHabitsPage();
+    const res=await sbReqSilent('POST','habit_logs',{habit_id:habitId,date:ds},'');
+    if(res&&res[0]){const idx=st.habitLogs.findIndex(l=>l.id===localId);if(idx>=0)st.habitLogs[idx]=res[0];save();}
+    pushUndo(()=>{st.habitLogs=st.habitLogs.filter(l=>l.id!==localId&&!(String(l.habit_id)===String(habitId)&&l.date===ds));save();renderHabitsHighlight();if(typeof renderHabitsPage==='function'&&activePg==='habits')renderHabitsPage();sbReqSilent('DELETE','habit_logs',null,`?habit_id=eq.${habitId}&date=eq.${ds}`);},'Checked habit');
+  }else if(!done&&wasDone){
+    const removed=st.habitLogs.filter(l=>String(l.habit_id)===String(habitId)&&l.date===ds);
+    st.habitLogs=st.habitLogs.filter(l=>!(String(l.habit_id)===String(habitId)&&l.date===ds));
+    save();renderHabitsHighlight();if(typeof renderHabitsPage==='function'&&activePg==='habits')renderHabitsPage();
+    await sbReqSilent('DELETE','habit_logs',null,`?habit_id=eq.${habitId}&date=eq.${ds}`);
+    pushUndo(()=>{st.habitLogs.push(...removed);save();renderHabitsHighlight();if(typeof renderHabitsPage==='function'&&activePg==='habits')renderHabitsPage();removed.forEach(r=>sbReqSilent('POST','habit_logs',{habit_id:r.habit_id,date:r.date},''));},'Unchecked habit');
+  }
 }
 // Type priority for untimed tasks: travel sorted first via pre-check; important via pre-check
 // Order: birthday(1) home(2) my work(3) work(4) social(5) recurring(6) shopping(7) pup(8) weekly-reset(9)

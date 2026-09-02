@@ -43,7 +43,7 @@ function renderShopFull() { if (_mCurTab === 'shop') mRenderShop(); }
 function renderDayTB() {}
 function setBadge() {}
 function renderPupSkillsHighlight() {}
-function renderDailyHabits() {}
+function renderHabitsHighlight() {}
 function updateOvBanner() {}
 // Snackbar undo/redo (modern contextual pattern): every pushUndo shows a pill above
 // the nav with an UNDO action; undoing offers REDO the same way. No permanent buttons.
