@@ -1456,7 +1456,7 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();if(activePg==='finance')showPage('overview');else showPage('finance');
   }
   if(e.key==='h'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')&&!(typeof _sKeyTimer!=='undefined'&&_sKeyTimer)){
-    e.preventDefault();if(activePg==='holidays')showPage('overview');else showPage('holidays');
+    e.preventDefault();if(activePg==='habits')showPage('overview');else showPage('habits');
   }
   // B = birthdays (skip if video popup is open — it uses B for adding a "Big" video)
   if(e.key==='b'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
