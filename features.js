@@ -3410,8 +3410,11 @@ async function _finPointsSave(id,field,val){
   const row=st.finPoints.find(r=>String(r.id)===String(id));if(!row)return;
   const parsed=field==='amount'?Math.abs(_finParseNum(String(val))):field==='remind_days_before'?(Math.abs(Math.round(_finParseNum(String(val))))||90):val;
   const finishIfDone=()=>{
-    const tr=document.querySelector(`#finPointsPop tr[data-fin-id="${id}"]`);
-    if(tr&&tr.contains(document.activeElement))return;
+    // Checking only *this* row's own tr isn't enough: tabbing off the last field of a row
+    // moves focus into the NEXT row (already re-entered edit mode by the time this runs),
+    // and a refresh here would wipe that row's fresh edit-mode DOM out from under it. Refresh
+    // only once focus has left every editing row in the popup, not just this one.
+    if(document.activeElement&&document.activeElement.closest('#finPointsPop tr.fin-ph-editing'))return;
     if(row._unsaved){
       if(!(row.name||'').trim()){st.finPoints=st.finPoints.filter(r=>r.id!==row.id);_finPointsRefresh();return;}
       _finCommitNewPoint(row);
@@ -3422,7 +3425,11 @@ async function _finPointsSave(id,field,val){
   if(row._unsaved){row[field]=parsed;setTimeout(finishIfDone,0);return;}
   if(row[field]===parsed){setTimeout(finishIfDone,0);return;}
   const old=row[field];row[field]=parsed;
-  _finPointsRefresh();
+  // finishIfDone (below, after the tab-to-next-field focus move has had a chance to land)
+  // is what actually re-renders — refreshing here instead would wipe the still-mid-edit
+  // row's DOM out from under a focus() call already in flight from Tab, killing the tab
+  // chain and dropping focus onto whatever unrelated element happens to sit at that
+  // screen position afterward.
   setTimeout(finishIfDone,0);
   if(field==='amount'||field==='unit')_finSyncPtsAccount();
   pushUndo(()=>{row[field]=old;_finPointsRefresh();if(field==='amount'||field==='unit')_finSyncPtsAccount();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','fin_points',{[field]:old},`?id=eq.${id}`);},'Edited '+field);

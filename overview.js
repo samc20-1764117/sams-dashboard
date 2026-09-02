@@ -5030,6 +5030,13 @@ function _vidOvRestoreSel(){
 function _vidOvKeyNav(e){
   const panel=document.getElementById('vidOvPanel');
   if(!panel||panel.style.display!=='block')return false;
+  // Bail on any typing target (input/select/textarea/contentEditable) BEFORE touching single-key
+  // shortcuts below — this was missing entirely (2026-09-02 fix: typing "December" in the schedule's
+  // month picker, or just typing into the search box, hit 't'/'e'/'n'/'b'/'l'/'m' as real shortcuts
+  // here since nothing checked what had focus first, same class of bug the rest of the codebase
+  // already guards against, e.g. the global 'd' dark-mode handler's `select:focus` check).
+  const _vidOvTag=document.activeElement?.tagName;
+  if(_vidOvTag==='INPUT'||_vidOvTag==='TEXTAREA'||_vidOvTag==='SELECT'||document.activeElement?.isContentEditable)return false;
   // T always works for toggling toolbox
   if(e.key==='t'&&!e.metaKey&&!e.ctrlKey&&!_vidCalOpen){e.preventDefault();_vidOvToggleAll();return true;}
   if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&!_vidCalOpen){e.preventDefault();_vidOvToggleTitleMode();return true;}
@@ -5654,7 +5661,11 @@ function _vidOvToggleCal(){
     // the list keeps its original (pre-extension) width via panel.dataset.calListW, and the
     // calendar column (flex:1 in _renderVidOvMenu) fills whatever's left.
     const _cr=_vidOvContentRect();
-    const ext=_cr?Math.max(300,_cr.left+_cr.width-cardRect.right):_VID_CAL_W;
+    // Clamped so the panel's right edge can never land past the viewport itself — _vidOvContentRect()
+    // is meant to already stay within it, but if that ever drifts (stale measurement, mid-resize),
+    // an unclamped ext pushes Search/Today/Close off-screen with no way to reach them (2026-09-02 fix).
+    let ext=_cr?Math.max(300,_cr.left+_cr.width-cardRect.right):_VID_CAL_W;
+    ext=Math.min(ext,Math.max(150,window.innerWidth-10-cardRect.right));
     panel.dataset.calListW=Math.round(cardRect.width)+'px';
     panel.style.right=(-ext)+'px';
     if(card){card.style.overflow='visible';card.style.zIndex='60';}
@@ -5702,20 +5713,6 @@ function _vidOvCloseCal(){
     if(card){card.style.overflow='hidden';card.style.zIndex='';}
   }
   _renderVidOvMenu();
-}
-// Year/Month select filter — replaces the old prev/next-month arrows (removed 2026-09-01, they were
-// dead: _vidOvRenderCal always shows the full continuous month range and never read
-// _vidCalMonth/_vidCalYear for scroll position). This scrolls directly to the chosen month instead of
-// re-rendering, same technique _vidOvRenderCal itself uses to land on the current month on open.
-function _vidCalGoToYM(y,m){
-  y=parseInt(y);m=parseInt(m);
-  window._vidCalSelY=y;window._vidCalSelM=m;
-  const scrollEl=document.getElementById('vidCalScroll');if(!scrollEl)return;
-  const key=`${y}-${String(m+1).padStart(2,'0')}`;
-  const firstCell=scrollEl.querySelector(`[data-caldate^="${key}"]`);
-  if(!firstCell)return;
-  const target=firstCell.closest('[style*="display:flex;align-items:stretch"]')||firstCell;
-  scrollEl.scrollTop+=target.getBoundingClientRect().top-scrollEl.getBoundingClientRect().top;
 }
 function _vidCalChipColor(v,ds,today){
   const isBig=v.video_type==='B';
@@ -5889,19 +5886,18 @@ function _vidOvRenderCal(){
   // popup, not another instance of the same bar; the close button is the last flex child, same as
   // the main popup's own close button, so the two line up vertically \u2014 a visual cue this X closes
   // only the schedule.
-  if(window._vidCalSelY===undefined){window._vidCalSelY=now.getFullYear();window._vidCalSelM=now.getMonth();}
-  const _selStyle='padding:2px 3px;border:1px solid var(--border);border-radius:5px;font-family:inherit;font-size:9px;background:var(--bg);color:var(--text);outline:none;flex-shrink:0';
-  const _yearOpts=[];for(let y=startY;y<=endY;y++)_yearOpts.push(`<option value="${y}"${y===window._vidCalSelY?' selected':''}>${y}</option>`);
-  const _monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const _monthOpts=_monthNames.map((mn,i)=>`<option value="${i}"${i===window._vidCalSelM?' selected':''}>${mn}</option>`).join('');
+  // No year/month <select> here (removed 2026-09-02, was here briefly) \u2014 a native <select>'s own
+  // type-ahead (typing "d" to jump to "Dec") is a real keydown that bubbles to document like any
+  // other keystroke, and _vidOvKeyNav had no typing-focus guard at all, so it fired 't'/'e'/'n'/'b'/
+  // 'l'/'m' shortcuts while picking a month (fixed separately in _vidOvKeyNav, but the user specifically
+  // doesn't want a keyboard-typeable control here regardless) \u2014 Today + the month grid already cover
+  // navigation.
   let html=`<div class="tod-tb-header vid-cal-header" style="position:relative">
-    <select id="vidCalMonthSel" onchange="_vidCalGoToYM(document.getElementById('vidCalYearSel').value,this.value)" style="${_selStyle}">${_monthOpts}</select>
-    <select id="vidCalYearSel" onchange="_vidCalGoToYM(this.value,document.getElementById('vidCalMonthSel').value)" style="${_selStyle}">${_yearOpts.join('')}</select>
     <button onclick="_vidCalToggleYear()" style="${_ib};color:${_vidCalYearView?'var(--accent)':'var(--muted)'}" title="Yearly overview (Y)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
     <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px;pointer-events:none">Schedule</span>
     <div style="flex:1;min-width:6px"></div>
-    <div style="position:relative;display:flex;align-items:center;min-width:0"><input id="vidCalSearchInput" type="text" autocomplete="off" placeholder="Search..." value="${_search.replace(/"/g,'&quot;')}" oninput="window._vidCalSearch=this.value;_vidOvRenderCal()" onkeydown="event.stopPropagation();if(event.key==='Escape'){window._vidCalSearch='';this.value='';_vidOvRenderCal();}" style="padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:10px;background:var(--bg);color:var(--text);outline:none;width:100%;min-width:36px;max-width:100px;box-sizing:border-box">${_search?'<button onclick="_vidCalClearSearch()" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:9px;color:var(--muted);padding:0">\u2715</button>':''}</div>
-    <button onclick="var n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();window._vidCalSelY=n.getFullYear();window._vidCalSelM=n.getMonth();_vidOvRenderCal()" style="${_ib};font-size:9px;font-weight:600;color:var(--muted);width:auto;padding:2px 7px;border:1px solid var(--border);border-radius:5px;background:var(--bg)" title="Back to today (T)">Today</button>
+    <div style="position:relative;display:flex;align-items:center;min-width:0"><input id="vidCalSearchInput" type="text" autocomplete="off" placeholder="Search..." value="${_search.replace(/"/g,'&quot;')}" oninput="window._vidCalSearch=this.value;_vidOvRenderCal()" onkeydown="event.stopPropagation();if(event.key==='Escape'){window._vidCalSearch='';this.value='';_vidOvRenderCal();}" style="padding:3px 8px;border:1.5px solid var(--muted);border-radius:6px;font-family:inherit;font-size:10px;background:var(--bg);color:var(--text);outline:none;width:100%;min-width:36px;max-width:100px;box-sizing:border-box;box-shadow:0 1px 2px rgba(0,0,0,.12)">${_search?'<button onclick="_vidCalClearSearch()" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:9px;color:var(--muted);padding:0">\u2715</button>':''}</div>
+    <button onclick="var n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal()" style="${_ib};font-size:9px;font-weight:700;color:var(--text);width:auto;padding:2px 7px;border:1.5px solid var(--muted);border-radius:5px;background:var(--bg);box-shadow:0 1px 2px rgba(0,0,0,.12)" title="Back to today (T)">Today</button>
     <button onclick="_vidOvCloseCal()" style="${_ib};color:var(--muted);margin-left:2px" title="Close schedule (doesn't close the videos popup)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button>
   </div>`;
   if(_vidCalYearView){
@@ -5976,7 +5972,11 @@ function _vidOvToggleAll(){
     const card=panel.parentElement;
     const cardRect=card?card.getBoundingClientRect():panel.getBoundingClientRect();
     const _cr=_vidOvContentRect();
-    const ext=_cr?Math.max(300,_cr.left+_cr.width-cardRect.right):_VID_CAL_W;
+    // Clamped so the panel's right edge can never land past the viewport itself — _vidOvContentRect()
+    // is meant to already stay within it, but if that ever drifts (stale measurement, mid-resize),
+    // an unclamped ext pushes Search/Today/Close off-screen with no way to reach them (2026-09-02 fix).
+    let ext=_cr?Math.max(300,_cr.left+_cr.width-cardRect.right):_VID_CAL_W;
+    ext=Math.min(ext,Math.max(150,window.innerWidth-10-cardRect.right));
     panel.dataset.calListW=Math.round(cardRect.width)+'px';
     panel.style.right=(-ext)+'px';
     if(card){card.style.overflow='visible';card.style.zIndex='60';}
@@ -6104,13 +6104,13 @@ function _vidOvAllProgRow(v,steps){
   const _xBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvXClick('${sid}',this)" title="Actions">✕</button>`;
   if(!_isB){
     // Standalone L video — render as small/child style
-    let html=`<div data-vidrow="${sid}" data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><div style="width:12px;flex-shrink:0"></div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+    let html=`<div data-vidrow="${sid}" data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><div style="width:12px;flex-shrink:0"></div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.topic||v.title)}</span><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
     return html;
   }
   const _addBtn=`<div onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',null,null,this.closest('[data-alldrag]'))" style="width:12px;min-width:12px;max-width:12px;height:12px;min-height:12px;max-height:12px;display:flex;align-items:center;justify-content:center;align-self:center;border-radius:2px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;flex-shrink:0;flex-grow:0;box-sizing:border-box;overflow:hidden" title="Add small video"><svg width="6" height="6" viewBox="0 0 6 6" style="display:block;flex-shrink:0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><line x1="3" y1="1" x2="3" y2="5"/><line x1="1" y1="3" x2="5" y2="3"/></svg></div>`;
   const _childCount=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;
   const _countBadge=_childCount?` <span style="font-size:10px;font-weight:400;color:var(--muted);opacity:.5;font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums">· ${_childCount}</span>`:'';
-  let html=`<div data-vidrow="${sid}" data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+  let html=`<div data-vidrow="${sid}" data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Show children (small videos) with └ lines
   if(v.video_type==='B'){
     const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid&&(c.status==='in_progress'||c.status==='up_next')&&c.status===v.status).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
@@ -6118,7 +6118,7 @@ function _vidOvAllProgRow(v,steps){
       const csid=String(c.id);
       const _csel=_voaSel.has(csid);
       const _cxBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvXClick('${csid}',this)" title="Actions">✕</button>`;
-      html+=`<div data-vidrow="${csid}" data-alldrag="${csid}" draggable="true" ondragstart="dragId='vid::${csid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${csid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" class="${_csel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:rgba(140,135,160,.4);font-size:9px">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:11px">${escHtml(c.topic||c.title)}</span><div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
+      html+=`<div data-vidrow="${csid}" data-alldrag="${csid}" draggable="true" ondragstart="dragId='vid::${csid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${csid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" class="${_csel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:rgba(140,135,160,.4);font-size:9px">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:11px">${escHtml(c.topic||c.title)}</span><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
     });
   }
   return html;
@@ -6150,17 +6150,7 @@ function _vidOvRenderAll(){
   h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1.5px solid rgba(210,205,228,.3);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em">In Progress</span></div>`;
   h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="font-size:10px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add idea (N)">+</button><button onclick="event.stopPropagation();_vidOvCloseAll()" style="background:none;border:none;cursor:pointer;padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Close all videos"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button></div>`;
   // In Progress column
-  const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1.5px solid rgba(210,205,228,.3);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
-  // Stage column headers
-  h+='<div style="display:flex;align-items:center;padding:3px 6px;gap:5px">';
-  h+='<div style="width:12px;flex-shrink:0"></div>';
-  h+='<span style="flex:1;min-width:0"></span>';
-  h+='<div style="display:flex;gap:0;flex-shrink:0;align-items:center">';
-  h+=steps.map(s=>`<div style="width:22px;text-align:center;font-size:9px;color:var(--muted);font-weight:700;flex-shrink:0">${(labels[s]||s).charAt(0)}</div>`).join('');
-  h+='</div>';
-  h+='<span style="width:14px;flex-shrink:0;margin-left:2px"></span>';
-  h+='</div>';
   if(inProg.length){inProg.forEach(v=>{h+=_vidOvAllProgRow(v,steps);});}
   else h+='<div style="color:var(--muted);font-size:11px;padding:12px 10px;opacity:.5">Drag ideas here to start</div>';
   h+='</div>';
