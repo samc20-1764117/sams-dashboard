@@ -3164,7 +3164,15 @@ function _finPHDatePicked(id,hiddenInput){
 }
 function _finPHSaveDateText(id,text){
   const iso=_finParsePHDate(text);
-  if(!iso){_finPHRefresh();return;}
+  if(!iso){
+    // Defer the same way _finPHSave does — an immediate refresh here would wipe the row's
+    // edit-mode DOM out from under a Tab that's already moving focus to the next field.
+    setTimeout(()=>{
+      if(document.activeElement&&document.activeElement.closest('#finInvDetailsPop tr.fin-ph-editing'))return;
+      _finPHRefresh();
+    },0);
+    return;
+  }
   _finPHSave(id,'date',iso);
 }
 function _finPHEdit(id){
@@ -3191,10 +3199,11 @@ async function _finPHSave(id,field,val){
   const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
   const parsed=field==='date'?val:Math.abs(_finParseNum(String(val)));
   const finishIfDone=()=>{
-    const tr=document.querySelector(`#finInvDetailsPop tr[data-fin-id="${id}"]`);
-    // If the user tabbed to the sibling field in the same row, don't re-render yet — that
-    // would destroy the input mid-Tab and drop focus (see _finCommitNew's <select> bug).
-    if(tr&&tr.contains(document.activeElement))return;
+    // Checking only *this* row's own tr isn't enough: tabbing off the last field of a row
+    // moves focus into the NEXT row (already re-entered edit mode by the time this runs),
+    // and a refresh here would wipe that row's fresh edit-mode DOM out from under it. Refresh
+    // only once focus has left every editing row in the popup, not just this one.
+    if(document.activeElement&&document.activeElement.closest('#finInvDetailsPop tr.fin-ph-editing'))return;
     if(row._unsaved){
       if(!row.amount){st.finance=st.finance.filter(r=>r.id!==row.id);_finPHRefresh();return;}
       _finCommitNewPurchase(row);
@@ -3206,7 +3215,8 @@ async function _finPHSave(id,field,val){
   if(!parsed&&field==='date'){setTimeout(finishIfDone,0);return;}
   if(row[field]===parsed){setTimeout(finishIfDone,0);return;}
   const old=row[field];row[field]=parsed;
-  renderFinancePage();
+  // finishIfDone (above) is what actually re-renders — refreshing here instead would wipe
+  // the still-mid-edit row's DOM out from under a focus() call already in flight from Tab.
   setTimeout(finishIfDone,0);
   pushUndo(()=>{row[field]=old;renderFinancePage();_finPHRefresh();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance',{[field]:old},`?id=eq.${id}`);},'Edited purchase');
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance',{[field]:parsed},`?id=eq.${id}`);
@@ -3407,8 +3417,20 @@ function _finPointsDatePicked(id,hiddenInput){
   _finPointsSave(id,'expires_on',hiddenInput.value);
 }
 function _finPointsSaveDateText(id,text){
-  const iso=text.trim()?_finParsePHDate(text):null;
-  if(text.trim()&&!iso){_finPointsRefresh();return;}
+  // A row with no expires_on shows the display placeholder "—" (from _finPHDateDisplay(null))
+  // as the text field's value while editing. Treating that as "invalid text the user typed"
+  // meant simply tabbing OFF an empty-expiry row's date field — without touching it — always
+  // failed to parse and hit the immediate-refresh branch below, killing the whole row's edit
+  // mode out from under the Tab key exactly like the _finPointsSave bug did.
+  const t=text.trim();
+  const iso=(t&&t!=='—')?_finParsePHDate(t):null;
+  if(t&&t!=='—'&&!iso){
+    setTimeout(()=>{
+      if(document.activeElement&&document.activeElement.closest('#finPointsPop tr.fin-ph-editing'))return;
+      _finPointsRefresh();
+    },0);
+    return;
+  }
   _finPointsSave(id,'expires_on',iso);
 }
 async function _finPointsSave(id,field,val){
