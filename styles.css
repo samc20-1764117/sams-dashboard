@@ -433,8 +433,7 @@ body.dark .chip.sel-row{outline-color:color-mix(in srgb,var(--sel-d) 55%,transpa
 /* green checkbox option: #a3c41a */
 .chk:checked::after{background:rgba(200,195,210,.35);box-shadow:inset 0 0 0 1px rgba(200,195,210,.35);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-position:center}
 .tn{flex:1;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;letter-spacing:-.01em}
-.wk-note{opacity:.5;font-size:9px}
-.cat-dot-wrap{display:inline-flex;line-height:0}
+.wk-note{opacity:.5;font-size:9px;font-weight:400}
 .tn:hover{color:var(--accent)}
 .cpill{font-size:9px;font-weight:600;padding:2px 7px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,0.6);white-space:nowrap;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.7)}
 .cat-dot{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;overflow:visible;transition:opacity .1s}
@@ -1765,7 +1764,10 @@ body.dark .fin-inv-kpi-float{background:rgba(30,30,34,.85);border-color:rgba(255
 /* Legend exclude */
 .fin-legend-excluded{opacity:.5}
 .fin-legend-excluded .fin-legend-amt{opacity:.6}
-.fin-excl-btn{border:none;background:none;cursor:pointer;font-size:13px;color:var(--muted);opacity:0;padding:0;border-radius:4px;transition:all .15s;line-height:1;text-align:right}
+/* Fixed width regardless of glyph (− vs ↩) — .fin-legend-name-wrap is flex:1 (elastic), so
+   without this, toggling exclude changed this button's content width, which resized the
+   elastic name column and shifted every column after it, including the $ amount. */
+.fin-excl-btn{border:none;background:none;cursor:pointer;font-size:13px;color:var(--muted);opacity:0;padding:0;border-radius:4px;transition:all .15s;line-height:1;text-align:center;width:14px;flex-shrink:0}
 .fin-legend-row:hover .fin-excl-btn{opacity:.5}
 .fin-excl-btn:hover{opacity:.8!important;color:#ef4444}
 .fin-excl-btn.active{opacity:1!important;color:#b0b8c4}
@@ -1822,9 +1824,9 @@ body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,25
 .fin-pts-tbl col.fin-pts-c-amt{width:100px}
 .fin-pts-tbl col.fin-pts-c-exp{width:88px}
 .fin-pts-tbl col.fin-pts-c-remind{width:52px}
-.fin-pts-tbl col.fin-pts-c-remdate{width:68px}
+.fin-pts-tbl col.fin-pts-c-remdate{width:94px}
 .fin-pts-tbl col.fin-pts-c-val{width:80px}
-.fin-pts-col-remdate{padding-right:6px!important}
+.fin-pts-col-remdate{padding-right:6px!important;white-space:nowrap}
 /* The trailing spacer col (extends the row divider to the right edge) has no width either,
    so with table-layout:fixed it was splitting leftover space 50/50 with the Name column
    instead of Name getting all of it — pin it small so Name gets the rest. */
@@ -1834,9 +1836,13 @@ body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,25
    worsening the name-cutoff complaint) AND made the input never look "full width" because it
    was fighting the select for a too-narrow column. Taking it out of flow during edit fixes both. */
 .fin-details-pop .fin-tbl tr.fin-ph-editing td.fin-pts-col-amt{position:relative}
-.fin-pts-amt-wrap{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:150px;display:flex;gap:6px;align-items:center;z-index:5}
-/* Same out-of-flow technique for the Expires cell. */
-.fin-pts-exp-wrap{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:96px;display:flex;gap:4px;align-items:center;z-index:5}
+/* width/right calibrated so this never bleeds into the Name input on the left (it's in normal
+   flow, not absolute, so an overlay sitting on top of it creates a dead click zone) or into
+   the Expires overlay on the right — verified via live getBoundingClientRect() measurement. */
+.fin-pts-amt-wrap{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:108px;display:flex;gap:4px;align-items:center;z-index:5}
+/* Same out-of-flow technique for the Expires cell — width/right calibrated to stay fully
+   inside its own column (zero bleed into Amount) the same way. */
+.fin-pts-exp-wrap{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:80px;display:flex;gap:4px;align-items:center;z-index:5}
 /* Remind is its own dedicated column (to the right of Expires, always visible in both
    display and edit mode). The number input's native spinner arrows have an intrinsic
    minimum width like the date/select fields did, so — same fix as those — take it out
@@ -1854,7 +1860,7 @@ body.dark .fin-pts-remind-input{border-color:rgba(255,255,255,.12)}
 /* Native <select> has no explicit height by default — it was rendering taller than the 20px
    text/number inputs beside it, making the Amount cell (and therefore the whole row) taller
    in edit mode than in display mode. box-sizing:border-box so the border doesn't add on top. */
-.fin-pts-unit-sel{height:20px;box-sizing:border-box;font-size:11px;border:1px solid rgba(200,200,215,.25);border-radius:5px;background:transparent;color:var(--text);padding:0 2px}
+.fin-pts-unit-sel{width:36px;height:20px;box-sizing:border-box;font-size:10px;border:1px solid rgba(200,200,215,.25);border-radius:5px;background:transparent;color:var(--text);padding:0 1px;flex-shrink:0}
 body.dark .fin-pts-unit-sel{border-color:rgba(255,255,255,.12)}
 .fin-chart-hit{cursor:pointer}
 .fin-donut circle{cursor:pointer;pointer-events:all}

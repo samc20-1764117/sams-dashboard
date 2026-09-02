@@ -2605,7 +2605,7 @@ function _finRenderPersonal(accs,vtiAcc,currentVal,netWorth,totalAll){
     const colorPastel=a.exclude?'#cbd5e1':(seg?seg.colorLight:(named?named[1]:'#cbd5e1'));
     const pctStr=seg?`${(seg.pct*100).toFixed(0)}%`:'';
     const excCls=a.exclude?' fin-legend-excluded':'';
-    html+=`<div class="fin-legend-row${excCls}" data-fin-id="${a.id}" onmouseenter="_finHover('${a.id}')" onmouseleave="_finHover(null)">
+    html+=`<div class="fin-legend-row${excCls}" data-fin-id="${a.id}" onmouseenter="_finHover('${a.id}')" onmouseleave="_finHover(null)"${_isPtsAcct(a)?` ondblclick="if(!event.target.closest('button')&&!event.target.closest('.fin-legend-dot'))openFinPointsDetails()"`:''}>
       <span class="fin-legend-dot" style="background-color:${colorSolid};cursor:pointer" onclick="_finOpenColorPicker(event,'${a.name.replace(/'/g,"\\'")}','${colorSolid}')" title="Change color"></span>
       <span class="fin-legend-name-wrap">
         <span class="fin-legend-name">${_finEditable(a.id,'name',a.name,'fin-legend-edit-name')}</span>
