@@ -8297,3 +8297,28 @@ window.addEventListener('keydown',e=>{
   targets.forEach(a=>selectedTasks.add('atb::'+a._atbId));
   applySelHighlight();
 },{capture:true});
+
+// ── Note tooltip (faster + theme-aware than native title) ──────────────────────
+// Any element with data-note gets this instead of a native title attribute — native title has a
+// fixed, non-configurable ~1s browser delay before showing; this shows after 150ms.
+let _noteTipTimer=null,_noteTipEl=null;
+document.addEventListener('mouseover',e=>{
+  const el=e.target.closest('[data-note]');
+  if(!el)return;
+  clearTimeout(_noteTipTimer);
+  _noteTipTimer=setTimeout(()=>{
+    if(!_noteTipEl){_noteTipEl=document.createElement('div');_noteTipEl.className='note-tip';document.body.appendChild(_noteTipEl);}
+    _noteTipEl.textContent=el.dataset.note;
+    const r=el.getBoundingClientRect();
+    _noteTipEl.style.left=Math.max(4,Math.min(r.left,window.innerWidth-244))+'px';
+    _noteTipEl.style.top=(r.bottom+4)+'px';
+    _noteTipEl.classList.add('show');
+  },150);
+});
+document.addEventListener('mouseout',e=>{
+  const el=e.target.closest('[data-note]');
+  if(!el)return;
+  if(e.relatedTarget&&e.relatedTarget.closest('[data-note]')===el)return;
+  clearTimeout(_noteTipTimer);
+  if(_noteTipEl)_noteTipEl.classList.remove('show');
+});
