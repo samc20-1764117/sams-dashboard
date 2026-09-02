@@ -2371,27 +2371,62 @@ function renderHabitsPage(){
       </div>`;
     }).join('');
   }else{
-    boardEl.style.display='none';schedEl.style.display='block';
-    const all=st.habits.filter(h=>h.is_enabled!==false);
-    const topLevel=all.filter(h=>!h.anchor_habit_id).sort((a,b)=>{
-      if(!a.scheduled_time&&b.scheduled_time)return 1;
-      if(a.scheduled_time&&!b.scheduled_time)return -1;
-      if(a.scheduled_time&&b.scheduled_time)return a.scheduled_time.localeCompare(b.scheduled_time);
-      return(a.name||'').localeCompare(b.name||'');
-    });
-    const childrenOf=id=>all.filter(h=>String(h.anchor_habit_id)===String(id));
-    const stageColor={future:'#94a3b8',building:'#f59e0b',established:'#22c55e'};
-    const schedRow=(h,indent)=>{
-      const kids=childrenOf(h.id);
-      return`<div style="margin-left:${indent}px;display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:4px;border-radius:8px;background:${document.body.classList.contains('dark')?'rgba(255,255,255,.06)':'rgba(255,255,255,.85)'};border:1px solid ${document.body.classList.contains('dark')?'rgba(255,255,255,.08)':'rgba(210,205,228,.3)'}">
-        <span style="width:7px;height:7px;border-radius:50%;background:${stageColor[h.stage]};flex-shrink:0" title="${h.stage}"></span>
-        <input type="time" value="${h.scheduled_time||''}" onchange="setHabitTime('${h.id}',this.value)" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;width:88px">
-        <span style="flex:1;min-width:0;font-size:13px;color:var(--text);cursor:pointer" ondblclick="openHabitModal('${h.id}')">${escHtml(h.name)}</span>
-        <button onclick="deleteHabit('${h.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0">✕</button>
-      </div>${kids.map(k=>schedRow(k,indent+24)).join('')}`;
-    };
-    schedEl.innerHTML=all.length?topLevel.map(h=>schedRow(h,0)).join(''):_habitEmpty('No habits yet. Click + to add one.');
+    boardEl.style.display='none';schedEl.style.display='flex';
+    _renderHabitsScheduleGrid();
   }
+}
+// ── Habits Schedule Grid (drag-and-drop timeblock, mirrors Overview's day timeline
+// visually — same .tb-* CSS classes — but keyed off habits.scheduled_time, not a
+// specific calendar date, since habits recur daily. Own PX/scroll sync, scoped
+// --hour-h CSS var on #habitsTbGrid so it never touches Overview's #tbGrid sizing. ──
+let _habitsPX=40/60;
+let _habitDragId=null;
+const _HABIT_STAGE_BG={future:'rgba(148,163,184,.18)',building:'rgba(245,158,11,.18)',established:'rgba(34,197,94,.18)'};
+const _HABIT_STAGE_FG={future:'#64748b',building:'#b45309',established:'#15803d'};
+const _HABIT_STAGE_BD={future:'rgba(148,163,184,.35)',building:'rgba(245,158,11,.35)',established:'rgba(34,197,94,.35)'};
+function _syncHabitsPX(){
+  const sc=document.getElementById('habitsTbScroll');const grid=document.getElementById('habitsTbGrid');
+  if(!sc||!grid)return;
+  const visH=sc.clientHeight;if(visH<=0)return;
+  const hourH=visH/14;grid.style.setProperty('--hour-h',hourH+'px');_habitsPX=hourH/60;
+}
+function _habitBlockDragStart(e,id){_habitDragId=id;e.dataTransfer.effectAllowed='move';e.target.style.opacity='.4';}
+function _habitBlockDragEnd(e){_habitDragId=null;if(e.target)e.target.style.opacity='';document.querySelectorAll('#habitsTbGrid .tb-hour.don').forEach(r=>r.classList.remove('don'));}
+function _habitDropOnRow(e,hour){
+  e.preventDefault();e.currentTarget.classList.remove('don');
+  if(!_habitDragId)return;
+  const rect=e.currentTarget.getBoundingClientRect();
+  const frac=(e.clientY-rect.top)/rect.height;
+  const mins=Math.max(0,Math.min(45,Math.round(frac*60/15)*15));
+  const time=String(hour).padStart(2,'0')+':'+String(mins).padStart(2,'0');
+  setHabitTime(_habitDragId,time);
+  _habitDragId=null;
+}
+function _renderHabitsScheduleGrid(){
+  const unschedEl=document.getElementById('habitsUnscheduled');
+  const gridEl=document.getElementById('habitsTbGrid');
+  if(!unschedEl||!gridEl)return;
+  const all=st.habits.filter(h=>h.is_enabled!==false);
+  const unscheduled=all.filter(h=>!h.scheduled_time).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const chip=h=>`<div class="habit-chip" draggable="true" ondragstart="_habitBlockDragStart(event,'${h.id}')" ondragend="_habitBlockDragEnd(event)" ondblclick="openHabitModal('${h.id}')" title="Drag onto the schedule below" style="padding:4px 10px;border-radius:999px;font-size:11px;cursor:grab;background:${_HABIT_STAGE_BG[h.stage]};color:${_HABIT_STAGE_FG[h.stage]};border:1px solid ${_HABIT_STAGE_BD[h.stage]}">${escHtml(h.name)}</div>`;
+  unschedEl.innerHTML=unscheduled.length?unscheduled.map(chip).join(''):`<div style="font-size:11px;color:var(--muted)">All habits are scheduled.</div>`;
+  gridEl.innerHTML=`<div class="tb-gutter">${HOURS.map(h=>`<div class="tb-tlbl">${h===12?'12p':h>12?(h-12)+'p':h+'a'}</div>`).join('')}</div>
+    <div class="tb-col" id="habitsTbCol">${HOURS.map(h=>`<div class="tb-hour" ondragover="event.preventDefault();this.classList.add('don')" ondragleave="this.classList.remove('don')" ondrop="_habitDropOnRow(event,${h})"></div>`).join('')}</div>`;
+  _syncHabitsPX();
+  const col=document.getElementById('habitsTbCol');if(!col)return;
+  all.filter(h=>h.scheduled_time).forEach(h=>{
+    const[hh,mm]=h.scheduled_time.split(':').map(Number);
+    const top=((hh*60+mm)-HOURS[0]*60)*_habitsPX;
+    const height=Math.max(14,(h.duration_minutes||20)*_habitsPX);
+    const blk=document.createElement('div');
+    blk.className='tb-block';blk.draggable=true;
+    blk.style.cssText=`top:${top}px;height:${height}px;background:${_HABIT_STAGE_BG[h.stage]};color:${_HABIT_STAGE_FG[h.stage]};border-color:${_HABIT_STAGE_BD[h.stage]}`;
+    blk.addEventListener('dragstart',e=>_habitBlockDragStart(e,h.id));
+    blk.addEventListener('dragend',_habitBlockDragEnd);
+    blk.addEventListener('dblclick',()=>openHabitModal(h.id));
+    blk.innerHTML=`<div class="tb-row"><span class="tb-bt">${escHtml(h.name)}</span><span class="tb-btime">${_habitFmtTime(h.scheduled_time)}</span><button class="tb-bdel" onclick="event.stopPropagation();setHabitTime('${h.id}','')" title="Remove from schedule">✕</button></div>`;
+    col.appendChild(blk);
+  });
 }
 function _habitFmtTime(t){
   if(!t)return'';
@@ -2411,6 +2446,7 @@ function openHabitModal(editId,defaultStage){
   document.getElementById('habitNameInput').value=h?h.name:'';
   document.getElementById('habitStageInput').value=h?h.stage:_habitModalDefaultStage;
   document.getElementById('habitTimeInput').value=h?(h.scheduled_time||''):'';
+  document.getElementById('habitDurationInput').value=h?String(h.duration_minutes||20):'20';
   document.getElementById('habitAnchorPosInput').value=h?(h.anchor_position||''):'';
   const anchorSel=document.getElementById('habitAnchorInput');
   const opts=st.habits.filter(x=>String(x.id)!==String(editId)&&String(x.anchor_habit_id)!==String(editId));
@@ -2427,10 +2463,11 @@ function _habitReadModalFields(){
   const name=(document.getElementById('habitNameInput')||{}).value?.trim()||'';
   const stage=(document.getElementById('habitStageInput')||{}).value||'future';
   const scheduled_time=(document.getElementById('habitTimeInput')||{}).value||null;
+  const duration_minutes=parseInt((document.getElementById('habitDurationInput')||{}).value,10)||20;
   const anchor_position=(document.getElementById('habitAnchorPosInput')||{}).value||null;
   const anchor_habit_id=(document.getElementById('habitAnchorInput')||{}).value||null;
   const notes=(document.getElementById('habitNotesInput')||{}).value?.trim()||null;
-  return{name,stage,scheduled_time,anchor_position:anchor_habit_id?anchor_position:null,anchor_habit_id,notes};
+  return{name,stage,scheduled_time,duration_minutes,anchor_position:anchor_habit_id?anchor_position:null,anchor_habit_id,notes};
 }
 async function saveNewHabit(){
   const f=_habitReadModalFields();
@@ -2440,7 +2477,7 @@ async function saveNewHabit(){
   const localId='l-'+Date.now();
   const row={id:localId,...f,sort_order,is_enabled:true,stage_changed_at:new Date().toISOString(),created_at:new Date().toISOString()};
   st.habits.push(row);renderHabitsPage();renderHabitsHighlight();save();
-  const sv=await sbReq('POST','habits',{name:f.name,stage:f.stage,scheduled_time:f.scheduled_time,anchor_position:f.anchor_position,anchor_habit_id:f.anchor_habit_id,notes:f.notes,sort_order});
+  const sv=await sbReq('POST','habits',{name:f.name,stage:f.stage,scheduled_time:f.scheduled_time,duration_minutes:f.duration_minutes,anchor_position:f.anchor_position,anchor_habit_id:f.anchor_habit_id,notes:f.notes,sort_order});
   if(sv&&sv[0]){const idx=st.habits.findIndex(h=>h.id===localId);if(idx>=0)st.habits[idx]=sv[0];save();renderHabitsPage();renderHabitsHighlight();}
 }
 async function saveHabitEdit(id){
@@ -2449,7 +2486,7 @@ async function saveHabitEdit(id){
   const stageChanged=f.stage!==h.stage;
   Object.assign(h,f,stageChanged?{stage_changed_at:new Date().toISOString()}:{});
   renderHabitsPage();renderHabitsHighlight();save();
-  if(!String(id).startsWith('l-'))await sbReq('PATCH','habits',{name:f.name,stage:f.stage,scheduled_time:f.scheduled_time,anchor_position:f.anchor_position,anchor_habit_id:f.anchor_habit_id,notes:f.notes,...(stageChanged?{stage_changed_at:h.stage_changed_at}:{})},`?id=eq.${id}`);
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','habits',{name:f.name,stage:f.stage,scheduled_time:f.scheduled_time,duration_minutes:f.duration_minutes,anchor_position:f.anchor_position,anchor_habit_id:f.anchor_habit_id,notes:f.notes,...(stageChanged?{stage_changed_at:h.stage_changed_at}:{})},`?id=eq.${id}`);
 }
 async function setHabitStage(id,stage){
   const h=st.habits.find(x=>String(x.id)===String(id));if(!h)return;

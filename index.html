@@ -495,7 +495,12 @@ if(sessionStorage._mReloaded===BUILD);else{
     <button class="btn-plus" onclick="openHabitModal()">+</button>
   </div>
   <div id="habitsBoardView" style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:12px"></div>
-  <div id="habitsScheduleView" style="display:none;flex:1;min-height:0;overflow-y:auto;margin-top:12px"></div>
+  <div id="habitsScheduleView" style="display:none;flex-direction:column;margin-top:12px;min-height:0">
+    <div id="habitsUnscheduled" style="display:flex;flex-wrap:wrap;gap:6px;padding:0 0 10px;flex-shrink:0"></div>
+    <div class="tb-scroll" id="habitsTbScroll" style="max-height:calc(100vh - 260px)">
+      <div class="tb-grid" id="habitsTbGrid"></div>
+    </div>
+  </div>
 </div>
 <div class="page" id="page-ideas" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
   <div class="ov-topbar">
@@ -621,9 +626,12 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div class="mfield"><label>Stage</label><select id="habitStageInput"><option value="future">Future — haven't started</option><option value="building">Building — actively working on it</option><option value="established">Established — already automatic</option></select></div>
     <div class="mfield" style="display:flex;gap:8px">
       <div style="flex:1"><label>Time <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="habitTimeInput" type="time"></div>
-      <div style="flex:1"><label>Stack <span style="opacity:.45;font-weight:400">(optional)</span></label><select id="habitAnchorPosInput"><option value="">—</option><option value="before">Before</option><option value="after">After</option></select></div>
+      <div style="flex:1"><label>Duration</label><select id="habitDurationInput"><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="20" selected>20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></div>
     </div>
-    <div class="mfield"><label>Stack with <span style="opacity:.45;font-weight:400">(optional)</span></label><select id="habitAnchorInput"><option value="">—</option></select></div>
+    <div class="mfield" style="display:flex;gap:8px">
+      <div style="flex:1"><label>Stack <span style="opacity:.45;font-weight:400">(optional)</span></label><select id="habitAnchorPosInput"><option value="">—</option><option value="before">Before</option><option value="after">After</option></select></div>
+      <div style="flex:1"><label>Stack with <span style="opacity:.45;font-weight:400">(optional)</span></label><select id="habitAnchorInput"><option value="">—</option></select></div>
+    </div>
     <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="habitNotesInput" placeholder="Add notes…" style="resize:none;min-height:52px;width:100%;box-sizing:border-box;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none"></textarea></div>
     <div class="mact"><button class="btn btn-ghost" id="habitDelBtn" onclick="deleteHabitFromModal()" style="display:none;margin-right:auto;color:#ef4444">Delete</button><button class="btn btn-ghost" onclick="closeMod('habitModal')">Cancel</button><button class="btn btn-dark" id="habitSaveBtn" onclick="saveHabitModal()">Add</button></div>
   </div>
