@@ -442,7 +442,12 @@ body.dark .note-tip{background:rgba(30,30,40,.88);color:#fff;border-color:transp
 .cat-dot{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;overflow:visible;transition:opacity .1s}
 #todList .cat-dot{right:7px}
 #todList .tn{padding-right:12px}
-.ti:hover .cat-dot,.ti.sel-row .cat-dot{opacity:0}
+/* Small glowing bar under the cat-dot when a task has notes — a separate element, not styling
+   on .cat-dot itself, since that SVG is shared by every row type and must stay untouched. */
+.cat-dot-note{position:absolute;right:11px;top:50%;transform:translateY(calc(-50% + 6px));width:7px;height:1.5px;border-radius:2px;pointer-events:none}
+#todList .cat-dot-note{right:7px}
+.tod-tb-body.tb-list-only .tod-list-row #todList .cat-dot-note{width:9px;transform:translateY(calc(-50% + 8px))}
+.ti:hover .cat-dot,.ti.sel-row .cat-dot,.ti:hover .cat-dot-note,.ti.sel-row .cat-dot-note{opacity:0}
 .dlbl{font-family:'DM Sans',sans-serif;font-size:10px;color:var(--subtle);flex-shrink:0;min-width:44px;text-align:right;white-space:nowrap;margin-left:auto}
 .date-clr{opacity:0;font-size:9px;color:var(--muted);transition:opacity .12s;margin-left:1px}
 .inline-date-picker{position:absolute;z-index:800;background:rgba(255,255,255,.98);border:1px solid rgba(210,205,228,.4);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:8px;backdrop-filter:blur(12px);display:none}

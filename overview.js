@@ -5714,6 +5714,20 @@ function _vidOvCloseCal(){
   }
   _renderVidOvMenu();
 }
+// Year/Month select filter — scrolls directly to the chosen month instead of re-rendering, same
+// technique _vidOvRenderCal itself uses to land on the current month on open. Re-added 2026-09-02
+// (briefly removed, then restored once _vidOvKeyNav's missing typing-focus guard — the actual cause
+// of month-picker keystrokes firing popup shortcuts — was fixed at the source).
+function _vidCalGoToYM(y,m){
+  y=parseInt(y);m=parseInt(m);
+  window._vidCalSelY=y;window._vidCalSelM=m;
+  const scrollEl=document.getElementById('vidCalScroll');if(!scrollEl)return;
+  const key=`${y}-${String(m+1).padStart(2,'0')}`;
+  const firstCell=scrollEl.querySelector(`[data-caldate^="${key}"]`);
+  if(!firstCell)return;
+  const target=firstCell.closest('[style*="display:flex;align-items:stretch"]')||firstCell;
+  scrollEl.scrollTop+=target.getBoundingClientRect().top-scrollEl.getBoundingClientRect().top;
+}
 function _vidCalChipColor(v,ds,today){
   const isBig=v.video_type==='B';
   const isDone=v.status==='published';
@@ -5887,17 +5901,25 @@ function _vidOvRenderCal(){
   // the main popup's own close button, so the two line up vertically \u2014 a visual cue this X closes
   // only the schedule.
   // No year/month <select> here (removed 2026-09-02, was here briefly) \u2014 a native <select>'s own
-  // type-ahead (typing "d" to jump to "Dec") is a real keydown that bubbles to document like any
-  // other keystroke, and _vidOvKeyNav had no typing-focus guard at all, so it fired 't'/'e'/'n'/'b'/
-  // 'l'/'m' shortcuts while picking a month (fixed separately in _vidOvKeyNav, but the user specifically
-  // doesn't want a keyboard-typeable control here regardless) \u2014 Today + the month grid already cover
-  // navigation.
+  // Year/Month selects are safe now that _vidOvKeyNav gates on typing focus (2026-09-02) \u2014 typing
+  // "Dec" in here used to also fire 't'/'e'/'n'/'b'/'l'/'m' popup shortcuts since that handler never
+  // checked what had focus; that's fixed at the source, not by avoiding <select> here.
+  // Search/Today are solid white pills (no border) \u2014 matches the popup's other white "+" button
+  // convention; a themed border/background here read as too dark to notice against the header tint.
+  const _pillStyle='background:rgba(255,255,255,.92);color:#333;border:none;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.25)';
+  if(window._vidCalSelY===undefined){window._vidCalSelY=now.getFullYear();window._vidCalSelM=now.getMonth();}
+  const _selStyle=`${_pillStyle};padding:2px 4px;font-family:inherit;font-size:9px;font-weight:600;outline:none;flex-shrink:0`;
+  const _yearOpts=[];for(let y=startY;y<=endY;y++)_yearOpts.push(`<option value="${y}"${y===window._vidCalSelY?' selected':''}>${y}</option>`);
+  const _monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const _monthOpts=_monthNames.map((mn,i)=>`<option value="${i}"${i===window._vidCalSelM?' selected':''}>${mn}</option>`).join('');
   let html=`<div class="tod-tb-header vid-cal-header" style="position:relative">
+    <select id="vidCalMonthSel" onchange="_vidCalGoToYM(document.getElementById('vidCalYearSel').value,this.value)" style="${_selStyle}">${_monthOpts}</select>
+    <select id="vidCalYearSel" onchange="_vidCalGoToYM(this.value,document.getElementById('vidCalMonthSel').value)" style="${_selStyle}">${_yearOpts.join('')}</select>
     <button onclick="_vidCalToggleYear()" style="${_ib};color:${_vidCalYearView?'var(--accent)':'var(--muted)'}" title="Yearly overview (Y)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
     <span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:12px;font-weight:700;color:var(--text);letter-spacing:-.1px;pointer-events:none">Schedule</span>
     <div style="flex:1;min-width:6px"></div>
-    <div style="position:relative;display:flex;align-items:center;min-width:0"><input id="vidCalSearchInput" type="text" autocomplete="off" placeholder="Search..." value="${_search.replace(/"/g,'&quot;')}" oninput="window._vidCalSearch=this.value;_vidOvRenderCal()" onkeydown="event.stopPropagation();if(event.key==='Escape'){window._vidCalSearch='';this.value='';_vidOvRenderCal();}" style="padding:3px 8px;border:1.5px solid var(--muted);border-radius:6px;font-family:inherit;font-size:10px;background:var(--bg);color:var(--text);outline:none;width:100%;min-width:36px;max-width:100px;box-sizing:border-box;box-shadow:0 1px 2px rgba(0,0,0,.12)">${_search?'<button onclick="_vidCalClearSearch()" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:9px;color:var(--muted);padding:0">\u2715</button>':''}</div>
-    <button onclick="var n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();_vidOvRenderCal()" style="${_ib};font-size:9px;font-weight:700;color:var(--text);width:auto;padding:2px 7px;border:1.5px solid var(--muted);border-radius:5px;background:var(--bg);box-shadow:0 1px 2px rgba(0,0,0,.12)" title="Back to today (T)">Today</button>
+    <div style="position:relative;display:flex;align-items:center;min-width:0"><input id="vidCalSearchInput" type="text" autocomplete="off" placeholder="Search..." value="${_search.replace(/"/g,'&quot;')}" oninput="window._vidCalSearch=this.value;_vidOvRenderCal()" onkeydown="event.stopPropagation();if(event.key==='Escape'){window._vidCalSearch='';this.value='';_vidOvRenderCal();}" style="${_pillStyle};padding:3px 8px;font-family:inherit;font-size:10px;outline:none;width:100%;min-width:36px;max-width:100px;box-sizing:border-box">${_search?'<button onclick="_vidCalClearSearch()" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:9px;color:#333;padding:0">\u2715</button>':''}</div>
+    <button onclick="var n=new Date();_vidCalMonth=n.getMonth();_vidCalYear=n.getFullYear();window._vidCalSelY=n.getFullYear();window._vidCalSelM=n.getMonth();_vidOvRenderCal()" style="${_ib};${_pillStyle};font-size:9px;font-weight:700;width:auto;padding:2px 7px" title="Back to today (T)">Today</button>
     <button onclick="_vidOvCloseCal()" style="${_ib};color:var(--muted);margin-left:2px" title="Close schedule (doesn't close the videos popup)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button>
   </div>`;
   if(_vidCalYearView){
@@ -6952,7 +6974,7 @@ function tRow(t,o={}){
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}"${_noteAttr} ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="${_dblHandler}" oncontextmenu="showCtx(event,'${t.id}')">
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
     <span class="tn">${tmIcon(t)}${escHtml(t.name)}</span>
-    ${o.cat?(o.catDot&&!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"${_hasNotes?` style="border-bottom:1.5px solid ${s.d};box-shadow:0 1px 4px ${s.d}"`:''}><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:(!o.catDot?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${escHtml(t.category||'?')}</span>`:'')):''}
+    ${o.cat?(o.catDot&&!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>${_hasNotes?`<span class="cat-dot-note" style="background:${s.d};box-shadow:0 0 3px ${s.d}"></span>`:''}`:(!o.catDot?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${escHtml(t.category||'?')}</span>`:'')):''}
     ${o.tbArrow?'<span class="tb-arrow">›</span>':''}
     ${o.flag?'<span class="flag-u">📅</span>':''}
     ${!o.flag&&(!o.noDate||ov)&&t.due_date?ov?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_taskMoveToToday('${t.id}')`):`<span class="dlbl" style="cursor:pointer" onclick="openInlineDatePicker(event,'${t.id}','${t.due_date}')">${fmtD(t.due_date)} <span class="date-clr" title="Clear date" onclick="event.stopPropagation();clearTaskDate('${t.id}',event)">×</span></span>`:''}
