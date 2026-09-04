@@ -1798,7 +1798,14 @@ body.dark .fin-color-swatch.selected{box-shadow:0 0 0 2px #1c1c20,0 0 0 3.5px rg
 .fin-details-pop{background:rgba(255,252,248,.97);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(210,205,228,.18);border-radius:var(--r,16px);box-shadow:0 10px 30px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,0.8);display:flex;flex-direction:column;overflow:hidden;opacity:0;transform:translateX(-8px) scale(.98);transition:opacity .18s ease,transform .18s ease;pointer-events:none}
 body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,255,255,.1);box-shadow:0 10px 30px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04)}
 .fin-details-pop.open{opacity:1;transform:translateX(0) scale(1);pointer-events:auto}
-.fin-details-scroll{flex:1;overflow-y:auto;min-height:0}
+.fin-details-scroll{flex:1;overflow-y:auto;overflow-x:auto;min-height:0}
+/* table-layout:fixed gives the Name column whatever's left after the other columns'
+   declared widths — if the popup itself is narrower than that (a smaller browser window,
+   e.g.), Name can collapse to a sliver a few px wide. Invisible in plain display text, but
+   glaring the instant edit mode renders an actual bordered input into that sliver — this is
+   what read as fields "shifting" on double-click. A min-width + horizontal scroll on the
+   container means the table degrades to scrollable instead of corrupting the layout. */
+.fin-pts-tbl{min-width:560px}
 .fin-details-pop .fin-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .fin-details-pop .fin-tbl td{padding:5px 8px;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif}
 .fin-details-pop .fin-tbl th{padding:4px 8px;font-size:10px;font-weight:600;color:var(--muted)}
@@ -1824,6 +1831,11 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
 .fin-details-pop .fin-tbl tr.fin-ph-editing td{padding-top:2px!important;padding-bottom:2px!important}
 .fin-ph-date-text,.fin-ph-amt-input{width:100%;height:20px;box-sizing:border-box;font-size:12px;font-family:inherit;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 5px;color:var(--text);background:transparent;font-variant-numeric:tabular-nums}
 .fin-ph-amt-input{text-align:right}
+/* Hide the native up/down spinner — it ate ~16px of width that a typed-in points/dollar
+   balance never needs, and its variable rendering across different digit counts was part
+   of what made these fields look unstable while editing. */
+.fin-ph-amt-input::-webkit-inner-spin-button,.fin-ph-amt-input::-webkit-outer-spin-button,.fin-pts-remind-input::-webkit-inner-spin-button,.fin-pts-remind-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.fin-ph-amt-input,.fin-pts-remind-input{-moz-appearance:textfield}
 .fin-ph-date-hidden{position:absolute;inset:0;opacity:0;pointer-events:none;width:100%;height:100%;border:none;padding:0;margin:0}
 body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,255,255,.12)}
 .fin-details-pop .fin-row:hover{background:rgba(100,100,140,.04)}
@@ -1847,18 +1859,22 @@ body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,25
 /* width/right calibrated so this never bleeds into the Name input on the left (it's in normal
    flow, not absolute, so an overlay sitting on top of it creates a dead click zone) or into
    the Expires overlay on the right — verified via live getBoundingClientRect() measurement. */
-.fin-pts-amt-wrap{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:108px;display:flex;gap:3px;align-items:center;z-index:5}
+/* left+right inset (not a fixed width) guarantees this can never extend past its own
+   column's boundary into Name or Expires, no matter how the surrounding layout changes —
+   the previous fixed-width-anchored-to-right version bled a few px into Name on every
+   render, which read as the fields "shifting" on double-click. */
+.fin-pts-amt-wrap{position:absolute;left:2px;right:2px;top:50%;transform:translateY(-50%);display:flex;gap:3px;align-items:center;z-index:5}
 /* Same out-of-flow technique for the Expires cell — width/right calibrated to stay fully
    inside its own column (zero bleed into Amount) the same way. */
-.fin-pts-exp-wrap{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:80px;display:flex;gap:4px;align-items:center;z-index:5}
+.fin-pts-exp-wrap{position:absolute;left:2px;right:2px;top:50%;transform:translateY(-50%);display:flex;gap:4px;align-items:center;z-index:5}
 /* Remind is its own dedicated column (to the right of Expires, always visible in both
    display and edit mode). The number input's native spinner arrows have an intrinsic
    minimum width like the date/select fields did, so — same fix as those — take it out
    of flow during edit so it can never grow the column or shove neighboring columns. */
 .fin-pts-col-remind{padding-right:6px!important}
 .fin-details-pop .fin-tbl tr.fin-ph-editing td.fin-pts-col-remind{position:relative}
-.fin-pts-remind-wrap{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:48px;display:flex;gap:3px;align-items:center;justify-content:flex-end;z-index:5}
-.fin-pts-remind-input{width:36px;height:22px;box-sizing:border-box;font-size:12px;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 3px;color:var(--text);background:transparent;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+.fin-pts-remind-wrap{position:absolute;left:2px;right:2px;top:50%;transform:translateY(-50%);display:flex;gap:3px;align-items:center;justify-content:flex-end;z-index:5}
+.fin-pts-remind-input{width:26px;height:22px;box-sizing:border-box;font-size:12px;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 3px;color:var(--text);background:transparent;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
 body.dark .fin-pts-remind-input{border-color:rgba(255,255,255,.12)}
 .fin-pts-remind-suffix{font-size:9px;color:var(--muted);flex-shrink:0}
 /* Wrapped display text (2 lines) vs a single-line edit input was the real cause of the row
