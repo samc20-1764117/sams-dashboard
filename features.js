@@ -3551,7 +3551,7 @@ function _finPointsEdit(id){
     onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
     onblur="_finPointsSave('${id}','name',this.value)">`;
   amtTd.innerHTML=`<span class="fin-pts-amt-wrap">
-    <input type="number" step="1" class="fin-ph-amt-input" style="flex:1;min-width:0;text-align:right" value="${Math.abs(row.amount||0)}"
+    <input type="number" step="1" class="fin-ph-amt-input" style="width:50px;flex-shrink:0;text-align:right" value="${Math.abs(row.amount||0)}"
       onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
       onblur="_finPointsSave('${id}','amount',this.value)">
     <select class="fin-pts-unit-sel" onchange="_finPointsSave('${id}','unit',this.value)" onkeydown="event.stopPropagation();if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}">
@@ -3561,8 +3561,8 @@ function _finPointsEdit(id){
     </select>
   </span>`;
   expTd.innerHTML=`<span class="fin-pts-exp-wrap">
-    <span style="position:relative;flex:1;min-width:0">
-      <input type="text" class="fin-ph-date-text" value="${_finPHDateDisplay(row.expires_on)}" placeholder="MM/DD/YY"
+    <span style="position:relative;width:70px;flex-shrink:0">
+      <input type="text" class="fin-ph-date-text" style="text-align:right" value="${_finPHDateDisplay(row.expires_on)}" placeholder="MM/DD/YY"
         onfocus="const h=this.nextElementSibling;if(h&&h.showPicker)try{h.showPicker();}catch(e){}"
         onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
         onblur="_finPointsSaveDateText('${id}',this.value)">

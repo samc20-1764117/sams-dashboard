@@ -1860,14 +1860,16 @@ body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,25
 /* width/right calibrated so this never bleeds into the Name input on the left (it's in normal
    flow, not absolute, so an overlay sitting on top of it creates a dead click zone) or into
    the Expires overlay on the right — verified via live getBoundingClientRect() measurement. */
-/* left+right inset (not a fixed width) guarantees this can never extend past its own
-   column's boundary into Name or Expires, no matter how the surrounding layout changes —
-   the previous fixed-width-anchored-to-right version bled a few px into Name on every
-   render, which read as the fields "shifting" on double-click. */
-.fin-pts-amt-wrap{position:absolute;left:2px;right:2px;top:50%;transform:translateY(-50%);display:flex;gap:3px;align-items:center;z-index:5}
-/* Same out-of-flow technique for the Expires cell — width/right calibrated to stay fully
-   inside its own column (zero bleed into Amount) the same way. */
-.fin-pts-exp-wrap{position:absolute;left:2px;right:2px;top:50%;transform:translateY(-50%);display:flex;gap:4px;align-items:center;z-index:5}
+/* right-only inset (no left) makes this shrink-to-fit its content and hug the column's
+   right edge, matching where the display text sits — a left+right inset stretched the
+   wrap (and its flex:1 input) across the FULL column, which visually left-shifted the
+   number away from where the same value renders in display mode. The child input/select
+   below are given fixed widths (not flex:1) precisely so this shrink-to-fit width stays
+   comfortably under the column's own width and can't bleed into Name. */
+.fin-pts-amt-wrap{position:absolute;right:2px;top:50%;transform:translateY(-50%);display:flex;gap:3px;align-items:center;justify-content:flex-end;z-index:5}
+/* Same reasoning for the Expires cell — shrink-to-fit + fixed-width child, right-anchored,
+   instead of stretching a flex:1 input across the whole column from its left edge. */
+.fin-pts-exp-wrap{position:absolute;right:2px;top:50%;transform:translateY(-50%);display:flex;gap:4px;align-items:center;justify-content:flex-end;z-index:5}
 /* Remind is its own dedicated column (to the right of Expires, always visible in both
    display and edit mode). The number input's native spinner arrows have an intrinsic
    minimum width like the date/select fields did, so — same fix as those — take it out
