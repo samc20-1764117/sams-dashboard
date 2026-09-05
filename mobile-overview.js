@@ -1504,6 +1504,7 @@ function mSyncBarClearance(barId, listId) {
 // Slides #mNavHighlight (the Liquid Glass pill, mobile.css) behind whichever .m-nav-btn
 // currently has .active. animate=false is used on initial load/resize to snap into place
 // without a visible slide-in.
+let _mNavHlLastX = null;
 function _mNavMoveHighlight(animate) {
   const bar = document.getElementById('mNav');
   const hl = document.getElementById('mNavHighlight');
@@ -1512,9 +1513,26 @@ function _mNavMoveHighlight(animate) {
   const barRect = bar.getBoundingClientRect();
   const btnRect = activeBtn.getBoundingClientRect();
   const x = btnRect.left - barRect.left - 6; // 6 = #mNav's own padding, the pill's resting left
-  if (!animate) hl.style.transition = 'none';
+  if (!animate) {
+    hl.style.transition = 'none';
+    hl.style.transform = `translateX(${x}px)`;
+    void hl.offsetHeight;
+    hl.style.transition = '';
+    _mNavHlLastX = x;
+    return;
+  }
+  // A fixed transition-duration made a full end-to-end jump (Today <-> More, 4 tabs
+  // apart) play at the same speed as a one-tab hop (e.g. Shop <-> More) — same time
+  // over 4x the distance means both a much higher velocity AND a proportionally bigger
+  // absolute spring-overshoot, which is why only the long jumps looked like they flew
+  // past the target. Scaling duration to the actual distance traveled keeps the pill's
+  // speed (and so its overshoot's relative size) consistent regardless of which two
+  // tabs are involved.
+  const dist = Math.abs(x - (_mNavHlLastX ?? x));
+  const dur = Math.max(260, Math.min(550, 260 + dist * 0.55));
+  hl.style.transitionDuration = dur + 'ms';
   hl.style.transform = `translateX(${x}px)`;
-  if (!animate) { void hl.offsetHeight; hl.style.transition = ''; }
+  _mNavHlLastX = x;
 }
 
 // ── Timeblock constants ───────────────────────────────────────────────────────

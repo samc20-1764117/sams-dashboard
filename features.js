@@ -3448,12 +3448,10 @@ function _finPtsReminderDate(expIso,leadDays){
 function _finPtsUpdateRemindPreview(id){
   const row=st.finPoints.find(r=>String(r.id)===String(id));if(!row)return;
   const tr=document.querySelector(`#finPointsPop tr[data-fin-id="${id}"]`);if(!tr)return;
-  const remindInput=tr.querySelector('.fin-pts-remind-input');
-  const dateHidden=tr.querySelector('.fin-ph-date-hidden');
-  const leadDays=Math.abs(Math.round(_finParseNum(String(remindInput?remindInput.value:row.remind_days_before))))||90;
-  const expIso=dateHidden?dateHidden.value:row.expires_on;
+  const remindEl=tr.querySelector('[data-field="remind_days_before"]');
+  const leadDays=Math.abs(Math.round(_finParseNum(remindEl?remindEl.textContent:String(row.remind_days_before))))||90;
   const preview=tr.querySelector('.fin-pts-remdate-preview');
-  if(preview)preview.textContent=_finPHDateDisplay(_finPtsReminderDate(expIso,leadDays));
+  if(preview)preview.textContent=_finPHDateDisplay(_finPtsReminderDate(row.expires_on,leadDays));
 }
 function _finRenderPointsContent(pop){
   const pts=[...st.finPoints].sort((a,b)=>{
@@ -3513,98 +3511,85 @@ function _finPointsTabNext(id,curField){
     if(nxt){nxt.focus();if(nxt.contentEditable==='true')_finSelAll(nxt);else if(nxt.select)nxt.select();}
   },30);
 }
-function _finPointsEdit(id){
-  const row=st.finPoints.find(r=>String(r.id)===String(id));if(!row)return;
-  const tr=document.querySelector(`#finPointsPop tr[data-fin-id="${id}"]`);if(!tr||tr.classList.contains('fin-ph-editing'))return;
-  tr.classList.add('fin-ph-editing');
-  const[nameTd,amtTd,expTd,remindTd,remdateTd]=tr.children;
-  nameTd.innerHTML=`<input type="text" class="fin-ph-date-text" value="${escHtml(row.name||'')}" placeholder="Name"
-    onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
-    onblur="_finPointsSave('${id}','name',this.value)">`;
-  amtTd.innerHTML=`<span class="fin-pts-amt-wrap">
-    <input type="number" step="1" class="fin-ph-amt-input" style="width:50px;flex-shrink:0;text-align:right" value="${Math.abs(row.amount||0)}"
-      onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
-      onblur="_finPointsSave('${id}','amount',this.value)">
-    <select class="fin-pts-unit-sel" onchange="_finPointsSave('${id}','unit',this.value)" onkeydown="event.stopPropagation();if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}">
-      <option value="usd"${row.unit==='usd'?' selected':''}>$</option>
-      <option value="miles"${row.unit==='miles'?' selected':''}>mi</option>
-      <option value="points"${row.unit==='points'?' selected':''}>pts</option>
-    </select>
-  </span>`;
-  expTd.innerHTML=`<span class="fin-pts-exp-wrap">
-    <span style="position:relative;width:70px;flex-shrink:0">
-      <input type="text" class="fin-ph-date-text" style="text-align:right" value="${_finPHDateDisplay(row.expires_on)}" placeholder="MM/DD/YY"
-        onfocus="const h=this.nextElementSibling;if(h&&h.showPicker)try{h.showPicker();}catch(e){}"
-        onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
-        onblur="_finPointsSaveDateText('${id}',this.value)">
-      <input type="date" class="fin-ph-date-hidden" value="${row.expires_on||''}" tabindex="-1"
-        onchange="_finPointsDatePicked('${id}',this);_finPtsUpdateRemindPreview('${id}')">
-    </span>
-  </span>`;
-  remindTd.innerHTML=`<span class="fin-pts-remind-wrap">
-    <input type="number" step="1" class="fin-pts-remind-input" title="Remind N days before it expires" value="${Number.isFinite(row.remind_days_before)?row.remind_days_before:90}"
-      oninput="_finPtsUpdateRemindPreview('${id}')"
-      onkeydown="if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}"
-      onblur="_finPointsSave('${id}','remind_days_before',this.value)">
-    <span class="fin-pts-remind-suffix">d</span>
-  </span>`;
-  remdateTd.innerHTML=`<span class="fin-pts-remdate-preview">${_finPHDateDisplay(_finPtsReminderDate(row.expires_on,Number.isFinite(row.remind_days_before)?row.remind_days_before:90))}</span>`;
-  nameTd.querySelector('input').focus();
+// Always-editable contenteditable spans (same pattern as Recurring Expenses' _finSubEditable
+// and Purchase History's _finPHEditableDate/_finPHEditableAmt) — no separate "edit mode" DOM
+// swap into bordered <input> elements, so there's no alternate layout to ever misalign with
+// the plain-text display. Unit gets its own always-visible <select> column (like Recurring's
+// Freq), instead of being crammed into the Amount cell.
+function _finPtsEditableName(id,val){
+  return`<span class="fin-sub-plain" contenteditable="true" data-fid="${id}" data-field="name" onblur="_finPointsSaveField('${id}','name',this)" onkeydown="if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}','name');this.blur();}">${escHtml(val||'')}</span>`;
+}
+function _finPtsEditableAmt(id,val){
+  const raw=Math.abs(val||0);
+  const display=raw.toLocaleString('en-US',raw%1?{minimumFractionDigits:2,maximumFractionDigits:2}:{});
+  return`<span class="fin-sub-plain" contenteditable="true" data-fid="${id}" data-field="amount" onfocus="this.textContent='${raw}';_finSelAll(this);" onblur="_finPointsSaveField('${id}','amount',this)" onkeydown="if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}','amount');this.blur();}">${display}</span>`;
+}
+function _finPtsUnitSelect(id,val){
+  return`<select class="fin-freq-sel" data-fid="${id}" data-field="unit" onchange="_finPointsSaveUnit('${id}',this.value)" onkeydown="event.stopPropagation();if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}','unit');}">
+    <option value="usd"${val==='usd'?' selected':''}>$</option>
+    <option value="miles"${val==='miles'?' selected':''}>mi</option>
+    <option value="points"${val==='points'?' selected':''}>pts</option>
+  </select>`;
+}
+function _finPtsEditableExp(id,val){
+  return`<span class="fin-sub-plain" contenteditable="true" data-fid="${id}" data-field="expires_on" onfocus="_finSelAll(this)" onblur="_finPointsSaveField('${id}','expires_on',this)" onkeydown="if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}','expires_on');this.blur();}">${_finPHDateDisplay(val)}</span>`;
+}
+function _finPtsEditableRemind(id,days){
+  return`<span class="fin-sub-plain" contenteditable="true" data-fid="${id}" data-field="remind_days_before" title="Remind this many days before it expires" onfocus="this.textContent='${days}';_finSelAll(this);" oninput="_finPtsUpdateRemindPreview('${id}')" onblur="_finPointsSaveField('${id}','remind_days_before',this)" onkeydown="if(event.key==='Escape'){event.preventDefault();_finPointsCancelIfNew('${id}');}if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finPointsTabNext('${id}','remind_days_before');this.blur();}">${days}d</span>`;
 }
 function _finPointsCancelIfNew(id){
   const row=st.finPoints.find(r=>String(r.id)===String(id));
   if(row&&row._unsaved&&!(row.name||'').trim())st.finPoints=st.finPoints.filter(r=>r.id!==row.id);
   _finPointsRefresh();
 }
-function _finPointsDatePicked(id,hiddenInput){
-  const textInput=hiddenInput.previousElementSibling;
-  if(textInput)textInput.value=_finPHDateDisplay(hiddenInput.value);
-  _finPointsSave(id,'expires_on',hiddenInput.value);
-}
-function _finPointsSaveDateText(id,text){
-  // A row with no expires_on shows the display placeholder "—" (from _finPHDateDisplay(null))
-  // as the text field's value while editing. Treating that as "invalid text the user typed"
-  // meant simply tabbing OFF an empty-expiry row's date field — without touching it — always
-  // failed to parse and hit the immediate-refresh branch below, killing the whole row's edit
-  // mode out from under the Tab key exactly like the _finPointsSave bug did.
-  const t=text.trim();
-  const iso=(t&&t!=='—')?_finParsePHDate(t):null;
-  if(t&&t!=='—'&&!iso){
-    setTimeout(()=>{
-      if(document.activeElement&&document.activeElement.closest('#finPointsPop tr.fin-ph-editing'))return;
-      _finPointsRefresh();
-    },0);
-    return;
-  }
-  _finPointsSave(id,'expires_on',iso);
-}
-async function _finPointsSave(id,field,val){
+async function _finPointsSaveUnit(id,val){
   const row=st.finPoints.find(r=>String(r.id)===String(id));if(!row)return;
-  const parsed=field==='amount'?Math.abs(_finParseNum(String(val))):field==='remind_days_before'?(Math.abs(Math.round(_finParseNum(String(val))))||90):val;
-  const finishIfDone=()=>{
-    // Checking only *this* row's own tr isn't enough: tabbing off the last field of a row
-    // moves focus into the NEXT row (already re-entered edit mode by the time this runs),
-    // and a refresh here would wipe that row's fresh edit-mode DOM out from under it. Refresh
-    // only once focus has left every editing row in the popup, not just this one.
-    if(document.activeElement&&document.activeElement.closest('#finPointsPop tr.fin-ph-editing'))return;
-    if(row._unsaved){
-      if(!(row.name||'').trim()){st.finPoints=st.finPoints.filter(r=>r.id!==row.id);_finPointsRefresh();return;}
-      _finCommitNewPoint(row);
+  if(row._unsaved){row.unit=val;return;}
+  if(row.unit===val)return;
+  const old=row.unit;row.unit=val;
+  _finPointsRefresh();
+  // renderFinancePage-style refresh swaps in a brand-new <select>, dropping focus to body —
+  // refocus it so Tab still advances to the next field (same fix as Recurring's Freq select).
+  const selEl=document.querySelector(`#finPointsPop select[data-fid="${id}"][data-field="unit"]`);if(selEl)selEl.focus();
+  _finSyncPtsAccount();
+  pushUndo(()=>{row.unit=old;_finPointsRefresh();_finSyncPtsAccount();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','fin_points',{unit:old},`?id=eq.${id}`);},'Changed unit');
+  if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','fin_points',{unit:val},`?id=eq.${id}`);
+}
+async function _finPointsSaveField(id,field,el){
+  const row=st.finPoints.find(r=>String(r.id)===String(id));if(!row)return;
+  const text=el.textContent.trim();
+  let parsed;
+  if(field==='name')parsed=text;
+  else if(field==='expires_on'){
+    // "—" is the display placeholder for no expiration — treat it the same as empty rather
+    // than as invalid typed text (this is what broke Tab on untouched empty-expiry rows before).
+    parsed=(text&&text!=='—')?_finParsePHDate(text):null;
+    if(text&&text!=='—'&&!parsed){_finPointsRefresh();return;}
+  }
+  else if(field==='remind_days_before')parsed=Math.abs(Math.round(_finParseNum(text)))||90;
+  else parsed=Math.abs(_finParseNum(text));
+  if(row._unsaved){
+    row[field]=parsed;
+    if(!(row.name||'').trim()){
+      // Only discard once focus has actually left the row — a field-to-field Tab within the
+      // same still-unsaved row shouldn't kill it just because Name happens to still be empty.
+      setTimeout(()=>{
+        const ae=document.activeElement;
+        if(ae&&ae.closest(`#finPointsPop tr[data-fin-id="${id}"]`))return;
+        const r=st.finPoints.find(x=>String(x.id)===String(id));
+        if(r&&r._unsaved&&!(r.name||'').trim()){st.finPoints=st.finPoints.filter(x=>x.id!==id);_finPointsRefresh();}
+      },50);
+      _finPointsRefresh();
       return;
     }
-    _finPointsRefresh();
-  };
-  if(row._unsaved){row[field]=parsed;setTimeout(finishIfDone,0);return;}
-  if(row[field]===parsed){setTimeout(finishIfDone,0);return;}
+    _finCommitNewPoint(row);
+    return;
+  }
+  if(row[field]===parsed){_finPointsRefresh();return;}
   const old=row[field];row[field]=parsed;
-  // finishIfDone (below, after the tab-to-next-field focus move has had a chance to land)
-  // is what actually re-renders — refreshing here instead would wipe the still-mid-edit
-  // row's DOM out from under a focus() call already in flight from Tab, killing the tab
-  // chain and dropping focus onto whatever unrelated element happens to sit at that
-  // screen position afterward.
-  setTimeout(finishIfDone,0);
-  if(field==='amount'||field==='unit')_finSyncPtsAccount();
-  pushUndo(()=>{row[field]=old;_finPointsRefresh();if(field==='amount'||field==='unit')_finSyncPtsAccount();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','fin_points',{[field]:old},`?id=eq.${id}`);},'Edited '+field);
+  _finPointsRefresh();
+  if(field==='amount')_finSyncPtsAccount();
+  pushUndo(()=>{row[field]=old;_finPointsRefresh();if(field==='amount')_finSyncPtsAccount();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','fin_points',{[field]:old},`?id=eq.${id}`);},'Edited '+field);
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','fin_points',{[field]:parsed},`?id=eq.${id}`);
 }
 async function _finCommitNewPoint(row){
