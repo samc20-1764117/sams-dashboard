@@ -1422,11 +1422,21 @@ function mShowTab(tab) {
   // The add bars are position:fixed, floating above content — #mApp's own padding only
   // ever needs to clear the fixed nav. List clearance for the fixed add bar itself is
   // measured and applied directly to the list in mSyncBarClearance() below.
-  document.getElementById('mApp').style.paddingBottom = 'calc(52px + env(safe-area-inset-bottom))';
+  document.getElementById('mApp').style.paddingBottom = 'calc(92px + env(safe-area-inset-bottom))';
   // No nav button lights up for tb — it's opened from Today's header, not the bottom nav.
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'week' && i === 1) || (tab === 'month' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
+    b.classList.remove('pop');
   });
+  // Slide the Liquid Glass highlight pill to the new active tab (no-ops harmlessly for
+  // tb/recipes, which don't light up any nav button — pill just stays put) and give the
+  // icon a small "pop" on arrival.
+  _mNavMoveHighlight(true);
+  const _mNavActiveBtn = document.querySelector('.m-nav-btn.active');
+  if (_mNavActiveBtn) {
+    _mNavActiveBtn.classList.add('pop');
+    _mNavActiveBtn.addEventListener('animationend', () => _mNavActiveBtn.classList.remove('pop'), {once: true});
+  }
   const titles = {today: 'Today', tb: 'Timeblock', week: 'Week', month: 'Month', shop: 'Shop', extras: 'More', recipes: 'Recipes'};
   const titleEl = document.getElementById('mHeaderTitle');
   if (titleEl) titleEl.textContent = titles[tab] || '';
@@ -1484,10 +1494,27 @@ function mSyncBarClearance(barId, listId) {
     const list = document.getElementById(listId);
     if (!bar || !list) return;
     const h = bar.offsetHeight;
-    // Bar sits at bottom:calc(52px + safe-area) — its own height stacks on top of that,
-    // so the list needs both plus a small buffer to fully clear it.
-    if (h > 0) list.style.paddingBottom = `calc(${h + 52 + 24}px + env(safe-area-inset-bottom))`;
+    // Bar sits at bottom:calc(88px + safe-area) — its own height stacks on top of that,
+    // so the list needs both plus a small buffer to fully clear it. 88 must match
+    // #mAddBar/#mShopAddBar's own bottom offset in mobile.css.
+    if (h > 0) list.style.paddingBottom = `calc(${h + 88 + 24}px + env(safe-area-inset-bottom))`;
   });
+}
+
+// Slides #mNavHighlight (the Liquid Glass pill, mobile.css) behind whichever .m-nav-btn
+// currently has .active. animate=false is used on initial load/resize to snap into place
+// without a visible slide-in.
+function _mNavMoveHighlight(animate) {
+  const bar = document.getElementById('mNav');
+  const hl = document.getElementById('mNavHighlight');
+  const activeBtn = bar?.querySelector('.m-nav-btn.active');
+  if (!bar || !hl || !activeBtn) return;
+  const barRect = bar.getBoundingClientRect();
+  const btnRect = activeBtn.getBoundingClientRect();
+  const x = btnRect.left - barRect.left - 6; // 6 = #mNav's own padding, the pill's resting left
+  if (!animate) hl.style.transition = 'none';
+  hl.style.transform = `translateX(${x}px)`;
+  if (!animate) { void hl.offsetHeight; hl.style.transition = ''; }
 }
 
 // ── Timeblock constants ───────────────────────────────────────────────────────
