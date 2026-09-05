@@ -1818,10 +1818,6 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
 .fin-ph-tbl col.fin-ph-c-amt{width:100px}
 .fin-ph-tbl col.fin-ph-c-cum{width:100px}
 .fin-ph-tbl col.fin-ph-c-del{width:24px}
-/* Chrome's native date input has a ~120px minimum render width that beats table-layout:fixed's
-   column width and forces the column to grow. Taking it out of flow (position:absolute) during
-   edit stops it from ever influencing column widths — it just floats over the row instead. */
-.fin-details-pop .fin-tbl tr.fin-ph-editing td.fin-ph-col-date{position:relative}
 .fin-ph-icon-btn{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;padding:0!important;line-height:1}
 .fin-ph-close-btn{font-size:14px}
 .fin-ph-col-date{padding-left:16px!important;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -1829,20 +1825,11 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
 .fin-ph-col-cum{padding-right:14px!important}
 .fin-details-pop .fin-tbl .delbtn{transform:translateX(26px)}
 .fin-details-pop .fin-pts-tbl .delbtn{transform:translateX(-10.6px)}
-.fin-details-pop .fin-tbl tr.fin-ph-editing td{padding-top:2px!important;padding-bottom:2px!important}
-.fin-ph-date-text,.fin-ph-amt-input{width:100%;height:20px;box-sizing:border-box;font-size:12px;font-family:inherit;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 5px;color:var(--text);background:transparent;font-variant-numeric:tabular-nums}
-.fin-ph-amt-input{text-align:right}
-/* Hide the native up/down spinner — it ate ~16px of width that a typed-in points/dollar
-   balance never needs, and its variable rendering across different digit counts was part
-   of what made these fields look unstable while editing. */
-.fin-ph-amt-input::-webkit-inner-spin-button,.fin-ph-amt-input::-webkit-outer-spin-button,.fin-pts-remind-input::-webkit-inner-spin-button,.fin-pts-remind-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
-.fin-ph-amt-input,.fin-pts-remind-input{-moz-appearance:textfield}
-.fin-ph-date-hidden{position:absolute;inset:0;opacity:0;pointer-events:none;width:100%;height:100%;border:none;padding:0;margin:0}
-body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,255,255,.12)}
 .fin-details-pop .fin-row:hover{background:rgba(100,100,140,.04)}
 .fin-details-pop .fin-row:hover .delbtn{opacity:.6}
 .fin-pts-tbl col.fin-pts-c-name{width:auto}
-.fin-pts-tbl col.fin-pts-c-amt{width:100px}
+.fin-pts-tbl col.fin-pts-c-amt{width:90px}
+.fin-pts-tbl col.fin-pts-c-unit{width:44px}
 .fin-pts-tbl col.fin-pts-c-exp{width:88px}
 .fin-pts-tbl col.fin-pts-c-remind{width:52px}
 .fin-pts-tbl col.fin-pts-c-remdate{width:94px}
@@ -1852,43 +1839,14 @@ body.dark .fin-ph-date-text,body.dark .fin-ph-amt-input{border-color:rgba(255,25
    so with table-layout:fixed it was splitting leftover space 50/50 with the Name column
    instead of Name getting all of it — pin it small so Name gets the rest. */
 .fin-pts-tbl col:last-child{width:1px}
-/* Same class of bug as the date field above: the amount+unit-select pair's intrinsic minimum
-   width beat table-layout:fixed and both grew the Amount column (stealing space from Name,
-   worsening the name-cutoff complaint) AND made the input never look "full width" because it
-   was fighting the select for a too-narrow column. Taking it out of flow during edit fixes both. */
-.fin-details-pop .fin-tbl tr.fin-ph-editing td.fin-pts-col-amt{position:relative}
-/* width/right calibrated so this never bleeds into the Name input on the left (it's in normal
-   flow, not absolute, so an overlay sitting on top of it creates a dead click zone) or into
-   the Expires overlay on the right — verified via live getBoundingClientRect() measurement. */
-/* right-only inset (no left) makes this shrink-to-fit its content and hug the column's
-   right edge, matching where the display text sits — a left+right inset stretched the
-   wrap (and its flex:1 input) across the FULL column, which visually left-shifted the
-   number away from where the same value renders in display mode. The child input/select
-   below are given fixed widths (not flex:1) precisely so this shrink-to-fit width stays
-   comfortably under the column's own width and can't bleed into Name. */
-.fin-pts-amt-wrap{position:absolute;right:2px;top:50%;transform:translateY(-50%);display:flex;gap:3px;align-items:center;justify-content:flex-end;z-index:5}
-/* Same reasoning for the Expires cell — shrink-to-fit + fixed-width child, right-anchored,
-   instead of stretching a flex:1 input across the whole column from its left edge. */
-.fin-pts-exp-wrap{position:absolute;right:2px;top:50%;transform:translateY(-50%);display:flex;gap:4px;align-items:center;justify-content:flex-end;z-index:5}
-/* Remind is its own dedicated column (to the right of Expires, always visible in both
-   display and edit mode). The number input's native spinner arrows have an intrinsic
-   minimum width like the date/select fields did, so — same fix as those — take it out
-   of flow during edit so it can never grow the column or shove neighboring columns. */
 .fin-pts-col-remind{padding-right:6px!important}
-.fin-details-pop .fin-tbl tr.fin-ph-editing td.fin-pts-col-remind{position:relative}
-.fin-pts-remind-wrap{position:absolute;left:2px;right:2px;top:50%;transform:translateY(-50%);display:flex;gap:3px;align-items:center;justify-content:flex-end;z-index:5}
-.fin-pts-remind-input{width:26px;height:22px;box-sizing:border-box;font-size:12px;border:1px solid rgba(200,200,215,.25);border-radius:5px;padding:0 3px;color:var(--text);background:transparent;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
-body.dark .fin-pts-remind-input{border-color:rgba(255,255,255,.12)}
-.fin-pts-remind-suffix{font-size:9px;color:var(--muted);flex-shrink:0}
 /* Wrapped display text (2 lines) vs a single-line edit input was the real cause of the row
-   height jumping between display and edit — force one line + ellipsis so both modes agree. */
+   height jumping between display and edit under the old bordered-input approach — no longer
+   applicable now that editing uses the same inline contenteditable span as display, but the
+   single-line/ellipsis behavior is still desirable for long program names. */
 .fin-pts-col-name{padding-left:16px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fin-pts-col-val{padding-right:8px!important}
-/* Native <select> has no explicit height by default — it was rendering taller than the 20px
-   text/number inputs beside it, making the Amount cell (and therefore the whole row) taller
-   in edit mode than in display mode. box-sizing:border-box so the border doesn't add on top. */
-.fin-pts-unit-sel{width:42px;height:20px;box-sizing:border-box;font-size:11px;border:1px solid rgba(200,200,215,.25);border-radius:5px;background:transparent;color:var(--text);padding:0 2px;flex-shrink:0}
-body.dark .fin-pts-unit-sel{border-color:rgba(255,255,255,.12)}
+.fin-pts-col-unit{padding:2px 4px!important}
 .fin-chart-hit{cursor:pointer}
 .fin-donut circle{cursor:pointer;pointer-events:all}
 
