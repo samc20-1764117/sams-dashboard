@@ -3151,7 +3151,7 @@ function _mSyncMonthScrollHeight() {
   scroller.style.flex = 'none';
   scroller.style.height = Math.max(120, avail) + 'px';
 }
-window.addEventListener('resize', () => { if (_mCurTab === 'month') _mSyncMonthScrollHeight(); });
+window.addEventListener('resize', () => { if (_mCurTab === 'month') _mSyncMonthScrollHeight(); _mNavMoveHighlight(false); });
 
 // Jump one real month from whichever month is currently docked at the top of the scroll view
 function mMonthJump(dir) {
@@ -3627,6 +3627,8 @@ function mToggleDark() {
   document.body.style.background = '';
   const hdr = document.getElementById('mHeader');
   if (hdr) void hdr.offsetHeight;
+  const nav = document.getElementById('mNav');
+  if (nav) void nav.offsetHeight;
   void document.body.offsetHeight;
 }
 
