@@ -16,7 +16,7 @@ All task types that appear on the overview calendar/today list. Every type must 
 | Video | `vid-ov-{vidId}` | `vid::{vidId}` | `_vidDayMap` (localStorage) |
 | Pup session | `pup-sess-{sessId}` | `pupsess::{sessId}::{ds}` | `st.pupSessions` |
 | Pup skill (drag-only) | n/a | `pupskill::{skillId}` | `st.pup_skills` |
-| Finance cancellation | `fin-cancel-{subId}` | `fin-cancel::{subId}` | computed |
+| Finance cancellation | `fin-cancel-{subId}` (subId is either `{subscriptionId}` or `flight-{fin_points.id}` for a flight-credit expiration reminder) | `fin-cancel::{subId}` | computed (`_finCancelTasksForDate`) |
 | Travel banner | `tv-{id}` | `travel::{id}::{offset}` | `st.travel` |
 | Birthday | n/a | `bday::{id}::{date}` (drag onto TB only) | `st.birthdays` (banner, no checkbox) |
 | Holiday | n/a | n/a | fetched `/api/holidays` (banner, no checkbox, NOT draggable — no timeblock) |
