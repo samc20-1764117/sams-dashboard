@@ -1422,7 +1422,7 @@ function mShowTab(tab) {
   // The add bars are position:fixed, floating above content — #mApp's own padding only
   // ever needs to clear the fixed nav. List clearance for the fixed add bar itself is
   // measured and applied directly to the list in mSyncBarClearance() below.
-  document.getElementById('mApp').style.paddingBottom = 'calc(82px + env(safe-area-inset-bottom))';
+  document.getElementById('mApp').style.paddingBottom = 'calc(76px + env(safe-area-inset-bottom))';
   // No nav button lights up for tb — it's opened from Today's header, not the bottom nav.
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'week' && i === 1) || (tab === 'month' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
@@ -1494,10 +1494,10 @@ function mSyncBarClearance(barId, listId) {
     const list = document.getElementById(listId);
     if (!bar || !list) return;
     const h = bar.offsetHeight;
-    // Bar sits at bottom:calc(80px + safe-area) — its own height stacks on top of that,
-    // so the list needs both plus a small buffer to fully clear it. 80 must match
+    // Bar sits at bottom:calc(74px + safe-area) — its own height stacks on top of that,
+    // so the list needs both plus a small buffer to fully clear it. 74 must match
     // #mAddBar/#mShopAddBar's own bottom offset in mobile.css.
-    if (h > 0) list.style.paddingBottom = `calc(${h + 80 + 24}px + env(safe-area-inset-bottom))`;
+    if (h > 0) list.style.paddingBottom = `calc(${h + 74 + 24}px + env(safe-area-inset-bottom))`;
   });
 }
 

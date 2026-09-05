@@ -120,7 +120,7 @@ body.dark .m-prog.m-prog-complete{color:#86efac}
    Floating, inset pill (not edge-to-edge) with real background blur behind it,
    plus a single sliding highlight capsule (#mNavHighlight) that spring-slides
    to whichever tab is active — ported from the approved prototype
-   (~/Desktop/mobile-tab-mockups/liquid-glass-tabs.html). The 8px/64px numbers
+   (~/Desktop/mobile-tab-mockups/liquid-glass-tabs.html). The 4px/64px numbers
    here are coupled to #mApp's padding-bottom and #mAddBar/#mShopAddBar's
    bottom offset above, and to mShowTab()/mSyncBarClearance() in
    mobile-overview.js — change all of them together. */
