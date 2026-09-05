@@ -1539,7 +1539,7 @@ document.addEventListener('keydown',e=>{
 // ── Help Overlay ─────────────────────────────────────────────────────────────
 function _showHelpOverlay(){
   const _global=[
-    ['⌘ ←/→','Switch between pages'],
+    ['⌘ ←/→','Switch between pages (or move selected task ±1 day if something\'s selected)'],
     ['O','Go to Overview'],
     ['V','Video popup (toggle)'],
     ['VV','Go to Videos page'],
@@ -1566,9 +1566,9 @@ function _showHelpOverlay(){
       ['M','Open / close month view'],
       ['F (month view)','Toggle Filters panel'],
       ['O (month view)','Toggle Objectives panel'],
-      ['←/→','Previous / next day'],
+      ['←/→','Previous / next day (or jump to top task in prev/next day if something\'s selected)'],
       ['W + ←/→','Previous / next week'],
-      ['←/→ (selected)','Move selected task ±1 day'],
+      ['⌘ ←/→ (selected)','Move selected task ±1 day'],
       ['↑/↓ (time block selected)','Move block ±30 min'],
       ['Space','Toggle skip on WR rule'],
       ['Delete / ⌫','Delete selected tasks'],
