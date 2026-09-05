@@ -16,14 +16,14 @@
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
 <title>Sam's Dashboard</title>
 <script>
-window._BUILD='20260904b';var BUILD=window._BUILD;
+window._BUILD='20260904c';var BUILD=window._BUILD;
 if(sessionStorage._mReloaded===BUILD);else{
   fetch('/version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(d.v&&d.v!==BUILD){sessionStorage._mReloaded=d.v;location.reload();}
   }).catch(function(){});
 }
 </script>
-<link rel="stylesheet" href="styles.css?v=20260904b">
+<link rel="stylesheet" href="styles.css?v=20260904c">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');var d=document.documentElement;var isDk=!!(s.cfg&&s.cfg.dark);if(isDk)d.classList.add('init-dark');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',isDk?'#111113':'#fdf8f4');try{window.webkit.messageHandlers.themeColor.postMessage(isDk?'#111113':'#fdf8f4');}catch(e){}if(s.sb!==false)d.classList.add('init-sb');}catch(e){}})();</script>
 </head>
 <body class="preload">
@@ -490,16 +490,12 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;margin-top:20px">
-    <div id="habitsViewToggle" style="display:flex;gap:4px"></div>
     <div style="flex:1"></div>
     <button class="btn-plus" onclick="openHabitModal()">+</button>
   </div>
-  <div id="habitsBoardView" style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:12px"></div>
-  <div id="habitsScheduleView" style="display:none;flex-direction:column;margin-top:12px;min-height:0">
-    <div id="habitsUnscheduled" style="display:flex;flex-wrap:wrap;gap:6px;padding:0 0 10px;flex-shrink:0"></div>
-    <div class="tb-scroll" id="habitsTbScroll" style="max-height:calc(100vh - 260px)">
-      <div class="tb-grid" id="habitsTbGrid"></div>
-    </div>
+  <div id="habitsBoardView" style="flex-shrink:0;height:200px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:12px"></div>
+  <div class="tb-scroll" id="habitsTbScroll" style="flex:1;min-height:0;margin-top:16px">
+    <div class="tb-grid" id="habitsTbGrid"></div>
   </div>
 </div>
 <div class="page" id="page-ideas" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
@@ -622,17 +618,16 @@ if(sessionStorage._mReloaded===BUILD);else{
 <div class="overlay" id="habitModal" onclick="closeMod('habitModal',event)" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();event.stopPropagation();saveHabitModal();}if(event.key==='Escape'){event.stopPropagation();closeMod('habitModal');}">
   <div class="modal task-modal" style="width:340px">
     <div class="mt" id="habitMTitle">Add Habit</div>
-    <div class="mfield"><label>Name *</label><input id="habitNameInput" placeholder="e.g. Lactic acid on arms"></div>
-    <div class="mfield"><label>Stage</label><select id="habitStageInput"><option value="future">Future — haven't started</option><option value="building">Building — actively working on it</option><option value="established">Established — already automatic</option></select></div>
-    <div class="mfield" style="display:flex;gap:8px">
-      <div style="flex:1"><label>Time <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="habitTimeInput" type="time"></div>
-      <div style="flex:1"><label>Duration</label><select id="habitDurationInput"><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="20" selected>20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></div>
+    <div class="mfield"><label>Name</label><input id="habitNameInput"></div>
+    <div class="mfield">
+      <label>Stage</label>
+      <div id="habitStageToggle" style="display:flex;gap:4px;background:rgba(0,0,0,.04);border-radius:8px;padding:3px"></div>
+      <select id="habitStageInput" style="display:none"><option value="future">Future</option><option value="building">Building</option><option value="established">Established</option></select>
     </div>
     <div class="mfield" style="display:flex;gap:8px">
-      <div style="flex:1"><label>Stack <span style="opacity:.45;font-weight:400">(optional)</span></label><select id="habitAnchorPosInput"><option value="">—</option><option value="before">Before</option><option value="after">After</option></select></div>
-      <div style="flex:1"><label>Stack with <span style="opacity:.45;font-weight:400">(optional)</span></label><select id="habitAnchorInput"><option value="">—</option></select></div>
+      <div style="flex:1;display:flex;flex-direction:column"><label>Time</label><input id="habitTimeInput" type="time" style="flex:1"></div>
+      <div style="flex:1;display:flex;flex-direction:column"><label>Duration</label><select id="habitDurationInput" style="flex:1"><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="20" selected>20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></div>
     </div>
-    <div class="mfield"><label>Notes <span style="opacity:.45;font-weight:400">(optional)</span></label><textarea id="habitNotesInput" placeholder="Add notes…" style="resize:none;min-height:52px;width:100%;box-sizing:border-box;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none"></textarea></div>
     <div class="mact"><button class="btn btn-ghost" id="habitDelBtn" onclick="deleteHabitFromModal()" style="display:none;margin-right:auto;color:#ef4444">Delete</button><button class="btn btn-ghost" onclick="closeMod('habitModal')">Cancel</button><button class="btn btn-dark" id="habitSaveBtn" onclick="saveHabitModal()">Add</button></div>
   </div>
 </div>
@@ -968,9 +963,9 @@ if(sessionStorage._mReloaded===BUILD);else{
 </div>
 
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260904b"></script>
-<script src="overview.js?v=20260904b"></script>
-<script src="features.js?v=20260904b"></script>
+<script src="core.js?v=20260904c"></script>
+<script src="overview.js?v=20260904c"></script>
+<script src="features.js?v=20260904c"></script>
 <script src="pup-skills.js?v=20260608b"></script>
 <script src="videos.js?v=20260608b"></script>
 

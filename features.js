@@ -2326,54 +2326,40 @@ function _cinemaSetupDrag(){
 // ══════════════════════════════════════════════════════════════════════════════
 // ── HABITS PAGE ──────────────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-let _habitsView='board';try{_habitsView=localStorage.getItem('_habitsView')||'board';}catch(e){}
 const _HABIT_STAGES=[['future','Future'],['building','Building'],['established','Established']];
 function _habitEmpty(msg){return`<div style="text-align:center;color:var(--muted);padding:20px 0;font-size:12px">${msg}</div>`;}
 function _habitRowShell(h,inner,extraAttrs){
   const dk=document.body.classList.contains('dark');
   const bg=dk?'rgba(255,255,255,.06)':'rgba(255,255,255,.85)';
   const bdr=dk?'rgba(255,255,255,.08)':'rgba(210,205,228,.3)';
-  return`<div class="habit-row" data-habit-id="${h.id}" ${extraAttrs||''} style="padding:6px 10px;margin-bottom:6px;border-radius:8px;background:${bg};border:1px solid ${bdr};display:flex;align-items:center;gap:6px">${inner}</div>`;
-}
-function _habitStageSelect(h){
-  return`<select onchange="event.stopPropagation();setHabitStage('${h.id}',this.value)" onclick="event.stopPropagation()" style="flex-shrink:0;font-size:10px;padding:2px 4px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit">${_HABIT_STAGES.map(([v,l])=>`<option value="${v}" ${h.stage===v?'selected':''}>${l}</option>`).join('')}</select>`;
+  return`<div class="habit-row" data-habit-id="${h.id}" draggable="true" ondragstart="_habitBlockDragStart(event,'${h.id}')" ondragend="_habitBlockDragEnd(event)" ${extraAttrs||''} style="padding:6px 10px;margin-bottom:6px;border-radius:8px;background:${bg};border:1px solid ${bdr};display:flex;align-items:center;gap:6px;cursor:grab">${inner}</div>`;
 }
 function _habitBoardRow(h){
-  const anchor=h.anchor_habit_id?st.habits.find(x=>String(x.id)===String(h.anchor_habit_id)):null;
-  const sub=anchor?`<div style="font-size:10px;color:var(--muted)">${h.anchor_position==='before'?'before':'after'} ${escHtml(anchor.name)}</div>`:'';
   const time=h.scheduled_time?`<span style="font-size:10px;color:var(--muted);flex-shrink:0">${_habitFmtTime(h.scheduled_time)}</span>`:'';
   return _habitRowShell(h,`
-    <div style="flex:1;min-width:0">
-      <div style="font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(h.name)}</div>
-      ${sub}
-    </div>
+    <span style="flex:1;min-width:0;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(h.name)}</span>
     ${time}
-    ${_habitStageSelect(h)}
     <button onclick="event.stopPropagation();deleteHabit('${h.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0">✕</button>
-  `,`ondblclick="if(!event.target.closest('button,select')){event.stopPropagation();openHabitModal('${h.id}')}"`);
+  `,`ondblclick="if(!event.target.closest('button')){event.stopPropagation();openHabitModal('${h.id}')}"`);
+}
+function _habitStageColDragOver(e){e.preventDefault();e.currentTarget.style.background=document.body.classList.contains('dark')?'rgba(255,255,255,.04)':'rgba(109,95,230,.05)';}
+function _habitStageColDrop(e,stage){
+  e.preventDefault();e.currentTarget.style.background='';
+  if(!_habitDragId)return;
+  setHabitStage(_habitDragId,stage);
+  _habitDragId=null;
 }
 function renderHabitsPage(){
-  const toggleEl=document.getElementById('habitsViewToggle');
-  if(toggleEl){
-    const btn=(val,label)=>`<button onclick="_habitsView='${val}';localStorage.setItem('_habitsView','${val}');renderHabitsPage()" style="padding:3px 9px;border-radius:6px;border:none;font-family:inherit;font-size:10px;cursor:pointer;background:${_habitsView===val?'var(--accent)':'transparent'};color:${_habitsView===val?'#fff':'var(--muted)'}">${label}</button>`;
-    toggleEl.innerHTML=btn('board','Board')+btn('schedule','Schedule');
-  }
   const boardEl=document.getElementById('habitsBoardView');
-  const schedEl=document.getElementById('habitsScheduleView');
-  if(!boardEl||!schedEl)return;
-  if(_habitsView==='board'){
-    boardEl.style.display='grid';schedEl.style.display='none';
-    boardEl.innerHTML=_HABIT_STAGES.map(([stage,label])=>{
-      const items=st.habits.filter(h=>h.stage===stage&&h.is_enabled!==false).sort((a,b)=>(a.sort_order??0)-(b.sort_order??0)||(a.name||'').localeCompare(b.name||''));
-      return`<div class="card" style="min-height:0">
-        <div class="ch"><div class="ct">${label}</div><div style="flex:1"></div><span style="font-size:10px;color:var(--muted)">${items.length}</span></div>
-        <div ondblclick="if(!event.target.closest('.habit-row'))openHabitModal(null,'${stage}')" style="flex:1;min-height:0;overflow-y:auto;padding:12px">${items.length?items.map(_habitBoardRow).join(''):_habitEmpty('Double-click to add')}</div>
-      </div>`;
-    }).join('');
-  }else{
-    boardEl.style.display='none';schedEl.style.display='flex';
-    _renderHabitsScheduleGrid();
-  }
+  if(!boardEl)return;
+  boardEl.innerHTML=_HABIT_STAGES.map(([stage,label])=>{
+    const items=st.habits.filter(h=>h.stage===stage&&h.is_enabled!==false).sort((a,b)=>(a.sort_order??0)-(b.sort_order??0)||(a.name||'').localeCompare(b.name||''));
+    return`<div class="card" style="min-height:0">
+      <div class="ch"><div class="ct">${label}</div><div style="flex:1"></div><span style="font-size:10px;color:var(--muted)">${items.length}</span></div>
+      <div ondragover="_habitStageColDragOver(event)" ondragleave="this.style.background=''" ondrop="_habitStageColDrop(event,'${stage}')" ondblclick="if(!event.target.closest('.habit-row'))openHabitModal(null,'${stage}')" style="flex:1;min-height:0;overflow-y:auto;padding:12px">${items.length?items.map(_habitBoardRow).join(''):_habitEmpty('Double-click to add, or drag a habit here')}</div>
+    </div>`;
+  }).join('');
+  _renderHabitsScheduleGrid();
 }
 // ── Habits Schedule Grid (drag-and-drop timeblock, mirrors Overview's day timeline
 // visually — same .tb-* CSS classes — but keyed off habits.scheduled_time, not a
@@ -2391,7 +2377,7 @@ function _syncHabitsPX(){
   const hourH=visH/14;grid.style.setProperty('--hour-h',hourH+'px');_habitsPX=hourH/60;
 }
 function _habitBlockDragStart(e,id){_habitDragId=id;e.dataTransfer.effectAllowed='move';e.target.style.opacity='.4';}
-function _habitBlockDragEnd(e){_habitDragId=null;if(e.target)e.target.style.opacity='';document.querySelectorAll('#habitsTbGrid .tb-hour.don').forEach(r=>r.classList.remove('don'));}
+function _habitBlockDragEnd(e){_habitDragId=null;if(e.target)e.target.style.opacity='';document.querySelectorAll('#habitsTbGrid .tb-hour.don').forEach(r=>r.classList.remove('don'));document.querySelectorAll('#habitsBoardView .ch+div').forEach(c=>c.style.background='');}
 function _habitDropOnRow(e,hour){
   e.preventDefault();e.currentTarget.classList.remove('don');
   if(!_habitDragId)return;
@@ -2403,13 +2389,9 @@ function _habitDropOnRow(e,hour){
   _habitDragId=null;
 }
 function _renderHabitsScheduleGrid(){
-  const unschedEl=document.getElementById('habitsUnscheduled');
   const gridEl=document.getElementById('habitsTbGrid');
-  if(!unschedEl||!gridEl)return;
+  if(!gridEl)return;
   const all=st.habits.filter(h=>h.is_enabled!==false);
-  const unscheduled=all.filter(h=>!h.scheduled_time).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-  const chip=h=>`<div class="habit-chip" draggable="true" ondragstart="_habitBlockDragStart(event,'${h.id}')" ondragend="_habitBlockDragEnd(event)" ondblclick="openHabitModal('${h.id}')" title="Drag onto the schedule below" style="padding:4px 10px;border-radius:999px;font-size:11px;cursor:grab;background:${_HABIT_STAGE_BG[h.stage]};color:${_HABIT_STAGE_FG[h.stage]};border:1px solid ${_HABIT_STAGE_BD[h.stage]}">${escHtml(h.name)}</div>`;
-  unschedEl.innerHTML=unscheduled.length?unscheduled.map(chip).join(''):`<div style="font-size:11px;color:var(--muted)">All habits are scheduled.</div>`;
   gridEl.innerHTML=`<div class="tb-gutter">${HOURS.map(h=>`<div class="tb-tlbl">${h===12?'12p':h>12?(h-12)+'p':h+'a'}</div>`).join('')}</div>
     <div class="tb-col" id="habitsTbCol">${HOURS.map(h=>`<div class="tb-hour" ondragover="event.preventDefault();this.classList.add('don')" ondragleave="this.classList.remove('don')" ondrop="_habitDropOnRow(event,${h})"></div>`).join('')}</div>`;
   _syncHabitsPX();
@@ -2436,6 +2418,12 @@ function _habitFmtTime(t){
 }
 let _habitModalEditId=null;
 let _habitModalDefaultStage='future';
+function _habitRenderStageToggle(){
+  const cur=document.getElementById('habitStageInput').value;
+  const wrap=document.getElementById('habitStageToggle');if(!wrap)return;
+  wrap.innerHTML=_HABIT_STAGES.map(([v,l])=>`<button type="button" onclick="_habitSetModalStage('${v}')" style="flex:1;padding:6px 0;border-radius:6px;border:none;font-family:inherit;font-size:11px;cursor:pointer;background:${cur===v?'var(--accent)':'transparent'};color:${cur===v?'#fff':'var(--muted)'}">${l}</button>`).join('');
+}
+function _habitSetModalStage(stage){document.getElementById('habitStageInput').value=stage;_habitRenderStageToggle();}
 function openHabitModal(editId,defaultStage){
   _habitModalEditId=editId||null;
   _habitModalDefaultStage=defaultStage||'future';
@@ -2447,11 +2435,7 @@ function openHabitModal(editId,defaultStage){
   document.getElementById('habitStageInput').value=h?h.stage:_habitModalDefaultStage;
   document.getElementById('habitTimeInput').value=h?(h.scheduled_time||''):'';
   document.getElementById('habitDurationInput').value=h?String(h.duration_minutes||20):'20';
-  document.getElementById('habitAnchorPosInput').value=h?(h.anchor_position||''):'';
-  const anchorSel=document.getElementById('habitAnchorInput');
-  const opts=st.habits.filter(x=>String(x.id)!==String(editId)&&String(x.anchor_habit_id)!==String(editId));
-  anchorSel.innerHTML='<option value="">—</option>'+opts.map(x=>`<option value="${x.id}" ${h&&String(h.anchor_habit_id)===String(x.id)?'selected':''}>${escHtml(x.name)}</option>`).join('');
-  document.getElementById('habitNotesInput').value=h?(h.notes||''):'';
+  _habitRenderStageToggle();
   document.getElementById('habitModal').classList.add('open');
   setTimeout(()=>{const el=document.getElementById('habitNameInput');if(el)el.focus();},80);
 }
@@ -2464,10 +2448,7 @@ function _habitReadModalFields(){
   const stage=(document.getElementById('habitStageInput')||{}).value||'future';
   const scheduled_time=(document.getElementById('habitTimeInput')||{}).value||null;
   const duration_minutes=parseInt((document.getElementById('habitDurationInput')||{}).value,10)||20;
-  const anchor_position=(document.getElementById('habitAnchorPosInput')||{}).value||null;
-  const anchor_habit_id=(document.getElementById('habitAnchorInput')||{}).value||null;
-  const notes=(document.getElementById('habitNotesInput')||{}).value?.trim()||null;
-  return{name,stage,scheduled_time,duration_minutes,anchor_position:anchor_habit_id?anchor_position:null,anchor_habit_id,notes};
+  return{name,stage,scheduled_time,duration_minutes};
 }
 async function saveNewHabit(){
   const f=_habitReadModalFields();
@@ -2477,7 +2458,7 @@ async function saveNewHabit(){
   const localId='l-'+Date.now();
   const row={id:localId,...f,sort_order,is_enabled:true,stage_changed_at:new Date().toISOString(),created_at:new Date().toISOString()};
   st.habits.push(row);renderHabitsPage();renderHabitsHighlight();save();
-  const sv=await sbReq('POST','habits',{name:f.name,stage:f.stage,scheduled_time:f.scheduled_time,duration_minutes:f.duration_minutes,anchor_position:f.anchor_position,anchor_habit_id:f.anchor_habit_id,notes:f.notes,sort_order});
+  const sv=await sbReq('POST','habits',{name:f.name,stage:f.stage,scheduled_time:f.scheduled_time,duration_minutes:f.duration_minutes,sort_order});
   if(sv&&sv[0]){const idx=st.habits.findIndex(h=>h.id===localId);if(idx>=0)st.habits[idx]=sv[0];save();renderHabitsPage();renderHabitsHighlight();}
 }
 async function saveHabitEdit(id){
@@ -2486,7 +2467,7 @@ async function saveHabitEdit(id){
   const stageChanged=f.stage!==h.stage;
   Object.assign(h,f,stageChanged?{stage_changed_at:new Date().toISOString()}:{});
   renderHabitsPage();renderHabitsHighlight();save();
-  if(!String(id).startsWith('l-'))await sbReq('PATCH','habits',{name:f.name,stage:f.stage,scheduled_time:f.scheduled_time,duration_minutes:f.duration_minutes,anchor_position:f.anchor_position,anchor_habit_id:f.anchor_habit_id,notes:f.notes,...(stageChanged?{stage_changed_at:h.stage_changed_at}:{})},`?id=eq.${id}`);
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','habits',{name:f.name,stage:f.stage,scheduled_time:f.scheduled_time,duration_minutes:f.duration_minutes,...(stageChanged?{stage_changed_at:h.stage_changed_at}:{})},`?id=eq.${id}`);
 }
 async function setHabitStage(id,stage){
   const h=st.habits.find(x=>String(x.id)===String(id));if(!h)return;
@@ -2506,8 +2487,6 @@ async function deleteHabit(id){
   const removedLogs=st.habitLogs.filter(l=>String(l.habit_id)===String(id));
   st.habits=st.habits.filter(h=>String(h.id)!==String(id));
   st.habitLogs=st.habitLogs.filter(l=>String(l.habit_id)!==String(id));
-  // Un-anchor any habits that were stacked on this one rather than leaving a dangling reference
-  st.habits.filter(h=>String(h.anchor_habit_id)===String(id)).forEach(h=>{h.anchor_habit_id=null;h.anchor_position=null;});
   renderHabitsPage();renderHabitsHighlight();save();
   pushUndo(()=>{st.habits.push(old);st.habitLogs.push(...removedLogs);renderHabitsPage();renderHabitsHighlight();save();},'Deleted "'+old.name+'"');
   if(!String(id).startsWith('l-'))await sbReq('DELETE','habits',null,`?id=eq.${id}`);

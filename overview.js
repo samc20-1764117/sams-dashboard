@@ -784,11 +784,9 @@ function renderHabitsHighlight(){
   const rows=building.map(h=>{
     const done=_habitDoneOn(h.id,ds);
     const streak=_habitStreak(h.id,ds);
-    const anchor=h.anchor_habit_id?st.habits.find(x=>String(x.id)===String(h.anchor_habit_id)):null;
-    const sub=anchor?`<span style="color:var(--muted);font-weight:400;font-size:10px"> — ${h.anchor_position==='before'?'before':'after'} ${escHtml(anchor.name)}</span>`:'';
     return`<div class="ti${done?' done':''}" style="${done?'opacity:.5':''}">
       <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${done?'checked':''} onchange="togHabitDone('${h.id}',this.checked,'${ds}')"></label>
-      <span class="tn">${escHtml(h.name)}${sub}</span>
+      <span class="tn">${escHtml(h.name)}</span>
       ${streak>1?`<span style="font-size:10px;color:var(--muted);flex-shrink:0;margin-right:4px">🔥${streak}</span>`:''}
     </div>`;
   }).join('');
