@@ -3280,8 +3280,7 @@ function _finRenderDetailsContent(pop){
   let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Purchase History</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn fin-ph-icon-btn" onclick="openFinInvAdd(event)" title="Add">+</button><button class="fin-add-btn fin-ph-icon-btn fin-ph-close-btn" onclick="closeFinInvDetails()" style="opacity:.6" title="Close">&#x2715;</button></div></div>`;
   html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))openFinInvAdd({target:document.querySelector('#finInvDetailsPop .fin-add-btn')})"><table class="fin-tbl fin-ph-tbl"><colgroup><col class="fin-ph-c-date"/><col class="fin-ph-c-amt"/><col class="fin-ph-c-cum"/><col class="fin-ph-c-del"/><col/></colgroup><thead><tr><th style="text-align:left" class="fin-ph-col-date">Date</th><th style="text-align:right" class="fin-ph-col-amt">Amount</th><th style="text-align:right" class="fin-ph-col-cum">Cumulative</th><th class="fin-ph-col-del"></th><th></th></tr></thead><tbody>`;
   purchases.forEach(p=>{
-    const ds=_finPHDateDisplay(p.date);
-    html+=`<tr class="fin-row" data-fin-id="${p.id}" ondblclick="if(!event.target.closest('button'))_finPHEdit('${p.id}')"><td class="fin-ph-col-date">${ds}</td><td style="text-align:right" class="fin-num fin-ph-col-amt">${_finFmt(Math.abs(p.amount||0))}</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-ph-col-cum">${_finFmt(cumMap[p.id]||0)}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPurchase('${p.id}')">&#x2715;</button></td><td></td></tr>`;
+    html+=`<tr class="fin-row" data-fin-id="${p.id}"><td class="fin-ph-col-date">${_finPHEditableDate(p.id,p.date)}</td><td style="text-align:right" class="fin-num fin-ph-col-amt">${_finPHEditableAmt(p.id,p.amount)}</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-ph-col-cum">${_finFmt(cumMap[p.id]||0)}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPurchase('${p.id}')">&#x2715;</button></td><td></td></tr>`;
   });
   html+=`</tbody></table></div>`;
   if(!purchases.length)html+=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No purchases yet</div>`;
@@ -3291,23 +3290,28 @@ function addFinPurchaseInline(){
   const row={id:'l-'+Date.now(),type:'vti',name:'VTI Purchase',date:tod(),amount:0,sort_order:0,_unsaved:true};
   st.finance.unshift(row);
   _finPHRefresh();
-  setTimeout(()=>_finPHEdit(row.id),30);
+  setTimeout(()=>{const el=document.querySelector(`#finInvDetailsPop [data-fid="${row.id}"][data-field="amount"]`);if(el){el.focus();_finSelAll(el);}},30);
 }
 // Tab date → amount; Tab on amount (last field) of the last row adds a new one instead of
-// doing nothing — mirrors a spreadsheet's tab-to-add-row. Same pattern as Points/Recurring.
-function _finPHTabNext(id,fromEl){
-  const tr=fromEl.closest('tr');if(!tr)return;
-  const focusable=[...tr.querySelectorAll('input.fin-ph-date-text,input.fin-ph-amt-input')];
-  const idx=focusable.indexOf(fromEl);
-  if(idx>=0&&idx<focusable.length-1){const nxt=focusable[idx+1];nxt.focus();if(nxt.select)nxt.select();return;}
-  const nextRow=tr.nextElementSibling;
-  if(nextRow&&nextRow.dataset.finId){
-    const rowId=nextRow.dataset.finId;
-    _finPHEdit(rowId);
-    setTimeout(()=>{const first=document.querySelector(`#finInvDetailsPop tr[data-fin-id="${rowId}"] .fin-ph-date-text`);if(first){first.focus();first.select&&first.select();}},20);
-  }else{
-    addFinPurchaseInline();
-  }
+// doing nothing — mirrors a spreadsheet's tab-to-add-row. Same pattern used by Points &
+// Recurring Expenses (_finPointsTabNext / _finSubTabNext): re-locate by data-fid/data-field
+// after the deferred blur-triggered re-render, rather than holding a stale element reference.
+function _finPHTabNext(id,curField){
+  setTimeout(()=>{
+    const cur=document.querySelector(`#finInvDetailsPop [data-fid="${id}"][data-field="${curField}"]`);
+    if(!cur)return;
+    const row=cur.closest('tr');if(!row)return;
+    const focusable=[...row.querySelectorAll('[contenteditable="true"]')].sort((a,b)=>a.getBoundingClientRect().left-b.getBoundingClientRect().left);
+    const idx=focusable.indexOf(cur);
+    let nxt;
+    if(idx>=0&&idx<focusable.length-1){nxt=focusable[idx+1];}
+    else{
+      const nextRow=row.nextElementSibling;
+      if(nextRow)nxt=nextRow.querySelector('[contenteditable="true"]');
+      else{addFinPurchaseInline();return;}
+    }
+    if(nxt){nxt.focus();_finSelAll(nxt);}
+  },30);
 }
 function _finPHCancelIfNew(id){
   const row=st.finance.find(r=>String(r.id)===String(id));
@@ -3331,67 +3335,31 @@ function _finParsePHDate(text){
   const yy=m[3].length===2?'20'+m[3]:m[3];
   return`${yy}-${mm}-${dd}`;
 }
-function _finPHDatePicked(id,hiddenInput){
-  const textInput=hiddenInput.previousElementSibling;
-  if(textInput)textInput.value=_finPHDateDisplay(hiddenInput.value);
-  _finPHSave(id,'date',hiddenInput.value);
+// Always-editable contenteditable spans (same pattern as Recurring Expenses' _finSubEditable) —
+// no separate "edit mode" DOM swap, so there's no bordered-input layout to ever misalign with
+// the plain-text display. Date's display format (MM/DD/YY) IS its typable form, so no
+// focus-time raw-value swap is needed the way Amount needs one (display is $-formatted).
+function _finPHEditableDate(id,val){
+  return`<span class="fin-sub-plain" contenteditable="true" data-fid="${id}" data-field="date" onfocus="_finSelAll(this)" onblur="_finPHSaveField('${id}','date',this)" onkeydown="if(event.key==='Escape'){event.preventDefault();_finPHCancelIfNew('${id}');}if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finPHTabNext('${id}','date');this.blur();}">${_finPHDateDisplay(val)}</span>`;
 }
-function _finPHSaveDateText(id,text){
-  const iso=_finParsePHDate(text);
-  if(!iso){
-    // Defer the same way _finPHSave does — an immediate refresh here would wipe the row's
-    // edit-mode DOM out from under a Tab that's already moving focus to the next field.
-    setTimeout(()=>{
-      if(document.activeElement&&document.activeElement.closest('#finInvDetailsPop tr.fin-ph-editing'))return;
-      _finPHRefresh();
-    },0);
+function _finPHEditableAmt(id,val){
+  const raw=Math.abs(val||0).toFixed(2);
+  return`<span class="fin-sub-plain" contenteditable="true" data-fid="${id}" data-field="amount" onfocus="this.textContent='${raw}';_finSelAll(this);" onblur="_finPHSaveField('${id}','amount',this)" onkeydown="if(event.key==='Escape'){event.preventDefault();_finPHCancelIfNew('${id}');}if(event.key==='Enter'){event.preventDefault();this.blur();}if(event.key==='Tab'){event.preventDefault();_finPHTabNext('${id}','amount');this.blur();}">${_finFmt(Math.abs(val||0))}</span>`;
+}
+async function _finPHSaveField(id,field,el){
+  const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
+  const text=el.textContent.trim();
+  const parsed=field==='date'?(text?_finParsePHDate(text):null):Math.abs(_finParseNum(text));
+  if(field==='date'&&text&&!parsed){_finPHRefresh();return;} // unparseable typed date — just restore correct display
+  if(row._unsaved){
+    row[field]=parsed;
+    if(!row.amount){st.finance=st.finance.filter(r=>r.id!==row.id);_finPHRefresh();return;}
+    _finCommitNewPurchase(row);
     return;
   }
-  _finPHSave(id,'date',iso);
-}
-function _finPHEdit(id){
-  const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
-  const tr=document.querySelector(`#finInvDetailsPop tr[data-fin-id="${id}"]`);if(!tr||tr.classList.contains('fin-ph-editing'))return;
-  tr.classList.add('fin-ph-editing');
-  const[dateTd,amtTd]=tr.children;
-  // A native <input type=date> can't render narrower than ~120px in Chrome, which overlapped
-  // the Amount column. Instead: a compact text field sized to match the column (typed as
-  // MM/DD/YY), paired with an invisible native date input for the picker — clicking/focusing
-  // the text field opens the real calendar via showPicker(), so both entry paths still work.
-  dateTd.innerHTML=`<span style="position:relative;display:block">
-    <input type="text" class="fin-ph-date-text" value="${_finPHDateDisplay(row.date)}" placeholder="MM/DD/YY"
-      onfocus="const h=this.nextElementSibling;if(h&&h.showPicker)try{h.showPicker();}catch(e){}"
-      onkeydown="if(event.key==='Tab'){event.preventDefault();_finPHTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPHCancelIfNew('${id}');}"
-      onblur="_finPHSaveDateText('${id}',this.value)">
-    <input type="date" class="fin-ph-date-hidden" value="${row.date||''}" tabindex="-1"
-      onchange="_finPHDatePicked('${id}',this)">
-  </span>`;
-  amtTd.innerHTML=`<input type="number" step="0.01" class="fin-ph-amt-input" value="${Math.abs(row.amount||0)}" onkeydown="if(event.key==='Tab'){event.preventDefault();_finPHTabNext('${id}',this);}else if(event.key==='Enter'){event.preventDefault();this.blur();}else if(event.key==='Escape'){event.preventDefault();_finPHCancelIfNew('${id}');}" onblur="_finPHSave('${id}','amount',this.value)">`;
-  dateTd.querySelector('.fin-ph-date-text').focus();
-}
-async function _finPHSave(id,field,val){
-  const row=st.finance.find(r=>String(r.id)===String(id));if(!row)return;
-  const parsed=field==='date'?val:Math.abs(_finParseNum(String(val)));
-  const finishIfDone=()=>{
-    // Checking only *this* row's own tr isn't enough: tabbing off the last field of a row
-    // moves focus into the NEXT row (already re-entered edit mode by the time this runs),
-    // and a refresh here would wipe that row's fresh edit-mode DOM out from under it. Refresh
-    // only once focus has left every editing row in the popup, not just this one.
-    if(document.activeElement&&document.activeElement.closest('#finInvDetailsPop tr.fin-ph-editing'))return;
-    if(row._unsaved){
-      if(!row.amount){st.finance=st.finance.filter(r=>r.id!==row.id);_finPHRefresh();return;}
-      _finCommitNewPurchase(row);
-      return;
-    }
-    _finPHRefresh();
-  };
-  if(row._unsaved){row[field]=parsed;setTimeout(finishIfDone,0);return;}
-  if(!parsed&&field==='date'){setTimeout(finishIfDone,0);return;}
-  if(row[field]===parsed){setTimeout(finishIfDone,0);return;}
+  if(row[field]===parsed){_finPHRefresh();return;}
   const old=row[field];row[field]=parsed;
-  // finishIfDone (above) is what actually re-renders — refreshing here instead would wipe
-  // the still-mid-edit row's DOM out from under a focus() call already in flight from Tab.
-  setTimeout(finishIfDone,0);
+  _finPHRefresh();
   pushUndo(()=>{row[field]=old;renderFinancePage();_finPHRefresh();if(!String(id).startsWith('l-'))sbReqNullable('PATCH','finance',{[field]:old},`?id=eq.${id}`);},'Edited purchase');
   if(!String(id).startsWith('l-'))await sbReqNullable('PATCH','finance',{[field]:parsed},`?id=eq.${id}`);
 }
@@ -3496,11 +3464,11 @@ function _finRenderPointsContent(pop){
   });
   let html=`<div class="fin-card-hdr" style="position:relative"><span class="fin-card-title">Points &amp; Flight Credits</span><div style="display:flex;gap:4px;align-items:center"><button class="fin-add-btn fin-ph-icon-btn" onclick="addFinPoint()" title="Add">+</button><button class="fin-add-btn fin-ph-icon-btn fin-ph-close-btn" onclick="closeFinPointsDetails()" style="opacity:.6" title="Close">&#x2715;</button></div></div>`;
   html+=`<div style="padding:2px 16px 8px;font-size:11px;color:var(--muted)">Total: <span style="font-weight:600;font-size:13px;color:var(--text)">${_finFmt(_finPtsTotal())}</span></div>`;
-  html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))addFinPoint()"><table class="fin-tbl fin-ph-tbl fin-pts-tbl"><colgroup><col class="fin-pts-c-name"/><col class="fin-pts-c-amt"/><col class="fin-pts-c-exp"/><col class="fin-pts-c-remind"/><col class="fin-pts-c-remdate"/><col class="fin-pts-c-val"/><col class="fin-ph-c-del"/><col/></colgroup><thead><tr><th style="text-align:left" class="fin-pts-col-name">Name</th><th style="text-align:right" class="fin-pts-col-amt">Amount</th><th style="text-align:right" class="fin-ph-col-date fin-pts-col-exp">Expires</th><th style="text-align:right" class="fin-pts-col-remind">Remind</th><th style="text-align:right" class="fin-pts-col-remdate">Reminds On</th><th style="text-align:right" class="fin-pts-col-val">$ Value</th><th class="fin-ph-col-del"></th><th></th></tr></thead><tbody>`;
+  html+=`<div class="fin-details-scroll" ondblclick="if(!event.target.closest('tr')&&!event.target.closest('button'))addFinPoint()"><table class="fin-tbl fin-ph-tbl fin-pts-tbl"><colgroup><col class="fin-pts-c-name"/><col class="fin-pts-c-amt"/><col class="fin-pts-c-unit"/><col class="fin-pts-c-exp"/><col class="fin-pts-c-remind"/><col class="fin-pts-c-remdate"/><col class="fin-pts-c-val"/><col class="fin-ph-c-del"/><col/></colgroup><thead><tr><th style="text-align:left" class="fin-pts-col-name">Name</th><th style="text-align:right" class="fin-pts-col-amt">Amount</th><th style="text-align:left" class="fin-pts-col-unit">Unit</th><th style="text-align:right" class="fin-ph-col-date fin-pts-col-exp">Expires</th><th style="text-align:right" class="fin-pts-col-remind">Remind</th><th style="text-align:right" class="fin-pts-col-remdate">Reminds On</th><th style="text-align:right" class="fin-pts-col-val">$ Value</th><th class="fin-ph-col-del"></th><th></th></tr></thead><tbody>`;
   pts.forEach(p=>{
     const soon=p.expires_on&&(new Date(p.expires_on+'T00:00')-new Date())<1000*60*60*24*90;
     const remindDays=Number.isFinite(p.remind_days_before)?p.remind_days_before:90;
-    html+=`<tr class="fin-row" data-fin-id="${p.id}" ondblclick="if(!event.target.closest('button'))_finPointsEdit('${p.id}')"><td class="fin-pts-col-name">${escHtml(p.name||'')}</td><td style="text-align:right" class="fin-num fin-pts-col-amt">${_finPtsAmtLabel(p)}</td><td style="text-align:right${soon?';color:#ef4444;font-weight:600':''}" class="fin-num fin-ph-col-date fin-pts-col-exp">${_finPHDateDisplay(p.expires_on)}</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-pts-col-remind" title="Remind this many days before it expires">${remindDays}d</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-pts-col-remdate"><span class="fin-pts-remdate-preview">${_finPHDateDisplay(_finPtsReminderDate(p.expires_on,remindDays))}</span></td><td style="text-align:right;color:var(--muted)" class="fin-num fin-pts-col-val">${_finFmt(_finPtsValue(p))}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPoint('${p.id}')">&#x2715;</button></td><td></td></tr>`;
+    html+=`<tr class="fin-row" data-fin-id="${p.id}"><td class="fin-pts-col-name">${_finPtsEditableName(p.id,p.name)}</td><td style="text-align:right" class="fin-num fin-pts-col-amt">${_finPtsEditableAmt(p.id,p.amount)}</td><td class="fin-pts-col-unit">${_finPtsUnitSelect(p.id,p.unit)}</td><td style="text-align:right${soon?';color:#ef4444;font-weight:600':''}" class="fin-num fin-ph-col-date fin-pts-col-exp">${_finPtsEditableExp(p.id,p.expires_on)}</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-pts-col-remind" title="Remind this many days before it expires">${_finPtsEditableRemind(p.id,remindDays)}</td><td style="text-align:right;color:var(--muted)" class="fin-num fin-pts-col-remdate"><span class="fin-pts-remdate-preview">${_finPHDateDisplay(_finPtsReminderDate(p.expires_on,remindDays))}</span></td><td style="text-align:right;color:var(--muted)" class="fin-num fin-pts-col-val">${_finFmt(_finPtsValue(p))}</td><td class="fin-ph-col-del"><button class="delbtn" onclick="delFinPoint('${p.id}')">&#x2715;</button></td><td></td></tr>`;
   });
   html+=`</tbody></table></div>`;
   if(!pts.length)html+=`<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No points or flight credits yet</div>`;
@@ -3517,30 +3485,33 @@ function addFinPoint(){
   st.finPoints.push(row); // append — new entries with no expiry sort to the bottom of the list
   _finPointsRefresh();
   setTimeout(()=>{
-    _finPointsEdit(row.id);
-    const el=document.querySelector(`#finPointsPop tr[data-fin-id="${row.id}"] input`);
-    if(el)el.focus();
+    const el=document.querySelector(`#finPointsPop [data-fid="${row.id}"][data-field="name"]`);
+    if(el){el.focus();_finSelAll(el);}
     const scroll=document.querySelector('#finPointsPop .fin-details-scroll');
     if(scroll)scroll.scrollTop=scroll.scrollHeight;
   },30);
 }
-// Tab through name → amount → unit → expires; Tab on the last field of the last row adds
-// a new one (same as pressing +) instead of doing nothing — mirrors a spreadsheet's
-// tab-to-add-row muscle memory. Applied the same way in Purchase History and Recurring
-// Expenses (_finPHTabNext / _finSubTabNext).
-function _finPointsTabNext(id,fromEl){
-  const tr=fromEl.closest('tr');if(!tr)return;
-  const focusable=[...tr.querySelectorAll('input.fin-ph-date-text,input.fin-ph-amt-input,select.fin-pts-unit-sel,input.fin-pts-remind-input')];
-  const idx=focusable.indexOf(fromEl);
-  if(idx>=0&&idx<focusable.length-1){const nxt=focusable[idx+1];nxt.focus();if(nxt.select)nxt.select();return;}
-  const nextRow=tr.nextElementSibling;
-  if(nextRow&&nextRow.dataset.finId){
-    const rowId=nextRow.dataset.finId;
-    _finPointsEdit(rowId);
-    setTimeout(()=>{const first=document.querySelector(`#finPointsPop tr[data-fin-id="${rowId}"] input`);if(first){first.focus();first.select&&first.select();}},20);
-  }else{
-    addFinPoint();
-  }
+// Tab through name → amount → unit → expires → remind; Tab on the last field of the last
+// row adds a new one (same as pressing +) instead of doing nothing — mirrors a spreadsheet's
+// tab-to-add-row muscle memory. Same re-locate-by-data-fid/data-field pattern as Purchase
+// History and Recurring Expenses (_finPHTabNext / _finSubTabNext) — never holds a stale
+// element reference across the blur-triggered re-render.
+function _finPointsTabNext(id,curField){
+  setTimeout(()=>{
+    const cur=document.querySelector(`#finPointsPop [data-fid="${id}"][data-field="${curField}"]`);
+    if(!cur)return;
+    const row=cur.closest('tr');if(!row)return;
+    const focusable=[...row.querySelectorAll('[contenteditable="true"],select.fin-freq-sel')].sort((a,b)=>a.getBoundingClientRect().left-b.getBoundingClientRect().left);
+    const idx=focusable.indexOf(cur);
+    let nxt;
+    if(idx>=0&&idx<focusable.length-1){nxt=focusable[idx+1];}
+    else{
+      const nextRow=row.nextElementSibling;
+      if(nextRow)nxt=nextRow.querySelector('[contenteditable="true"]');
+      else{addFinPoint();return;}
+    }
+    if(nxt){nxt.focus();if(nxt.contentEditable==='true')_finSelAll(nxt);else if(nxt.select)nxt.select();}
+  },30);
 }
 function _finPointsEdit(id){
   const row=st.finPoints.find(r=>String(r.id)===String(id));if(!row)return;
