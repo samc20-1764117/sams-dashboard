@@ -16,14 +16,14 @@
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
 <title>Sam's Dashboard</title>
 <script>
-window._BUILD='20260904c';var BUILD=window._BUILD;
+window._BUILD='20260904d';var BUILD=window._BUILD;
 if(sessionStorage._mReloaded===BUILD);else{
   fetch('/version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(d.v&&d.v!==BUILD){sessionStorage._mReloaded=d.v;location.reload();}
   }).catch(function(){});
 }
 </script>
-<link rel="stylesheet" href="styles.css?v=20260904c">
+<link rel="stylesheet" href="styles.css?v=20260904d">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');var d=document.documentElement;var isDk=!!(s.cfg&&s.cfg.dark);if(isDk)d.classList.add('init-dark');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',isDk?'#111113':'#fdf8f4');try{window.webkit.messageHandlers.themeColor.postMessage(isDk?'#111113':'#fdf8f4');}catch(e){}if(s.sb!==false)d.classList.add('init-sb');}catch(e){}})();</script>
 </head>
 <body class="preload">
@@ -493,9 +493,28 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div style="flex:1"></div>
     <button class="btn-plus" onclick="openHabitModal()">+</button>
   </div>
-  <div id="habitsBoardView" style="flex-shrink:0;height:200px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:12px"></div>
-  <div class="tb-scroll" id="habitsTbScroll" style="flex:1;min-height:0;margin-top:16px">
-    <div class="tb-grid" id="habitsTbGrid"></div>
+  <div id="habitsBoardView" style="flex:1;min-height:0;display:grid;grid-template-columns:1.6fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:16px;margin-top:12px">
+    <div style="grid-column:1;grid-row:1 / span 2;display:flex;flex-direction:column;min-height:0">
+      <div class="tb-scroll" id="habitsTbScroll" style="flex:1;min-height:0">
+        <div class="tb-grid" id="habitsTbGrid"></div>
+      </div>
+    </div>
+    <div class="card" style="grid-column:2;grid-row:1;min-height:0">
+      <div class="ch"><div class="ct">Building</div><div style="flex:1"></div><span id="habitsCountBuilding" style="font-size:10px;color:var(--muted)"></span></div>
+      <div id="habitsColBuilding" ondragover="_habitStageColDragOver(event)" ondragleave="this.style.background=''" ondrop="_habitStageColDrop(event,'building')" ondblclick="if(!event.target.closest('.habit-row'))openHabitModal(null,'building')" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
+    </div>
+    <div class="card" style="grid-column:2;grid-row:2;min-height:0">
+      <div class="ch"><div class="ct">Established</div><div style="flex:1"></div><span id="habitsCountEstablished" style="font-size:10px;color:var(--muted)"></span></div>
+      <div id="habitsColEstablished" ondragover="_habitStageColDragOver(event)" ondragleave="this.style.background=''" ondrop="_habitStageColDrop(event,'established')" ondblclick="if(!event.target.closest('.habit-row'))openHabitModal(null,'established')" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
+    </div>
+    <div class="card" style="grid-column:3;grid-row:1;min-height:0">
+      <div class="ch"><div class="ct">Future</div><div style="flex:1"></div><span id="habitsCountFuture" style="font-size:10px;color:var(--muted)"></span></div>
+      <div id="habitsColFuture" ondragover="_habitStageColDragOver(event)" ondragleave="this.style.background=''" ondrop="_habitStageColDrop(event,'future')" ondblclick="if(!event.target.closest('.habit-row'))openHabitModal(null,'future')" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
+    </div>
+    <div class="card" style="grid-column:3;grid-row:2;min-height:0">
+      <div class="ch"><div class="ct">Ideas</div></div>
+      <div style="flex:1;min-height:0;overflow-y:auto;padding:12px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:11px">Coming soon</div>
+    </div>
   </div>
 </div>
 <div class="page" id="page-ideas" style="padding:60px clamp(12px,3vw,56px) 24px clamp(12px,3vw,56px)">
@@ -625,8 +644,8 @@ if(sessionStorage._mReloaded===BUILD);else{
       <select id="habitStageInput" style="display:none"><option value="future">Future</option><option value="building">Building</option><option value="established">Established</option></select>
     </div>
     <div class="mfield" style="display:flex;gap:8px">
-      <div style="flex:1;display:flex;flex-direction:column"><label>Time</label><input id="habitTimeInput" type="time" style="flex:1"></div>
-      <div style="flex:1;display:flex;flex-direction:column"><label>Duration</label><select id="habitDurationInput" style="flex:1"><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="20" selected>20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></div>
+      <div style="flex:1;display:flex;flex-direction:column"><label>Time</label><input id="habitTimeInput" type="time" style="flex:1;border-radius:6px;box-sizing:border-box"></div>
+      <div style="flex:1;display:flex;flex-direction:column"><label>Duration</label><select id="habitDurationInput" style="flex:1;border-radius:6px;box-sizing:border-box"><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="20" selected>20 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option></select></div>
     </div>
     <div class="mact"><button class="btn btn-ghost" id="habitDelBtn" onclick="deleteHabitFromModal()" style="display:none;margin-right:auto;color:#ef4444">Delete</button><button class="btn btn-ghost" onclick="closeMod('habitModal')">Cancel</button><button class="btn btn-dark" id="habitSaveBtn" onclick="saveHabitModal()">Add</button></div>
   </div>
@@ -963,9 +982,9 @@ if(sessionStorage._mReloaded===BUILD);else{
 </div>
 
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260904c"></script>
-<script src="overview.js?v=20260904c"></script>
-<script src="features.js?v=20260904c"></script>
+<script src="core.js?v=20260904d"></script>
+<script src="overview.js?v=20260904d"></script>
+<script src="features.js?v=20260904d"></script>
 <script src="pup-skills.js?v=20260608b"></script>
 <script src="videos.js?v=20260608b"></script>
 

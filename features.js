@@ -2349,16 +2349,17 @@ function _habitStageColDrop(e,stage){
   setHabitStage(_habitDragId,stage);
   _habitDragId=null;
 }
+const _HABIT_COL_ID={future:'habitsColFuture',building:'habitsColBuilding',established:'habitsColEstablished'};
+const _HABIT_COUNT_ID={future:'habitsCountFuture',building:'habitsCountBuilding',established:'habitsCountEstablished'};
 function renderHabitsPage(){
-  const boardEl=document.getElementById('habitsBoardView');
-  if(!boardEl)return;
-  boardEl.innerHTML=_HABIT_STAGES.map(([stage,label])=>{
+  _HABIT_STAGES.forEach(([stage])=>{
+    const colEl=document.getElementById(_HABIT_COL_ID[stage]);
+    const countEl=document.getElementById(_HABIT_COUNT_ID[stage]);
+    if(!colEl)return;
     const items=st.habits.filter(h=>h.stage===stage&&h.is_enabled!==false).sort((a,b)=>(a.sort_order??0)-(b.sort_order??0)||(a.name||'').localeCompare(b.name||''));
-    return`<div class="card" style="min-height:0">
-      <div class="ch"><div class="ct">${label}</div><div style="flex:1"></div><span style="font-size:10px;color:var(--muted)">${items.length}</span></div>
-      <div ondragover="_habitStageColDragOver(event)" ondragleave="this.style.background=''" ondrop="_habitStageColDrop(event,'${stage}')" ondblclick="if(!event.target.closest('.habit-row'))openHabitModal(null,'${stage}')" style="flex:1;min-height:0;overflow-y:auto;padding:12px">${items.length?items.map(_habitBoardRow).join(''):_habitEmpty('Double-click to add, or drag a habit here')}</div>
-    </div>`;
-  }).join('');
+    if(countEl)countEl.textContent=items.length;
+    colEl.innerHTML=items.length?items.map(_habitBoardRow).join(''):_habitEmpty('Double-click to add, or drag a habit here');
+  });
   _renderHabitsScheduleGrid();
 }
 // ── Habits Schedule Grid (drag-and-drop timeblock, mirrors Overview's day timeline
