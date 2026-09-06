@@ -6761,6 +6761,7 @@ document.addEventListener('keydown',async e=>{
       const dir=e.key==='ArrowLeft'?-1:1;
       const _shiftDs=(ds,n)=>{const d=new Date(ds+'T12:00:00');d.setDate(d.getDate()+n);return d2s(d);};
       const undos=[];
+      const renames=[];
       let moved=false;
       for(const sid of selectedTasks){
         // Regular task
@@ -6874,17 +6875,23 @@ document.addEventListener('keydown',async e=>{
             }
             (st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===prevDs).forEach(bl=>{bl.ds=newDs;sbUpdateBlock(bl.id,{day_date:newDs});});
             undos.push(()=>{if(prevSnap){const m2=_vidStepDayMap();m2[key]=prevSnap;_vidStepDayMapSet(m2);}(st.blocks||[]).filter(bl=>String(bl._vidStepVid)===String(vidId)&&bl._vidStepName===step&&bl.ds===newDs).forEach(bl=>{bl.ds=prevDs;sbUpdateBlock(bl.id,{day_date:prevDs});});});
+            // sid has the OLD date baked in (vidstep-{vid}-{step}-{ds}) — swap selection to the new
+            // dated id so the next arrow press reads the chip's current day instead of replaying
+            // the same stale date every time (was the "stuck after 1 day" bug, 2026-09-06).
+            if(chipDs){const newSid='vidstep-'+vidId+'-'+step+'-'+newDs;renames.push({from:sid,to:newSid});}
           }
           moved=true;continue;
         }
       }
-      if(moved){e.preventDefault();save();renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
+      if(moved){e.preventDefault();
+        renames.forEach(({from,to})=>{if(selectedTasks.has(from)){selectedTasks.delete(from);selectedTasks.add(to);}if(lastSelectedId===from)lastSelectedId=to;});
+        save();renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
         // Keep weekly-cal keyboard nav (_wkcColKeyNav) pointed at the day the selection just moved
         // to — without this, Up/Down right after this move kept searching the stale OLD day and
         // found nothing there, so arrow nav silently no-op'd until the next click (2026-08-24 fix,
         // same root cause as the drag-to-another-day fix above).
         if(_lastSelSurface==='wkcCol'&&_lastSelWkcDs)_lastSelWkcDs=_shiftDs(_lastSelWkcDs,dir);
-        pushUndo(()=>{undos.forEach(fn=>fn());if(_lastSelSurface==='wkcCol'&&_lastSelWkcDs)_lastSelWkcDs=_shiftDs(_lastSelWkcDs,-dir);save();renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();},'Moved tasks');
+        pushUndo(()=>{undos.forEach(fn=>fn());renames.forEach(({from,to})=>{if(selectedTasks.has(to)){selectedTasks.delete(to);selectedTasks.add(from);}if(lastSelectedId===to)lastSelectedId=from;});if(_lastSelSurface==='wkcCol'&&_lastSelWkcDs)_lastSelWkcDs=_shiftDs(_lastSelWkcDs,-dir);save();renderAll();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();},'Moved tasks');
       }
     }
     return;
