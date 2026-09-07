@@ -7780,11 +7780,17 @@ function _rolloverPromptQueue(items,clickEvent){
   const next=()=>_rolloverPromptQueue(rest,clickEvent);
   const fakeEvent={preventDefault(){},stopPropagation(){},clientX:clickEvent?.clientX||window.innerWidth/2,clientY:clickEvent?.clientY||window.innerHeight/2};
   if(item._wrWeekMiss){
-    _wrScopePrompt(fakeEvent,item.name,item._wkKey,
+    _wrecScopePrompt(fakeEvent,item.name,item._wkKey,
       ()=>{writeWrOverride(item._ruleId,item._wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task'});next();},
       ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,false);next();},
-      ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,true,false);next();},
-      ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,true,true);next();});
+      ()=>{wrMoveToThisWeek(item._ruleId,item._wkKey,true,false);next();});
+  } else if(item._isWrec){
+    const rec=st.recurring.find(x=>String(x.id)===String(item._recId));
+    if(!rec){next();return;}
+    _wrecScopePrompt(fakeEvent,item.name,item._wkKey,
+      ()=>{_recSkipPastWeek(rec,item._wkKey);next();},
+      ()=>{_recMoveThisOccToToday(rec,item._wkKey);next();},
+      ()=>{_recMoveAllFuture(rec,item._wkKey,tod(),null,true);next();});
   } else {
     const rec=st.recurring.find(x=>String(x.id)===String(item._recId));
     if(!rec){next();return;}

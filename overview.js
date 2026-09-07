@@ -979,6 +979,15 @@ function _wrScopePrompt(e,name,wkKey,onSkip,onThisTime,onSameDay,onChangeDay){
   const title=name?`${name} (recurring) ${_weeksAgoLabel(wkKey)}`:'';
   showWrScopePicker(e,'↻  Same day','↻  Change day to today',onSameDay,onChangeDay,'⊘  This time only',onThisTime,title,'⊘  Skip past week',onSkip);
 }
+// WR/wrec past-week miss: 3-option menu (Skip past week / Move this occurrence / Move all future)
+// — these are override-driven weekly-reset tasks with no meaningful "keep day vs change day"
+// distinction the way a freeform non-WR recurring task has, so unlike _wrScopePrompt's 4-way menu
+// below they collapse "move all future" to a single option (day-of-week left unchanged, setDow
+// false — matches the Weekly Reset container's own top-block Move button, overview.js ~3109).
+function _wrecScopePrompt(e,name,wkKey,onSkip,onThis,onAll){
+  const title=name?`${name} (weekly reset) ${_weeksAgoLabel(wkKey)}`:'';
+  showWrScopePicker(e,'⊞  Move this occurrence','↻  Move all future',onThis,onAll,'⊘  Skip past week',onSkip,title);
+}
 function _ovRowMoveClick(e,kind,id,wkKey){
   e.stopPropagation();e.preventDefault();
   const curWk=getWkKey(0);
@@ -986,11 +995,10 @@ function _ovRowMoveClick(e,kind,id,wkKey){
   if(kind==='wrrule'){
     const rule=st.wrRules.find(r=>String(r.id)===String(id));if(!rule)return;
     if(pastWeek){
-      _wrScopePrompt(e,rule.name,wkKey,
+      _wrecScopePrompt(e,rule.name,wkKey,
         ()=>writeWrOverride(id,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task'}),
         ()=>wrMoveToThisWeek(id,wkKey,false),
-        ()=>wrMoveToThisWeek(id,wkKey,true,false),
-        ()=>wrMoveToThisWeek(id,wkKey,true,true));
+        ()=>wrMoveToThisWeek(id,wkKey,true,false));
     } else {
       if(!rule._dateOverrides)rule._dateOverrides={};
       const prev=rule._dateOverrides[wkKey];const today=tod();
@@ -998,6 +1006,16 @@ function _ovRowMoveClick(e,kind,id,wkKey){
       save();renderAll();
       sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rule._dateOverrides},`?id=eq.${id}`);
       pushUndo(()=>{if(prev!==undefined)rule._dateOverrides[wkKey]=prev;else delete rule._dateOverrides[wkKey];save();renderAll();sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rule._dateOverrides},`?id=eq.${id}`);},'Moved to today');
+    }
+  } else if(kind==='wrec'){
+    const rec=st.recurring.find(x=>String(x.id)===String(id));if(!rec)return;
+    if(pastWeek){
+      _wrecScopePrompt(e,rec.name,wkKey,
+        ()=>_recSkipPastWeek(rec,wkKey),
+        ()=>_recMoveThisOccToToday(rec,wkKey),
+        ()=>_recMoveAllFuture(rec,wkKey,tod(),null,true));
+    } else {
+      _recMoveThisOccToToday(rec,wkKey||curWk);
     }
   } else {
     const rec=st.recurring.find(x=>String(x.id)===String(id));if(!rec)return;
@@ -1063,7 +1081,7 @@ function tRowTodayVirt(t,tbArrow=false,noColor=false){
     ${_hebBadge(t.name,t._wkKey)}${_pupBadge(t.name)}<span class="tn">${t.name}${t._wkNote?` <span class="wk-note">@${escHtml(t._wkNote)}</span>`:''}</span>
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
-    ${ov&&t.due_date?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_ovRowMoveClick(event,'${t._isWrRule?'wrrule':'rec'}','${t._isWrRule?t._ruleId:t._recId}','${t._wkKey||getWkKey(0)}')`):''}
+    ${ov&&t.due_date?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_ovRowMoveClick(event,'${t._isWrRule?'wrrule':t._isWrec?'wrec':'rec'}','${t._isWrRule?t._ruleId:t._recId}','${t._wkKey||getWkKey(0)}')`):''}
     <button class="delbtn" onclick="event.stopPropagation();${_xBtn}">✕</button>
   </div>`;
 }
