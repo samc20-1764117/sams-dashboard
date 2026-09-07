@@ -3651,6 +3651,11 @@ function mToggleDark() {
 }
 
 async function mInit() {
+  // Visible build stamp (login screen + More tab) so a "did my change actually load"
+  // question can be answered by looking at the screen instead of guessing — reads
+  // window._BUILD (set inline in mobile.html's <head>) so it always reflects whatever
+  // actually loaded, never needs manual updating.
+  document.querySelectorAll('.m-build-stamp').forEach(el => { el.textContent = 'Build ' + (window._BUILD || '?'); });
   load();
   // Apply dark mode immediately after load() restores cfg.dark — mirrors desktop's init()
   // (features.js). Must also clear the inline --bg custom property that features.js's
