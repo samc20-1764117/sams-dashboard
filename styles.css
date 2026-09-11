@@ -1425,6 +1425,8 @@ body.dark .cat-sel-drop{background:rgba(24,24,28,.98);}
 .vid-cal-day{min-height:18px;border-radius:3px;padding:1px;transition:background .12s;position:relative}
 .vid-ov-focus{background:rgba(250,204,21,.06)!important;box-shadow:inset 0 0 0 1px rgba(234,179,8,.18)!important}
 .vid-ov-nest-target{background:rgba(14,165,233,.10)!important;box-shadow:inset 0 0 0 1.5px rgba(14,165,233,.5)!important}
+.vid-ov-nest-before{box-shadow:inset 0 2px 0 0 rgba(14,165,233,.8)!important}
+.vid-ov-nest-after{box-shadow:inset 0 -2px 0 0 rgba(14,165,233,.8)!important}
 .vid-cal-day.vid-cal-today{background:rgba(249,115,22,.06);box-shadow:inset 0 0 0 1.5px rgba(249,115,22,.25);border-radius:4px}
 .vid-cal-day.vid-cal-drop{background:rgba(14,165,233,.08)!important;box-shadow:inset 0 0 0 1px rgba(14,165,233,.4)!important}
 .vid-cal-chip{font-size:8px;font-weight:600;padding:1px 4px;border-radius:3px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:grab;transition:opacity .1s;width:100%;box-sizing:border-box}.vid-cal-chip:hover{opacity:.8}

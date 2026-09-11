@@ -5336,7 +5336,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" data-postvid="${csid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_cPostColor};cursor:pointer;line-height:12px">${_cPostDate||''}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="event.preventDefault()" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:8px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex-shrink:0;min-width:0;width:20px;margin-left:-3px;margin-right:-3px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums;font-family:Menlo,Consolas,monospace;overflow:visible">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="_vidOvNestChildDragOver(event)" ondragleave="_vidOvNestChildDragLeave(event)" ondrop="_vidOvNestChildDrop(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" data-nest-parent="${sid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:8px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex-shrink:0;min-width:0;width:20px;margin-left:-3px;margin-right:-3px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums;font-family:Menlo,Consolas,monospace;overflow:visible">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone"><button class="vid-insert-btn" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this.closest('.vid-insert-zone'))">+</button></div>`;}
   });
   return html;
@@ -6170,7 +6170,7 @@ function _vidOvAllProgRow(v){
       const csid=String(c.id);
       const _csel=_voaSel.has(csid);
       const _cxBtn=`<button class="vid-ov-x" onclick="event.stopPropagation();_vidOvXClick('${csid}',this)" title="Actions">✕</button>`;
-      html+=`<div data-vidrow="${csid}" data-alldrag="${csid}" draggable="true" ondragstart="dragId='vid::${csid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${csid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" class="${_csel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:rgba(140,135,160,.4);font-size:9px">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:11px">${escHtml(c.topic||c.title)}</span><div style="display:flex;flex-shrink:0;align-items:center">${_vidOvStepDots(c,['step_build'])}</div><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:flex-end;line-height:12px">${_cxBtn}</div></div>`;
+      html+=`<div data-vidrow="${csid}" data-alldrag="${csid}" data-nest-parent="${sid}" draggable="true" ondragstart="dragId='vid::${csid}';event.dataTransfer.effectAllowed='move'" ondragover="_vidOvNestChildDragOver(event)" ondragleave="_vidOvNestChildDragLeave(event)" ondrop="_vidOvNestChildDrop(event,'${sid}','${csid}')" onclick="_voaRowClick(event,'${csid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" class="${_csel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''"><div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:rgba(140,135,160,.4);font-size:9px">└</div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:11px">${escHtml(c.topic||c.title)}</span><div style="display:flex;flex-shrink:0;align-items:center">${_vidOvStepDots(c,['step_build'])}</div><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:flex-end;line-height:12px">${_cxBtn}</div></div>`;
     });
   }
   return html;
@@ -6323,15 +6323,56 @@ function _vidOvNestDrop(e,targetBigId){
   e.currentTarget.classList.remove('vid-ov-nest-target');
   if(!_vidOvIsNestZone(e))return; // outside the middle band — let it bubble to the container's own drop handler
   e.preventDefault();e.stopPropagation();
+  _vidOvNestCommit(targetBigId,null,false);
+}
+// ── Nest at a specific position between two existing children (2026-09-11) ────────────────────
+// Dropping on a Big's own row (above) always appends to the end of its children; dropping on a
+// CHILD row instead inserts before/after that specific sibling, split by which half of the child's
+// own row height the cursor is over — same top/bottom-half convention used elsewhere for "insert
+// here" (e.g. the reorder-indicator line). Every child row carries data-nest-parent so this can
+// check whether the ALREADY-in-progress drag is a same-parent child reorder (the pre-existing
+// indicator-line system in #vidOvContent, main list only) — if so this backs off entirely (no
+// preventDefault/stopPropagation) so that system's own drop still fires exactly as it did before
+// this feature existed; only a cross-parent nest (different parent, standalone, or a Big being
+// demoted) is claimed here.
+function _vidOvNestChildDragOver(e){
+  e.preventDefault(); // always allow a drop here — matches this row's old unconditional preventDefault()
+  if(_vidOvChildDrag){
+    const dragC=(st.videos||[]).find(x=>String(x.id)===String(_vidOvChildDrag.dataset.cvid));
+    if(dragC&&String(dragC.big_video_id)===String(e.currentTarget.dataset.nestParent)){
+      e.currentTarget.classList.remove('vid-ov-nest-before','vid-ov-nest-after');
+      return; // same-parent reorder already in flight — let it keep bubbling to the existing system
+    }
+  }
+  e.stopPropagation();
+  const rect=e.currentTarget.getBoundingClientRect();
+  const before=(e.clientY-rect.top)/rect.height<0.5;
+  e.currentTarget.classList.toggle('vid-ov-nest-before',before);
+  e.currentTarget.classList.toggle('vid-ov-nest-after',!before);
+}
+function _vidOvNestChildDragLeave(e){e.currentTarget.classList.remove('vid-ov-nest-before','vid-ov-nest-after');}
+function _vidOvNestChildDrop(e,targetBigId,refChildId){
+  const isBefore=e.currentTarget.classList.contains('vid-ov-nest-before');
+  e.currentTarget.classList.remove('vid-ov-nest-before','vid-ov-nest-after');
+  if(_vidOvChildDrag){
+    const dragC=(st.videos||[]).find(x=>String(x.id)===String(_vidOvChildDrag.dataset.cvid));
+    if(dragC&&String(dragC.big_video_id)===String(targetBigId))return; // let the existing same-parent reorder drop run instead
+  }
+  e.preventDefault();e.stopPropagation();
+  _vidOvNestCommit(targetBigId,refChildId,isBefore);
+}
+// Shared by both drop sites above. refChildId/insertBefore null/false = append to the end (dropped
+// on the Big's own row); otherwise splices in next to that specific sibling.
+function _vidOvNestCommit(targetBigId,refChildId,insertBefore){
   const draggedId=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
-  if(!draggedId||String(draggedId)===String(targetBigId))return;
+  if(!draggedId||String(draggedId)===String(targetBigId)||String(draggedId)===String(refChildId))return;
   const target=(st.videos||[]).find(x=>String(x.id)===String(targetBigId));
   if(!target||target.video_type!=='B'||target.is_deleted)return;
   const dragged=(st.videos||[]).find(x=>String(x.id)===String(draggedId));
   if(!dragged||dragged.is_deleted)return;
-  // No-op guard: already nested here as an L (not a demote-in-progress) — dropping back on its own
-  // parent shouldn't reorder-to-end or fire a stray undo toast.
-  if(dragged.video_type==='L'&&String(dragged.big_video_id)===String(targetBigId))return;
+  // No-op guard: dropped back onto its own parent's own row (append-to-end path only — a
+  // between-siblings drop should still be free to actually move it within the group).
+  if(refChildId==null&&dragged.video_type==='L'&&String(dragged.big_video_id)===String(targetBigId))return;
   // Clear same-container reorder-drag state so a stale _vidOvBDrag/_vidOvChildDrag from this same
   // gesture can't also fire the container's own reorder branch on a later event.
   _vidOvBDrag=null;_vidOvChildDrag=null;_vidOvClearIndicator();
@@ -6345,12 +6386,23 @@ function _vidOvNestDrop(e,targetBigId){
       sbReqSilent('PATCH','videos',{big_video_id:null},`?id=eq.${c.id}`);
     });
   }
-  const siblings=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(targetBigId));
-  const maxOrder=Math.max(0,...siblings.map(c=>c.vid_order??0));
+  const siblings=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(targetBigId)&&String(c.id)!==String(dragged.id)).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  siblings.forEach((s,i)=>{if(s.vid_order==null)s.vid_order=i;});
+  let newOrder;
+  const refIdx=refChildId!=null?siblings.findIndex(s=>String(s.id)===String(refChildId)):-1;
+  if(refIdx<0){
+    newOrder=(Math.max(0,...siblings.map(s=>s.vid_order??0)))+1;
+  }else if(insertBefore){
+    const prevSib=siblings[refIdx-1];
+    newOrder=prevSib?(prevSib.vid_order+siblings[refIdx].vid_order)/2:siblings[refIdx].vid_order-1;
+  }else{
+    const nextSib=siblings[refIdx+1];
+    newOrder=nextSib?(siblings[refIdx].vid_order+nextSib.vid_order)/2:siblings[refIdx].vid_order+1;
+  }
   dragged.video_type='L';
   dragged.big_video_id=parseInt(targetBigId)||targetBigId;
   if(dragged.status!==target.status&&dragged.status!=='published')dragged.status=target.status;
-  dragged.vid_order=maxOrder+1;
+  dragged.vid_order=newOrder;
 
   save();_renderVidOvMenu();if(_vidOvAllOpen)_vidOvRenderAll();renderAll();
   sbReqSilent('PATCH','videos',{video_type:'L',big_video_id:dragged.big_video_id,status:dragged.status,vid_order:dragged.vid_order},`?id=eq.${dragged.id}`);
