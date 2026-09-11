@@ -5224,7 +5224,11 @@ function _renderVidOvMenu(){
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   const _calListW=(_vidCalOpen||_vidOvAllOpen)?menu.dataset.calListW:null;
-  let listHtml=`<div id="vidOvContent" style="padding:4px 10px 0;${_calListW?`width:${_calListW};flex-shrink:0`:'flex:1;min-width:0'};min-height:0;overflow-y:auto" ondragover="event.preventDefault();_vidOvDragIndicator(event)" ondragleave="_vidOvClearIndicator()" ondrop="_vidOvContentDrop(event)">`;
+  // dragover: an in-progress same-container reorder (_vidOvChildDrag/_vidOvBDrag) always wins,
+  // unchanged. Otherwise this is a foreign/cross drag heading for the _vidOvUpNextDrop fallback —
+  // gate it the same way as the toolbox's column (_vidOvBlankDropAllowed) so a grouped child can't
+  // be silently stranded by a blank-space drop here either (2026-09-11).
+  let listHtml=`<div id="vidOvContent" style="padding:4px 10px 0;${_calListW?`width:${_calListW};flex-shrink:0`:'flex:1;min-width:0'};min-height:0;overflow-y:auto" ondragover="if(_vidOvChildDrag||_vidOvBDrag){event.preventDefault();_vidOvDragIndicator(event);this.style.background=''}else if(_vidOvBlankDropAllowed()){event.preventDefault();this.style.background=''}else{this.style.background='rgba(239,68,68,.04)'}" ondragleave="_vidOvClearIndicator();this.style.background=''" ondrop="this.style.background='';_vidOvContentDrop(event)">`;
   // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
   listHtml+='<div style="display:flex;align-items:center;padding:3px 19px 3px 6px;gap:5px;position:relative">';
   listHtml+='<div style="width:12px;flex-shrink:0"></div>';
@@ -6201,7 +6205,7 @@ function _vidOvRenderAll(){
   h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1.5px solid rgba(210,205,228,.3);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em">In Progress</span></div>`;
   h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="font-size:10px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add idea (N)">+</button><button onclick="event.stopPropagation();_vidOvCloseAll()" style="background:none;border:none;cursor:pointer;padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Close all videos"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button></div>`;
   // In Progress column
-  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1.5px solid rgba(210,205,228,.3);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
+  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1.5px solid rgba(210,205,228,.3);padding:4px" ondragover="if(_vidOvBlankDropAllowed()){event.preventDefault();this.style.background='rgba(245,158,11,.03)'}else{this.style.background='rgba(239,68,68,.06)'}" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
   if(inProg.length){
     // Divider before a standalone L that directly follows a Big's own row/children — same "not part
     // of the group above it" clarification as the Up Next list (2026-09-11).
@@ -6239,11 +6243,21 @@ function _vidOvRenderAll(){
   h+='</div></div>';
   panel.innerHTML=h;
 }
+// A video that already belongs to a group (has big_video_id) must go through an explicit nest-drop
+// (onto a specific Big/child row) or an explicit ungroup (Ideas drop / demote) to change status or
+// group — never this generic "anywhere in the column" drop. Without this guard, a child dropped in
+// blank status-only space keeps its OLD big_video_id but gets a NEW status; if no view's filter
+// happens to show that exact combination, the video silently vanishes everywhere with zero feedback
+// — indistinguishable from deletion (2026-09-11 fix, reported as "dragging to an empty spot deletes
+// it"). The dragover gate (_vidOvBlankDropAllowed, used on the column's own ondragover) is the
+// primary enforcement — it stops 'drop' from even firing here in the rejected case — this is a
+// defensive second check in case some other path ever calls this directly.
 function _vidOvAllDrop(event,newStatus){
   event.preventDefault();
   const vidId=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
   if(!vidId)return;
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
+  if(v.big_video_id)return;
   const prev=v.status;
   v.status=newStatus;
   // Promote/demote children when moving a B video
@@ -6282,6 +6296,10 @@ function _vidOvUpNextDrop(event){
   const vidId=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
   if(!vidId)return;
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
+  // Same guard as _vidOvAllDrop — a grouped child dropped in blank space here would otherwise get
+  // status='up_next' while keeping its old (possibly status-mismatched) parent link, which can make
+  // it vanish from every view's filters (2026-09-11 fix).
+  if(v.big_video_id)return;
   if(v.status==='up_next')return;
   const prev=v.status;
   v.status='up_next';
@@ -6308,6 +6326,17 @@ function _vidOvUpNextDrop(event){
 // owns that zone (the Up Next list's own B-reorder indicator line, or the toolbox column's
 // status-change drop) — this is what lets simple reordering/status-drop keep working right next to
 // the new nest behavior instead of the nest zone swallowing every drop on a Big row.
+// Gates the generic "anywhere in this column/list" status-drop zones (used on their own dragover,
+// so the browser shows a real no-drop cursor and 'drop' never even fires there): a video that
+// already belongs to a group can't use this catch-all — it must land on an explicit nest target
+// (a Big row's middle band, or a specific child row) or an explicit ungroup action instead. See
+// _vidOvAllDrop's comment for why (2026-09-11).
+function _vidOvBlankDropAllowed(){
+  const vid=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
+  if(!vid)return true;
+  const v=(st.videos||[]).find(x=>String(x.id)===String(vid));
+  return !v||!v.big_video_id;
+}
 function _vidOvIsNestZone(e){
   const rect=e.currentTarget.getBoundingClientRect();
   if(!rect.height)return false;
