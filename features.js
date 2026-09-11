@@ -95,10 +95,11 @@ async function submitQA(){
     let store=(document.getElementById('qaStore')?.value||'').trim();
     if(store==='__custom')store=(document.getElementById('qaStoreCustom')?.value||'').trim();
     if(!store)store='Online';
-    const s={id:'l-'+Date.now(),name:n,store,done:false};st.shopping.push(s);renderAll();
+    const shopOrder=_shopNewOrder();
+    const s={id:'l-'+Date.now(),name:n,store,done:false,shop_order:shopOrder};st.shopping.push(s);renderAll();
     let shopServerId=null;
     pushUndo(()=>{const rid=shopServerId||s.id;st.shopping=st.shopping.filter(x=>String(x.id)!==String(rid));renderAll();if(shopServerId)sbReq('DELETE','shopping_list',null,`?id=eq.${shopServerId}`);},'Added item');
-    const sv=await sbReq('POST','shopping_list',{name:n,store,done:false});
+    const sv=await sbReq('POST','shopping_list',{name:n,store,done:false,shop_order:shopOrder});
     if(sv&&sv[0]){const i=st.shopping.findIndex(x=>x.id===s.id);if(i>-1)st.shopping[i]=sv[0];shopServerId=String(sv[0].id);save();}
     renderShopOv();return;
   }
@@ -886,7 +887,7 @@ function renderShopFull(){save();
   const sf=document.getElementById('shopFull');if(!sf){renderShopOv();return;}
   if(mode==='manual'){
     sf.innerHTML='';
-    const sorted=[...[...todo].sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999)),...done];
+    const sorted=[..._shopOvSort(todo),...done];
     sorted.forEach(s=>{
       const el=document.createElement('div');
       el.className='ti'+(s.done?' done':'');el.id='ti-shop-cal-'+s.id;
@@ -916,7 +917,7 @@ function renderShopFull(){save();
             el.style.opacity='';
             if(dragging&&ph){
               _shopDragged=true;
-              const items=[...todo].sort((a,b)=>(a.shop_order??9999)-(b.shop_order??9999));
+              const items=_shopOvSort(todo);
               const origIds=items.map(x=>String(x.id));
               sf.insertBefore(el,ph);ph.remove();
               const allRows=[...document.querySelectorAll('#shopFull .ti:not(.done)')];
@@ -1026,8 +1027,9 @@ async function togShop(id,done){
 async function delShop(id){const s=st.shopping.find(x=>String(x.id)===String(id));if(!s)return;const copy={...s};st.shopping=st.shopping.filter(x=>String(x.id)!==String(id));renderShopFull();pushUndo(()=>{st.shopping.push(copy);renderShopFull();},'Deleted item');await sbReq('DELETE','shopping_list',null,`?id=eq.${id}`);}
 async function addShopFull(){
   const n=document.getElementById('nsN').value.trim();if(!n)return;const s2=document.getElementById('nsS').value;
-  const s={id:'l-'+Date.now(),name:n,store:s2,done:false};st.shopping.push(s);renderShopFull();document.getElementById('nsN').value='';
-  const sv=await sbReq('POST','shopping_list',{name:n,store:s2,done:false});if(sv&&sv[0]){const i=st.shopping.findIndex(x=>x.id===s.id);if(i>-1)st.shopping[i]=sv[0];}
+  const shopOrder=_shopNewOrder();
+  const s={id:'l-'+Date.now(),name:n,store:s2,done:false,shop_order:shopOrder};st.shopping.push(s);renderShopFull();document.getElementById('nsN').value='';
+  const sv=await sbReq('POST','shopping_list',{name:n,store:s2,done:false,shop_order:shopOrder});if(sv&&sv[0]){const i=st.shopping.findIndex(x=>x.id===s.id);if(i>-1)st.shopping[i]=sv[0];}
 }
 
 // ── Month modal ────────────────────────────────────────────────────────────────
@@ -6731,6 +6733,25 @@ document.addEventListener('keydown',async e=>{
   if(activePg==='overview'&&typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen){
     // When toolbox open: block arrows (handled by toolbox), let other keys through
     if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Delete'||e.key==='Backspace'||e.key==='n'||e.key==='l'||e.key==='b'||e.key==='Enter')return;
+  }
+  // Weekly-cal: plain ArrowDown with nothing selected drops from "day selection" (the day
+  // highlighted via dayOff/wkc-day-sel, moved with plain Left/Right below) into task selection on
+  // that same day's column — first chip. Symmetric exit (topmost task + Up -> back to day
+  // selection, no day change) lives in _wkcColKeyNav's top-edge branch. Together these make the
+  // day header and its task column feel like one up/down-navigable stack instead of two
+  // disconnected selection systems.
+  if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!e.shiftKey&&activePg==='overview'&&!selectedTasks.size&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')&&document.getElementById('wkcCols')){
+    const ds=d2s(getDayDate(dayOff));
+    const col=document.querySelector('.wkc-col[data-ds="'+CSS.escape(ds)+'"]');
+    const chips=col?[...col.querySelectorAll('.chip[data-tid]')]:[];
+    if(chips.length){
+      e.preventDefault();
+      const targetId=chips[0].dataset.tid;
+      selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
+      _lastSelSurface='wkcCol';_lastSelWkcDs=ds;
+      applySelHighlight();
+      return;
+    }
   }
   // w + Arrow: shift week on overview
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'&&!document.querySelector('.atb-mgr')){e.preventDefault();_wUsedForChord=true;shiftWk(e.key==='ArrowLeft'?-1:1);return;}

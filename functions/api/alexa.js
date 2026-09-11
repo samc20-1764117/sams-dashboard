@@ -100,10 +100,22 @@ async function handleAddShopping(slots, sbKey, userId) {
 
   const itemName = capitalize(raw);
 
+  // New items go to the top of the manual (non-calendar) order tier — see overview.js
+  // _shopNewOrder()/_shopOvSort for the client-side equivalent. Calendar items always sort
+  // above manual-order ones regardless of shop_order value, so this only needs to beat the
+  // lowest existing shop_order, not worry about calendar items separately.
+  let shopOrder = 0;
+  try {
+    const minRows = await sbRest('GET', 'shopping_list', sbKey, null,
+      `?select=shop_order&order=shop_order.asc.nullslast&limit=1${userId ? `&user_id=eq.${userId}` : ''}`);
+    if (minRows && minRows[0] && minRows[0].shop_order != null) shopOrder = minRows[0].shop_order - 1;
+  } catch (e) { /* fall back to shop_order 0 if the lookup fails */ }
+
   await sbRest('POST', 'shopping_list', sbKey, {
     name: itemName,
     store: store,
     done: false,
+    shop_order: shopOrder,
     ...(userId && { user_id: userId }),
   });
 

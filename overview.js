@@ -497,6 +497,11 @@ function _pupHiddenTiles(){try{return JSON.parse(localStorage._pupHiddenTiles||'
 function _setPupTileHidden(pup,hidden){let arr=_pupHiddenTiles().filter(p=>p!==pup);if(hidden)arr.push(pup);localStorage._pupHiddenTiles=JSON.stringify(arr);renderPupSkillsHighlight();}
 function renderPupSkillsHighlight(){
   const wrap=document.getElementById('pupSkillsHighlight');if(!wrap)return;
+  // Rebuilding the rows below destroys the currently-hovered .ti element (if any) without firing
+  // its mouseleave — happens on the 30s background sync poll while the mouse sits still over a
+  // row — which orphaned the tooltip open forever showing stale comments. Force-hide up front so
+  // every re-render starts clean; a genuine hover will just re-show it via a fresh mouseenter.
+  clearTimeout(_pupTipTimer);const _pupTip=document.getElementById('_pupSkillTip');if(_pupTip)_pupTip.style.display='none';
   seedPupWeeklyFocus(wkOff);
   const mochiSkills=_pupWkFocusSkills('Mochi',wkOff);
   const sunnySkills=_pupWkFocusSkills('Sunny',wkOff);
@@ -4284,14 +4289,20 @@ function _wkcColKeyNav(e){
     return true;
   }
 
-  // Arrow Up/Down: navigate selection within the column — hitting the top/bottom edge (no shift)
-  // advances into the next/prev day's column, crossing into next/prev week via shiftWk if needed.
+  // Arrow Up/Down: navigate selection within the column. Bottom edge (no shift) advances into the
+  // next day's column, crossing into next week via shiftWk if needed. Top edge instead backs OUT
+  // to "day selection" — clears the task selection but leaves the day (dayOff/_lastSelWkcDs)
+  // unchanged, so Left/Right's day-shift picks up right where the task list left off, and plain
+  // Down (see the global keydown handler in features.js) re-enters at the first task. This was a
+  // deliberate 2026-09-11 change from the old top-edge-advances-to-prev-day behavior — the day
+  // header and its column are meant to feel like one navigable stack, not two.
   if(e.key==='ArrowUp'||e.key==='ArrowDown'){
     e.preventDefault();
     const dir=e.key==='ArrowUp'?-1:1;
     const lastSel=colSel[colSel.length-1];
     const curIdx=rowIds.indexOf(lastSel);
     const newIdx=curIdx+dir;
+    if(!e.shiftKey&&dir===-1&&newIdx<0){selectedTasks.clear();lastSelectedId=null;applySelHighlight();return true;}
     if(!e.shiftKey&&(newIdx<0||newIdx>=rowIds.length)){_wkcAdvanceDay(dir,ds);return true;}
     const clamped=Math.max(0,Math.min(rowIds.length-1,newIdx));
     const newId=rowIds[clamped];
@@ -4448,11 +4459,24 @@ function dropOnTodayList(e){
 
 // ── Shop overview ──────────────────────────────────────────────────────────────
 function _shopTopOrder(s){const orders=st.shopping.filter(x=>String(x.id)!==String(s.id)&&x.shop_order!=null).map(x=>x.shop_order);return orders.length?Math.min(...orders)-1:0;}
-// Manual order (shop_order) is the sole sort key — due_date is just metadata shown on the row,
-// not a grouping/sort mechanism. Previously due-date sorted first, which silently blocked
-// Cmd+Up/Down from moving an item past a differently-dated neighbor (confirmed unwanted).
+// New item's shop_order: top of the manual (non-calendar) tier — NOT necessarily the global min,
+// since calendar items sort by due_date regardless of their own shop_order (see _shopOvSort), so
+// a brand-new item just needs to beat every other manual-order item, not the calendar ones too.
+function _shopNewOrder(){const orders=st.shopping.filter(x=>x.shop_order!=null).map(x=>x.shop_order);return orders.length?Math.min(...orders)-1:0;}
+// Tiered sort (2026-09-11, explicit user request): on-calendar items (due_date set) always float
+// to the top, soonest date first; everything else keeps the old manual-order-only behavior below
+// that, so new items (which get _shopNewOrder(), the top of THIS tier) land right under the
+// calendar items and above older manual-order items. This reverses the earlier "due_date is not a
+// sort boundary" decision (see rules/pages.md) — that revert was about due_date silently
+// interleaving with manual order card-by-card; a hard boolean tier (on-calendar vs not) doesn't
+// have that problem since manual order still fully controls ordering within each tier.
 function _shopOvSort(arr){
-  return[...arr].sort((x,y)=>(x.shop_order??9999)-(y.shop_order??9999));
+  return[...arr].sort((x,y)=>{
+    const xCal=!!x.due_date,yCal=!!y.due_date;
+    if(xCal!==yCal)return xCal?-1:1;
+    if(xCal&&yCal){const c=(x.due_date||'').localeCompare(y.due_date||'');if(c)return c;}
+    return(x.shop_order??9999)-(y.shop_order??9999);
+  });
 }
 // ── Videos on Overview ────────────────────────────────────────────────────────
 // Manual per-day task order (Today list drag-reorder, mirrored into the weekly cal day columns —
@@ -6894,13 +6918,17 @@ function _shopOvKeyNav(e){
     if(!idxs.length)return true;
     // Move the whole selected block past its one neighbor by splicing it out and reinserting —
     // simpler and symmetric for up/down and single/multi-select than juggling shop_order deltas.
-    // Manual order always wins — due_date is just metadata on the row, not a sort boundary.
+    // Manual order controls position WITHIN a tier, but can't cross the calendar/non-calendar
+    // tier boundary (_shopOvSort) — that would just get re-sorted back on next render, so it's
+    // blocked outright (no-op) rather than left to silently snap back.
     if(dir===-1){
       if(idxs[0]===0)return true;
+      if(!!sorted[idxs[0]-1].due_date!==!!sorted[idxs[0]].due_date)return true;
       const moved=sorted.splice(idxs[0]-1,1)[0];
       sorted.splice(idxs[idxs.length-1],0,moved);
     } else {
       if(idxs[idxs.length-1]===sorted.length-1)return true;
+      if(!!sorted[idxs[idxs.length-1]+1].due_date!==!!sorted[idxs[idxs.length-1]].due_date)return true;
       const moved=sorted.splice(idxs[idxs.length-1]+1,1)[0];
       sorted.splice(idxs[0],0,moved);
     }
