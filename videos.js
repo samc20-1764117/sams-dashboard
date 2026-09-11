@@ -379,15 +379,19 @@ function renderVideosPage(){
   });
   // Enforce: B videos cannot have big_video_id
   bVids.forEach(v=>{if(v.big_video_id){v.big_video_id=null;if(!String(v.id).startsWith('l-'))sbReqSilent('PATCH','videos',{big_video_id:null},`?id=eq.${v.id}`);}});
-  // Enforce: L videos without a valid big parent can't be in_progress/up_next
+  // Clear DANGLING big_video_id refs only (parent got deleted/invalid) — leaves status alone.
+  // Standalone L videos (big_video_id===null) are explicitly allowed to sit in in_progress/up_next
+  // now (2026-09-11, at user's request — previously ANY L video without a big parent was silently
+  // forced back to idea on every single render here, which is what made "small videos must be
+  // assigned to a big" feel like a hard rule; the toolbox/up-next UI now renders standalones with a
+  // divider so they're visually distinct from a group instead of being hidden by this reset).
   const _activeBigIds=new Set(bVids.map(v=>String(v.id)));
   const _fixedIds=[];
   st.videos.forEach(v=>{
     if(v.is_deleted||v.video_type==='B')return;
-    const hasValidParent=v.big_video_id&&_activeBigIds.has(String(v.big_video_id));
-    if(!hasValidParent&&(v.status==='in_progress'||v.status==='up_next')){v.status='idea';_fixedIds.push(v.id);}
+    if(v.big_video_id&&!_activeBigIds.has(String(v.big_video_id))){v.big_video_id=null;_fixedIds.push(v.id);}
   });
-  if(_fixedIds.length){save();_fixedIds.forEach(id=>{if(!String(id).startsWith('l-'))sbReqSilent('PATCH','videos',{status:'idea'},`?id=eq.${id}`);});}
+  if(_fixedIds.length){save();_fixedIds.forEach(id=>{if(!String(id).startsWith('l-'))sbReqSilent('PATCH','videos',{big_video_id:null},`?id=eq.${id}`);});}
   // Auto-publish: core 5 done + post_date + topic + title → published
   let _autoPublished=false;
   st.videos.forEach(v=>{
@@ -1023,10 +1027,9 @@ async function _vidDashDrop(e,newStatus){
   // Now apply status changes
   for(const d of undoData){
     const v=d.v;
-    if(v.status!==newStatus&&v.status!=='published'){
-      if(v.video_type==='L'&&!v.big_video_id&&(newStatus==='in_progress'||newStatus==='up_next'))v.status='idea';
-      else v.status=newStatus;
-    }
+    // Standalone L videos can sit directly in in_progress/up_next now (2026-09-11) — this used to
+    // force them back to idea instead of letting the drag actually move them.
+    if(v.status!==newStatus&&v.status!=='published')v.status=newStatus;
     // When moving a B to ideas, move its children to ideas too
     if(v.video_type==='B'&&newStatus==='idea'){
       d.childPrevs.forEach(cp=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cp.id));if(c&&c.status!=='published')c.status='idea';});
@@ -2903,8 +2906,7 @@ async function saveVidModal(){
     const maxOrder=Math.max(0,...siblings.map(c=>c.vid_order??0));
     data.vid_order=maxOrder+1;
   }
-  // L videos without a big parent can't be in_progress/up_next
-  if(data.video_type==='L'&&!data.big_video_id&&(data.status==='in_progress'||data.status==='up_next'))data.status='idea';
+  // Standalone L (no big parent) is allowed in in_progress/up_next now (2026-09-11) — no forced reset.
   // Defer the modal close one tick: the videos pop-up / sub-panels' outside-click handlers skip closing
   // only WHILE the modal is open, so closing it synchronously here lets the Save click then close the
   // toolbox. Deferring keeps the modal "open" through the click, so those handlers leave the toolbox alone.

@@ -5151,7 +5151,11 @@ function _vidOvNewVideo(type){
 function _renderVidOvMenu(){
   const menu=document.getElementById('vidOvPanel');if(!menu)return;
   // Keep a published big visible while its group isn't fully complete (its smalls are still pending).
-  let vids=(st.videos||[]).filter(v=>!v.is_deleted&&v.video_type==='B'&&(v.status==='up_next'||(v.status==='published'&&!_vidGroupFullyComplete(v)))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  // Standalone L (no big_video_id) is included here too since 2026-09-11 — it can sit directly in
+  // up_next now instead of being forced back to idea. _vidOvMenuItem renders it as a plain top-level
+  // row (no add-child button/children loop); the divider-insertion loop below marks the transition
+  // from a Big group into these so they don't read as that group's children.
+  let vids=(st.videos||[]).filter(v=>!v.is_deleted&&(v.video_type==='B'||!v.big_video_id)&&(v.status==='up_next'||(v.status==='published'&&!_vidGroupFullyComplete(v)))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   if(window._vidOvFocusWk===undefined&&localStorage._vidOvFocusWk==='1')window._vidOvFocusWk=true;
   const _focusActive=!!window._vidOvFocusWk;
   // Focus mode: highlight (not filter) videos on calendar this week
@@ -5245,7 +5249,14 @@ function _renderVidOvMenu(){
   if(_vidOvTitleMode)listHtml+='<button onclick="_vidOvCloseTitleMode()" style="position:absolute;top:50%;right:0;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:0;width:12px;height:12px;display:flex;align-items:center;justify-content:center;color:var(--muted)" title="Close edit titles (doesn\'t close the videos popup)"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button>';
   listHtml+='</div>';
 
-  vids.forEach(v=>{listHtml+=_vidOvMenuItem(v,steps,_focusSet);});
+  // Divider before a standalone L that directly follows a Big's own row/children — makes clear it's
+  // not part of the group above it, since both kinds now share this same top-level list (2026-09-11).
+  let _prevWasBig=false;
+  vids.forEach(v=>{
+    if(v.video_type!=='B'&&_prevWasBig)listHtml+='<div style="height:1px;background:rgba(210,205,228,.3);margin:4px 6px"></div>';
+    listHtml+=_vidOvMenuItem(v,steps,_focusSet);
+    _prevWasBig=v.video_type==='B';
+  });
   listHtml+='</div>';
   // When the calendar or all-videos toolbox is open it lives in a column beside the list, both
   // inside #vidOvPanel itself (extended further right — see _vidOvToggleCal/_vidOvToggleAll),
@@ -5298,9 +5309,21 @@ function _vidOvMenuItem(v,steps,focusSet){
   const _postColor=v.post_date?_vidOvPostColor(v):'var(--muted)';
   const _postField=`<span class="vid-ov-post" data-postvid="${sid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_postColor};cursor:pointer;line-height:12px">${_postDate||''}</span>`;
   const _focusCls=_isFocused?' vid-ov-focus':'';
+  // Standalone L video shown at top level (2026-09-11: the enforced-to-idea guard that used to hide
+  // these from up_next/in_progress was removed at the user's request). No add-child button, no
+  // children loop (a Small can't have its own children), no nest-drop target (only Bigs are nest
+  // targets) — dragstart sets dragId only, not _vidOvBDrag, so it can't be mistaken for a same-list
+  // Big reorder by _vidOvContentDrop's B-reorder branch.
+  if(v.video_type!=='B'){
+    const _lDragAttr=`draggable="true" ondragstart="_vidOvSelVid='${sid}';dragId='vid::${sid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';document.body.classList.remove('body-dragging');showWkcEdges(false)"`;
+    const _lTitleField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${sid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${v.title?escHtml(v.title):''}</span>`:'';
+    const _lCommentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${v.comment?escHtml(v.comment):''}</span>`:'';
+    return `<div data-vidrow="${sid}" ${_lDragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:12px;flex-shrink:0"></div><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}</span><span style="flex-shrink:0;width:10px"></span>${_lTitleField}${_lCommentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+  }
+  const _nestAttr=`ondragover="_vidOvNestDragOver(event)" ondragleave="_vidOvNestDragLeave(event)" ondrop="_vidOvNestDrop(event,'${sid}')"`;
   const _titleField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${sid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${v.title?escHtml(v.title):''}</span>`:'';
   const _commentField=_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${sid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${sid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${v.comment?escHtml(v.comment):''}</span>`:'';
-  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}</span><span style="flex-shrink:0;width:10px"></span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
+  let html=`<div data-vidrow="${sid}" ${_dragAttr} ${_nestAttr} ${_dblAttr} ${_ctxAttr} ${_hov} class="${_focusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}</span><span style="flex-shrink:0;width:10px"></span>${_titleField}${_commentField}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(v,steps)}</div>${_postField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.5;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(v,steps)?_vidOvPct(v,steps)+'%':''}</span>${_xBtn}</div></div>`;
   // Children (S/L videos)
   // Keep a published small visible (shown done) under its big until the whole group is complete.
   const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(v.id)&&c.status!=='idea'&&(c.status!=='published'||!_vidGroupFullyComplete(c))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
@@ -6139,7 +6162,7 @@ function _vidOvAllProgRow(v){
   const _addBtn=`<div onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',null,null,this.closest('[data-alldrag]'))" style="width:12px;min-width:12px;max-width:12px;height:12px;min-height:12px;max-height:12px;display:flex;align-items:center;justify-content:center;align-self:center;border-radius:2px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;flex-shrink:0;flex-grow:0;box-sizing:border-box;overflow:hidden" title="Add small video"><svg width="6" height="6" viewBox="0 0 6 6" style="display:block;flex-shrink:0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><line x1="3" y1="1" x2="3" y2="5"/><line x1="1" y1="3" x2="5" y2="3"/></svg></div>`;
   const _childCount=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid).length;
   const _countBadge=_childCount?` <span style="font-size:10px;font-weight:400;color:var(--muted);opacity:.5;font-family:system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums">· ${_childCount}</span>`:'';
-  let html=`<div data-vidrow="${sid}" data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span><div style="display:flex;flex-shrink:0;align-items:center">${_vidOvStepDots(v,['step_build'])}</div><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:flex-end;line-height:12px">${_xBtn}</div></div>`;
+  let html=`<div data-vidrow="${sid}" data-alldrag="${sid}" draggable="true" ondragstart="dragId='vid::${sid}';event.dataTransfer.effectAllowed='move'" ondragover="_vidOvNestDragOver(event)" ondragleave="_vidOvNestDragLeave(event)" ondrop="_vidOvNestDrop(event,'${sid}')" onclick="_voaRowClick(event,'${sid}')" ondblclick="if(typeof openVidEdit==='function')openVidEdit('${sid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${sid}')" class="${_sel?'vid-sel':''}" style="padding:5px 6px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text);cursor:grab;display:flex;align-items:center;gap:5px" onmouseenter="if(!this.classList.contains('vid-sel'))this.style.background='${_hovBg}'" onmouseleave="if(!this.classList.contains('vid-sel'))this.style.background=''">${_addBtn}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(v.topic||v.title)}${_countBadge}</span><div style="display:flex;flex-shrink:0;align-items:center">${_vidOvStepDots(v,['step_build'])}</div><div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:2px;display:flex;align-items:center;justify-content:flex-end;line-height:12px">${_xBtn}</div></div>`;
   // Show children (small videos) with └ lines
   if(v.video_type==='B'){
     const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===sid&&(c.status==='in_progress'||c.status==='up_next')&&c.status===v.status).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
@@ -6179,7 +6202,16 @@ function _vidOvRenderAll(){
   h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="font-size:10px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add idea (N)">+</button><button onclick="event.stopPropagation();_vidOvCloseAll()" style="background:none;border:none;cursor:pointer;padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Close all videos"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button></div>`;
   // In Progress column
   h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1.5px solid rgba(210,205,228,.3);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
-  if(inProg.length){inProg.forEach(v=>{h+=_vidOvAllProgRow(v);});}
+  if(inProg.length){
+    // Divider before a standalone L that directly follows a Big's own row/children — same "not part
+    // of the group above it" clarification as the Up Next list (2026-09-11).
+    let _prevWasBig=false;
+    inProg.forEach(v=>{
+      if(v.video_type!=='B'&&_prevWasBig)h+='<div style="height:1px;background:rgba(210,205,228,.3);margin:4px 6px"></div>';
+      h+=_vidOvAllProgRow(v);
+      _prevWasBig=v.video_type==='B';
+    });
+  }
   else h+='<div style="color:var(--muted);font-size:11px;padding:12px 10px;opacity:.5">Drag ideas here to start</div>';
   h+='</div>';
   // Ideas column — matching videos page style
@@ -6263,6 +6295,73 @@ function _vidOvUpNextDrop(event){
   save();if(_vidOvAllOpen)_vidOvRenderAll();_renderVidOvMenu();renderAll();
   sbReqSilent('PATCH','videos',{status:'up_next'},`?id=eq.${v.id}`);
   pushUndo(()=>{v.status=prev;childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});save();if(_vidOvAllOpen)_vidOvRenderAll();_renderVidOvMenu();renderAll();sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${v.id}`);},'Moved to up next');
+}
+// ── Nest onto a Big video (Up Next list + toolbox In Progress column) ──────────
+// A Big row is a valid nest target — dropping a Small (from Ideas or a standalone in In Progress)
+// onto it assigns big_video_id and syncs status to the parent's. Dropping a BIG video onto it
+// instead demotes the dragged Big into a Small under the target — its own former children get
+// promoted to standalone (big_video_id cleared, status left untouched) rather than reparented or
+// forced to idea, per explicit 2026-09-11 request (this is also why the render-time/status-change
+// guards forcing standalone L → idea were removed — a promoted child needs somewhere to legally
+// exist). Only the MIDDLE band of a Big row's own height is the nest target; the top/bottom bands
+// pass the dragover through un-prevented so it bubbles to whatever container-level handler already
+// owns that zone (the Up Next list's own B-reorder indicator line, or the toolbox column's
+// status-change drop) — this is what lets simple reordering/status-drop keep working right next to
+// the new nest behavior instead of the nest zone swallowing every drop on a Big row.
+function _vidOvIsNestZone(e){
+  const rect=e.currentTarget.getBoundingClientRect();
+  if(!rect.height)return false;
+  const rel=(e.clientY-rect.top)/rect.height;
+  return rel>0.25&&rel<0.75;
+}
+function _vidOvNestDragOver(e){
+  if(_vidOvIsNestZone(e)){e.preventDefault();e.stopPropagation();e.currentTarget.classList.add('vid-ov-nest-target');}
+  else e.currentTarget.classList.remove('vid-ov-nest-target');
+}
+function _vidOvNestDragLeave(e){e.currentTarget.classList.remove('vid-ov-nest-target');}
+function _vidOvNestDrop(e,targetBigId){
+  e.currentTarget.classList.remove('vid-ov-nest-target');
+  if(!_vidOvIsNestZone(e))return; // outside the middle band — let it bubble to the container's own drop handler
+  e.preventDefault();e.stopPropagation();
+  const draggedId=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
+  if(!draggedId||String(draggedId)===String(targetBigId))return;
+  const target=(st.videos||[]).find(x=>String(x.id)===String(targetBigId));
+  if(!target||target.video_type!=='B'||target.is_deleted)return;
+  const dragged=(st.videos||[]).find(x=>String(x.id)===String(draggedId));
+  if(!dragged||dragged.is_deleted)return;
+  // No-op guard: already nested here as an L (not a demote-in-progress) — dropping back on its own
+  // parent shouldn't reorder-to-end or fire a stray undo toast.
+  if(dragged.video_type==='L'&&String(dragged.big_video_id)===String(targetBigId))return;
+  // Clear same-container reorder-drag state so a stale _vidOvBDrag/_vidOvChildDrag from this same
+  // gesture can't also fire the container's own reorder branch on a later event.
+  _vidOvBDrag=null;_vidOvChildDrag=null;_vidOvClearIndicator();
+
+  const prevType=dragged.video_type,prevBig=dragged.big_video_id,prevStatus=dragged.status,prevOrder=dragged.vid_order;
+  const orphanUndo=[];
+  if(prevType==='B'){
+    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(dragged.id)).forEach(c=>{
+      orphanUndo.push({id:c.id,prevBig:c.big_video_id});
+      c.big_video_id=null;
+      sbReqSilent('PATCH','videos',{big_video_id:null},`?id=eq.${c.id}`);
+    });
+  }
+  const siblings=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(targetBigId));
+  const maxOrder=Math.max(0,...siblings.map(c=>c.vid_order??0));
+  dragged.video_type='L';
+  dragged.big_video_id=parseInt(targetBigId)||targetBigId;
+  if(dragged.status!==target.status&&dragged.status!=='published')dragged.status=target.status;
+  dragged.vid_order=maxOrder+1;
+
+  save();_renderVidOvMenu();if(_vidOvAllOpen)_vidOvRenderAll();renderAll();
+  sbReqSilent('PATCH','videos',{video_type:'L',big_video_id:dragged.big_video_id,status:dragged.status,vid_order:dragged.vid_order},`?id=eq.${dragged.id}`);
+
+  const label=prevType==='B'?'Converted to small video':'Assigned to big video';
+  pushUndo(()=>{
+    dragged.video_type=prevType;dragged.big_video_id=prevBig;dragged.status=prevStatus;dragged.vid_order=prevOrder;
+    orphanUndo.forEach(o=>{const c=(st.videos||[]).find(x=>String(x.id)===String(o.id));if(c){c.big_video_id=o.prevBig;sbReqSilent('PATCH','videos',{big_video_id:o.prevBig},`?id=eq.${o.id}`);}});
+    save();_renderVidOvMenu();if(_vidOvAllOpen)_vidOvRenderAll();renderAll();
+    sbReqSilent('PATCH','videos',{video_type:prevType,big_video_id:prevBig??null,status:prevStatus,vid_order:prevOrder??null},`?id=eq.${dragged.id}`);
+  },label);
 }
 // ── Analytics panel ─────────────────────────────────────────────────────────
 let _vidOvAnOpen=false;
