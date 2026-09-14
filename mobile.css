@@ -13,11 +13,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
    sticky #mHeader would engage relative to that outer scroll and could visually overlap
    a tab's own internally-scrolled content (this was the real cause of "header is in the
    way" on Month — #mMonthScroll was correctly bounded, but #mApp itself wasn't). */
-/* 78px = the floating nav's own footprint (14px bottom offset + 56px bar height, no
+/* 84px = the floating nav's own footprint (20px bottom offset + 56px bar height, no
    safe-area term — see #mNav below) plus an 8px breathing-room buffer above it — kept
    in sync with #mNav/#mNavHighlight below and with mShowTab()/mSyncBarClearance() in
    mobile-overview.js if any of those numbers change. */
-#mApp{display:none;flex-direction:column;height:100dvh;padding-bottom:78px}
+#mApp{display:none;flex-direction:column;height:100dvh;padding-bottom:84px}
 #mApp.ready{display:flex}
 
 /* ── Header ───────────────────────────────────────────────────────────────── */
@@ -107,10 +107,10 @@ body.dark .m-prog.m-prog-complete{color:#86efac}
    #mMain's height resolved, then jumped to the bottom once it did. The corresponding
    list's padding-bottom is measured and set in JS (mSyncBarClearance) rather than
    guessed here, so it always exactly matches this bar's real height. */
-/* 76px = the floating nav's top edge (14px bottom offset + 56px height, no safe-area
+/* 82px = the floating nav's top edge (20px bottom offset + 56px height, no safe-area
    term) plus a 6px gap so the add bar floats clear of the pill below it, matching the
    reference's separated-floating-elements look. */
-#mAddBar,#mShopAddBar{position:fixed;left:0;right:0;bottom:76px;display:flex;flex-direction:column;gap:7px;padding:12px 16px;background:var(--bg-elevated);border-top:1px solid var(--border);box-shadow:0 -4px 14px rgba(0,0,0,.07);z-index:20}
+#mAddBar,#mShopAddBar{position:fixed;left:0;right:0;bottom:82px;display:flex;flex-direction:column;gap:7px;padding:12px 16px;background:var(--bg-elevated);border-top:1px solid var(--border);box-shadow:0 -4px 14px rgba(0,0,0,.07);z-index:20}
 #mNewTask,#mShopNewName{width:100%;padding:12px 14px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;box-sizing:border-box}
 #mNewTask:focus,#mShopNewName:focus{border-color:var(--accent)}
 .m-add-row2{display:flex;gap:8px;align-items:center}
@@ -145,7 +145,7 @@ body.dark .m-prog.m-prog-complete{color:#86efac}
    is unaffected regardless of where they sit.) Because bottom:0 and height no longer
    depend on env(safe-area-inset-bottom), #mApp/#mAddBar/mSyncBarClearance below also
    drop the safe-area term — they only ever needed to clear #mNav's own top edge. */
-#mNav{position:fixed;left:14px;right:14px;bottom:14px;height:56px;padding:6px;display:flex;border-radius:28px;background:var(--nav-glass-bg);box-shadow:var(--nav-glass-shadow);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);overflow:hidden;z-index:15}
+#mNav{position:fixed;left:14px;right:14px;bottom:20px;height:56px;padding:6px;display:flex;border-radius:28px;background:var(--nav-glass-bg);box-shadow:var(--nav-glass-shadow);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);overflow:hidden;z-index:15}
 .m-nav-highlight{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 5);border-radius:22px;background:var(--nav-pill-bg);box-shadow:var(--nav-pill-shadow);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .5s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
 .m-nav-btn{flex:1;background:none;border:none;font-family:inherit;color:var(--nav-icon-inactive);cursor:pointer;padding:4px 0;transition:color .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;z-index:1;-webkit-tap-highlight-color:transparent}
 .m-nav-btn span{font-size:10px;font-weight:600;letter-spacing:.02em}
