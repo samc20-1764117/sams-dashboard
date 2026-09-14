@@ -5172,11 +5172,12 @@ function closeVidOvMenu(){
   panel.style.opacity='0';panel.style.transform='translateX(-12px)';
   setTimeout(()=>{panel.style.display='none';},250);
 }
-function _vidOvNewVideo(type){
+function _vidOvNewVideo(type,status){
   if(typeof openVidModal==='function'){
     openVidModal(type||'B');
+    const _st=status||'up_next';
     const _ss=document.getElementById('vmStatus');
-    if(_ss){_ss.value='up_next';if(typeof _vidSetStatusDisplay==='function')_vidSetStatusDisplay('up_next');}
+    if(_ss){_ss.value=_st;if(typeof _vidSetStatusDisplay==='function')_vidSetStatusDisplay(_st);}
   }
 }
 function _renderVidOvMenu(){
@@ -5260,9 +5261,11 @@ function _renderVidOvMenu(){
   // always accepts — a blank-space drop here now does something useful (see _vidOvUpNextDrop) rather
   // than needing to be gated/rejected (2026-09-14, replaces an earlier red-tint reject indicator).
   let listHtml=`<div id="vidOvContent" style="padding:4px 10px 0;${_calListW?`width:${_calListW};flex-shrink:0`:'flex:1;min-width:0'};min-height:0;overflow-y:auto" ondragover="event.preventDefault();if(_vidOvChildDrag||_vidOvBDrag)_vidOvDragIndicator(event)" ondragleave="_vidOvClearIndicator()" ondrop="_vidOvContentDrop(event)">`;
-  // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
-  listHtml+='<div style="display:flex;align-items:center;padding:3px 19px 3px 6px;gap:5px;position:relative">';
-  listHtml+='<div style="width:12px;flex-shrink:0"></div>';
+  // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]. height:26px matches the
+  // In Progress/Ideas toolbox column headers (_vidOvRenderAll) so all three read as one synced header
+  // row across the list + toolbox (2026-09-14).
+  listHtml+='<div style="display:flex;align-items:center;padding:3px 19px 3px 6px;gap:5px;position:relative;height:26px;box-sizing:border-box">';
+  listHtml+=`<button onclick="event.stopPropagation();if(typeof _vidOvNewVideo==='function')_vidOvNewVideo('B','up_next')" style="width:16px;height:16px;line-height:14px;text-align:center;font-size:10px;font-weight:700;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add video to Up Next">+</button>`;
   listHtml+='<span style="flex:1;min-width:0"></span>';
   listHtml+='<span style="flex-shrink:0;width:10px"></span>';
   if(_vidOvTitleMode)listHtml+='<span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700;line-height:12px">Title</span><span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700;line-height:12px">Comment</span>';
@@ -5371,7 +5374,7 @@ function _vidOvMenuItem(v,steps,focusSet){
     const _cPostDate=c.post_date?_vidOvPostStr(c.post_date):'';
     const _cPostColor=c.post_date?_vidOvPostColor(c):'var(--muted)';
     const _cPostField=`<span class="vid-ov-post" data-postvid="${csid}" style="width:28px;flex-shrink:0;font-size:9px;text-align:right;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;color:${_cPostColor};cursor:pointer;line-height:12px">${_cPostDate||''}</span>`;
-    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="_vidOvNestChildDragOver(event)" ondragleave="_vidOvNestChildDragLeave(event)" ondrop="_vidOvNestChildDrop(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" data-nest-parent="${sid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:8px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex-shrink:0;min-width:0;width:20px;margin-left:-3px;margin-right:-3px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums;font-family:Menlo,Consolas,monospace;overflow:visible">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
+    html+=`<div draggable="true" ondragstart="_vidOvSelVid='${csid}';_vidOvChildDrag=event.currentTarget;dragId='vid::${csid}';event.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');showWkcEdges(true);event.currentTarget.style.opacity='.4'" ondragend="event.currentTarget.style.opacity='1';_vidOvChildDrag=null;document.body.classList.remove('body-dragging');showWkcEdges(false)" ondragover="_vidOvNestChildDragOver(event)" ondragleave="_vidOvNestChildDragLeave(event)" ondrop="_vidOvNestChildDrop(event,'${sid}','${csid}')" ${_hov} ondblclick="event.stopPropagation();if(typeof openVidEdit==='function')openVidEdit('${csid}')" oncontextmenu="if(typeof showVidCtx==='function')showVidCtx(event,'${csid}')" data-vidrow="${csid}" data-cvid="${csid}" data-nest-parent="${sid}" class="${_cFocusCls}" style="padding:5px 19px 5px 6px;border-radius:6px;font-size:11px;font-weight:500;color:var(--muted);cursor:grab;display:flex;align-items:center;gap:5px;transition:background .1s"><div style="width:8px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:${_cOnCal?'var(--accent)':'rgba(140,135,160,.4)'};font-size:9px;font-weight:${_cOnCal?'700':'400'}">└</div><span style="flex-shrink:0;min-width:0;width:20px;margin-left:-3px;margin-right:-3px;text-align:right;font-size:11px;font-weight:500;color:var(--muted);opacity:.55;font-variant-numeric:tabular-nums;font-family:Menlo,Consolas,monospace;overflow:visible">${ci+1}.</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:12px">${escHtml(c.topic||c.title)}</span>${_vidOvTitleMode?`<span class="vid-ov-title" data-vidtitle="${csid}" ondblclick="event.stopPropagation();_vidOvStartTitleEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.title?escHtml(c.title):''}</span>`:''}${_vidOvTitleMode?`<span class="vid-ov-title" data-vidcomment="${csid}" ondblclick="event.stopPropagation();_vidOvStartCommentEdit(this,'${csid}')" style="flex:1;min-width:0;font-size:11px;font-weight:400;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:0 3px;border-radius:3px;line-height:12px;display:block;min-height:12px">${c.comment?escHtml(c.comment):''}</span>`:''}<div style="display:flex;gap:0;flex-shrink:0;align-items:center">${_vidOvStepDots(c,steps)}</div>${_cPostField}<div class="vid-ov-pctx" style="width:14px;flex-shrink:0;position:relative;margin-left:12px;display:flex;align-items:center;justify-content:flex-end;line-height:12px"><span class="vid-ov-pct" style="font-size:9px;opacity:.4;font-variant-numeric:tabular-nums;font-family:system-ui,-apple-system,sans-serif;line-height:12px">${_vidOvPct(c,steps)?_vidOvPct(c,steps)+'%':''}</span>${_cxBtn}</div></div>`;
     if(ci<children.length-1){const oA=c.vid_order??ci;const oB=children[ci+1].vid_order??(ci+1);html+=`<div class="vid-insert-zone"><button class="vid-insert-btn" onclick="event.stopPropagation();_vidOvInlineAdd('${sid}',${oA},${oB},this.closest('.vid-insert-zone'))">+</button></div>`;}
   });
   return html;
@@ -6173,6 +6176,10 @@ function _vidOvToggleAll(){
   },100);
 }
 function _vidOvCloseAll(){
+  // Same suppression saveVidModal sets around a Save so the add/edit modal's Save-click/Enter can
+  // never also collapse the toolbox out from under it (mirrors closeVidOvMenu's own check, 2026-09-14
+  // — this path wasn't guarded before, only the outer popup close was).
+  if(window._vidOvSuppressClose)return;
   _vidOvAllOpen=false;_voaSel.clear();_voaLast=null;
   const panel=document.getElementById('vidOvPanel');
   if(panel){
@@ -6232,11 +6239,15 @@ function _vidOvRenderAll(){
   const littleIdeas=all.filter(v=>v.status==='idea'&&v.video_type!=='B').sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   // 2-column layout: In Progress | Ideas
   let h=`<div onclick="if(!event.target.closest('[data-alldrag]')&&!event.target.closest('button')){_voaSel.clear();_voaLast=null;_voaApplySel()}" style="display:grid;grid-template-columns:1.5fr 1fr;grid-template-rows:auto 1fr;flex:1;min-height:0">`;
-  // Column headers
-  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1.5px solid rgba(210,205,228,.3);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em">In Progress</span></div>`;
-  h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="font-size:10px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add idea (N)">+</button><button onclick="event.stopPropagation();_vidOvCloseAll()" style="background:none;border:none;cursor:pointer;padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Close all videos"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button></div>`;
-  // In Progress column
-  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1.5px solid rgba(210,205,228,.3);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
+  // Column headers — height:26px (overrides .tod-tb-header's 31px min-height) to match the Up Next
+  // list's own stage-dot header row height (_renderVidOvMenu), so the header row reads as one synced
+  // strip across the list + both toolbox columns (2026-09-14).
+  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1.5px solid rgba(210,205,228,.3);justify-content:flex-start;padding-left:14px;min-height:26px;height:26px;box-sizing:border-box;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em;flex:1">In Progress</span><button onclick="event.stopPropagation();if(typeof _vidOvNewVideo==='function')_vidOvNewVideo('B','in_progress')" style="font-size:10px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add video to In Progress">+</button></div>`;
+  h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px;min-height:26px;height:26px;box-sizing:border-box"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="font-size:10px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add idea (N)">+</button><button onclick="event.stopPropagation();_vidOvCloseAll()" style="background:none;border:none;cursor:pointer;padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Close all videos"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button></div>`;
+  // In Progress column — dblclick on blank space (not a row/button) adds directly into In Progress
+  // instead of falling through to the list's own blank-dblclick handler, which always forces up_next
+  // (2026-09-14 fix — previously a double-click here silently created an Up Next video instead).
+  h+=`<div ondblclick="if(!event.target.closest('[data-vidrow]')&&!event.target.closest('button')){event.stopPropagation();if(typeof _vidOvNewVideo==='function')_vidOvNewVideo('B','in_progress');}" style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1.5px solid rgba(210,205,228,.3);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
   if(inProg.length){
     // Divider before a standalone L that directly follows a Big's own row/children — same "not part
     // of the group above it" clarification as the Up Next list (2026-09-11).
@@ -6258,13 +6269,16 @@ function _vidOvRenderAll(){
     // the last few spill downward past the box's bottom edge, straight into the Little section that
     // starts right there — read as "Little's header overlapping Little's rows" (2026-09-02 fix,
     // confirmed live: box height measured shorter than scrollHeight until this was added).
-    h+=`<div style="min-height:30px;padding-bottom:4px;flex-shrink:0" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'B')">`;
-    h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:4px 6px 4px 10px;letter-spacing:.03em">Big</div>`;
+    h+=`<div ondblclick="if(!event.target.closest('[data-vidrow]')&&!event.target.closest('button')){event.stopPropagation();if(typeof openVidModal==='function')openVidModal('B');}" style="min-height:30px;padding-bottom:4px;flex-shrink:0" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'B')">`;
+    // Big/Little labels tinted differently (subtle — same 9px/600/tracking treatment as before, just
+    // no longer both flat var(--muted) grey) so the two idea sub-sections are easier to tell apart at
+    // a glance (2026-09-14, per explicit request — kept low-contrast on purpose).
+    h+=`<div style="font-size:9px;font-weight:600;color:rgba(124,58,237,.62);padding:4px 6px 4px 10px;letter-spacing:.03em">Big</div>`;
     if(bigIdeas.length)bigIdeas.forEach(v=>{h+=_vidOvAllIdeaRow(v);});
     else h+='<div style="color:var(--muted);font-size:10px;padding:4px 10px;opacity:.5">None</div>';
     h+='</div>';
-    h+=`<div style="min-height:30px;border-top:1px solid rgba(210,205,228,.15);padding-bottom:4px;flex-shrink:0" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'L')">`;
-    h+=`<div style="font-size:9px;font-weight:600;color:var(--muted);padding:4px 6px 4px 10px;letter-spacing:.03em">Little</div>`;
+    h+=`<div ondblclick="if(!event.target.closest('[data-vidrow]')&&!event.target.closest('button')){event.stopPropagation();if(typeof openVidModal==='function')openVidModal('L');}" style="min-height:30px;border-top:1px solid rgba(210,205,228,.15);padding-bottom:4px;flex-shrink:0" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'L')">`;
+    h+=`<div style="font-size:9px;font-weight:600;color:rgba(14,165,233,.65);padding:4px 6px 4px 10px;letter-spacing:.03em">Little</div>`;
     if(littleIdeas.length)littleIdeas.forEach(v=>{h+=_vidOvAllIdeaRow(v);});
     else h+='<div style="color:var(--muted);font-size:10px;padding:4px 10px;opacity:.5">None</div>';
     h+='</div>';

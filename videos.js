@@ -2465,7 +2465,10 @@ function _vidModalKey(event){
     // Close any open dropdowns first
     var sDrop=document.getElementById('vmStatusDrop');if(sDrop)sDrop.style.display='none';
     var bDrop=document.getElementById('vmBigVideoDrop');if(bDrop)bDrop.style.display='none';
-    event.preventDefault();saveVidModal();
+    // stopPropagation (matching the Escape branch above) so this keystroke can't also be picked up by
+    // a document-level keydown listener behind the modal — Save must never risk closing the videos
+    // pop-up/toolbox underneath (2026-09-14).
+    event.preventDefault();event.stopPropagation();saveVidModal();
   }
 }
 function _vidShowDropdown(type){_vidFilterDropdown(type);}
