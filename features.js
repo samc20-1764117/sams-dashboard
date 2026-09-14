@@ -6734,12 +6734,15 @@ document.addEventListener('keydown',async e=>{
     // When toolbox open: block arrows (handled by toolbox), let other keys through
     if(e.key==='ArrowUp'||e.key==='ArrowDown'||e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Delete'||e.key==='Backspace'||e.key==='n'||e.key==='l'||e.key==='b'||e.key==='Enter')return;
   }
-  // Weekly-cal: plain ArrowDown with nothing selected drops from "day selection" (the day
-  // highlighted via dayOff/wkc-day-sel, moved with plain Left/Right below) into task selection on
-  // that same day's column — first chip. Symmetric exit (topmost task + Up -> back to day
-  // selection, no day change) lives in _wkcColKeyNav's top-edge branch. Together these make the
-  // day header and its task column feel like one up/down-navigable stack instead of two
-  // disconnected selection systems.
+  // Weekly-cal day-selection <-> task-selection (2026-09-14 spec, deliberately asymmetric):
+  // Down from day selection (nothing selected) enters the CURRENT day's column at its first task
+  // (no day change). Up climbs back OUT one level at a time instead of diving in symmetrically:
+  // topmost task + Up -> day selection on the SAME day (see _wkcColKeyNav's top-edge branch); a
+  // SECOND Up from there (nothing selected) is the block below — it shifts to the PREVIOUS day
+  // AND selects its last task in one press, so repeated Up keeps climbing the whole week
+  // task-by-task through every day's list. Down never gained a matching "back out" stop — hitting
+  // its bottom edge crosses straight into the next day's first task (existing/confirmed-good
+  // behavior, _wkcColKeyNav's bottom-edge branch) — so only Up round-trips through day selection.
   if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!e.shiftKey&&activePg==='overview'&&!selectedTasks.size&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')&&document.getElementById('wkcCols')){
     const ds=d2s(getDayDate(dayOff));
     const col=document.querySelector('.wkc-col[data-ds="'+CSS.escape(ds)+'"]');
@@ -6753,11 +6756,37 @@ document.addEventListener('keydown',async e=>{
       return;
     }
   }
+  // ArrowUp from day selection (nothing selected): shift to the previous day AND select its last
+  // task in one press — the second half of the "climb out, then climb into the previous day" loop
+  // described above. Uses shiftDay (not _wkcAdvanceDay's own day-walk) since we're not currently
+  // anchored to any column/chip to walk from — day selection only tracks dayOff.
+  if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!e.shiftKey&&activePg==='overview'&&!selectedTasks.size&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')&&document.getElementById('wkcCols')){
+    e.preventDefault();
+    // Skip empty days (bounded, same 60-try cap _wkcAdvanceDay uses) so repeated Up always lands
+    // on an actual task rather than stalling day selection on a day with nothing in it.
+    for(let tries=0;tries<60;tries++){
+      shiftDay(-1);
+      const newDs=d2s(getDayDate(dayOff));
+      const col=document.querySelector('.wkc-col[data-ds="'+CSS.escape(newDs)+'"]');
+      const chips=col?[...col.querySelectorAll('.chip[data-tid]')]:[];
+      if(chips.length){
+        const targetId=chips[chips.length-1].dataset.tid;
+        selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
+        _lastSelSurface='wkcCol';_lastSelWkcDs=newDs;
+        applySelHighlight();
+        break;
+      }
+    }
+    return;
+  }
   // w + Arrow: shift week on overview
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&_wKeyHeld&&activePg==='overview'&&!document.querySelector('.atb-mgr')){e.preventDefault();_wUsedForChord=true;shiftWk(e.key==='ArrowLeft'?-1:1);return;}
   // Arrow left/right: nothing selected = shift the viewed day. Something selected = jump to the
-  // TOP task of the prev/next day instead (selection rule, not a plain day-view shift) — moving
-  // the selected item's own date lives on Cmd+Arrow below.
+  // SAME-POSITION task in the prev/next day instead (selection rule, not a plain day-view shift)
+  // — moving the selected item's own date lives on Cmd+Arrow below. 2026-09-14: this used to
+  // always force the prev/next day's TOP task regardless of which task was selected; now it
+  // preserves the selected task's index within its own day's list (clamped to that day's last
+  // task if it's shorter) so moving right from the 3rd task lands on the 3rd task over there too.
   if((e.key==='ArrowLeft'||e.key==='ArrowRight')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&activePg==='overview'&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')){
     // If a single auto-block is selected (not blk/vidstep which should move days), cycle like Tab
     if(selectedTasks.size===1&&lastSelectedId){
@@ -6768,8 +6797,17 @@ document.addEventListener('keydown',async e=>{
     e.preventDefault();
     const dir=e.key==='ArrowLeft'?-1:1;
     if(!selectedTasks.size){shiftDay(dir);return;}
-    if(_lastSelSurface==='todList')_todAdvanceDay(dir,true);
-    else if(_lastSelSurface==='wkcCol'&&_lastSelWkcDs)_wkcAdvanceDay(dir,_lastSelWkcDs,true);
+    if(_lastSelSurface==='todList'){
+      const rowIds=[...document.querySelectorAll('#todList .ti[id^="ti-"]')].map(r=>r.id.slice(3));
+      const idx=rowIds.indexOf(lastSelectedId);
+      _todAdvanceDay(dir,idx>=0?idx:0);
+    }
+    else if(_lastSelSurface==='wkcCol'&&_lastSelWkcDs){
+      const col=document.querySelector('.wkc-col[data-ds="'+CSS.escape(_lastSelWkcDs)+'"]');
+      const rowIds=col?[...col.querySelectorAll('.chip[data-tid]')].map(c=>c.dataset.tid):[];
+      const idx=rowIds.indexOf(lastSelectedId);
+      _wkcAdvanceDay(dir,_lastSelWkcDs,idx>=0?idx:0);
+    }
     else shiftDay(dir);
     return;
   }

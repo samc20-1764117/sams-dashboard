@@ -4220,19 +4220,23 @@ function _todListKeyNav(e){
   return false;
 }
 // Advances the Today list's viewed day (shiftDay already syncs wkOff/wrRecOff across week
-// boundaries) and lands selection on the first/last item of the next non-empty day, skipping
-// empty days — bounded so a long empty stretch can't hang the keypress. forceTop=true always
-// picks the day's first item regardless of dir (used by plain Left/Right with a selection —
-// "select the top task in the prev/next day" — as opposed to the Up/Down list-edge-crossing
-// case below it, which continues the scroll direction by landing on the far end).
-function _todAdvanceDay(dir,forceTop=false){
+// boundaries) and lands selection on an item in the next non-empty day, skipping empty days —
+// bounded so a long empty stretch can't hang the keypress. targetIdx (number) preserves the
+// selected item's horizontal position: plain Left/Right with a selection passes the item's
+// current index in its own day's list so the same-position item gets selected in the next day too
+// (clamped to that day's last item if it's shorter — "3rd task, no 3rd task over there, pick the
+// 2nd/last one instead"), 2026-09-14. Left null/omitted, it falls back to continuing the Up/Down
+// scroll direction by landing on the far end (dir<0 last item, dir>0 first item) — the
+// list-edge-crossing case below this function.
+function _todAdvanceDay(dir,targetIdx=null){
   let tries=0;
   while(tries<60){
     shiftDay(dir);
     const container=document.getElementById('todList');
     const rows=container?[...container.querySelectorAll('.ti[id^="ti-"]')]:[];
     if(rows.length){
-      const targetEl=forceTop?rows[0]:(dir<0?rows[rows.length-1]:rows[0]);
+      const idx=targetIdx!=null?Math.max(0,Math.min(targetIdx,rows.length-1)):(dir<0?rows.length-1:0);
+      const targetEl=rows[idx];
       const targetId=targetEl.id.slice(3);
       selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
       applySelHighlight();
@@ -4321,12 +4325,15 @@ function _wkcColKeyNav(e){
   return false;
 }
 // Advances the weekly-cal focused day column left/right (crossing into next/prev week via
-// shiftWk when it runs past Monday/Sunday) and lands selection on the first/last chip of the
-// next non-empty day, skipping empty days — bounded so a long empty stretch can't hang the
-// keypress. Works in date-space rather than DOM indices since shiftWk fully re-renders #wkcCols.
-// forceTop=true always picks the day's first chip regardless of dir (plain Left/Right with a
-// selection); omitted, it continues the Up/Down scroll direction by landing on the far end.
-function _wkcAdvanceDay(dir,ds,forceTop=false){
+// shiftWk when it runs past Monday/Sunday) and lands selection on a chip in the next non-empty
+// day, skipping empty days — bounded so a long empty stretch can't hang the keypress. Works in
+// date-space rather than DOM indices since shiftWk fully re-renders #wkcCols. targetIdx (number)
+// preserves the selected chip's horizontal position: plain Left/Right with a selection passes the
+// chip's current index in its own column so the same-position chip gets selected in the next
+// day's column too (clamped to that column's last chip if it's shorter), 2026-09-14. Left
+// null/omitted, it falls back to continuing the Up/Down scroll direction by landing on the far
+// end (dir<0 last chip, dir>0 first chip).
+function _wkcAdvanceDay(dir,ds,targetIdx=null){
   let cur=new Date(ds+'T00:00:00');
   let tries=0;
   while(tries<60){
@@ -4341,7 +4348,8 @@ function _wkcAdvanceDay(dir,ds,forceTop=false){
     const col=[...document.querySelectorAll('#wkcCols .wkc-col')].find(c=>c.dataset.ds===newDs);
     const chips=col?[...col.querySelectorAll('.chip[data-tid]')]:[];
     if(chips.length){
-      const targetChip=forceTop?chips[0]:(dir<0?chips[chips.length-1]:chips[0]);
+      const idx=targetIdx!=null?Math.max(0,Math.min(targetIdx,chips.length-1)):(dir<0?chips.length-1:0);
+      const targetChip=chips[idx];
       const targetId=targetChip.dataset.tid;
       selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
       _lastSelWkcDs=newDs; // keep the tracked column in sync as we cross into a new day
