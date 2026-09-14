@@ -5248,11 +5248,11 @@ function _renderVidOvMenu(){
   const steps=typeof VID_STEPS_CORE!=='undefined'?VID_STEPS_CORE:(typeof VID_STEPS!=='undefined'?VID_STEPS:[]);
   const labels=typeof VID_STEP_LABELS!=='undefined'?VID_STEP_LABELS:{};
   const _calListW=(_vidCalOpen||_vidOvAllOpen)?menu.dataset.calListW:null;
-  // dragover: an in-progress same-container reorder (_vidOvChildDrag/_vidOvBDrag) always wins,
-  // unchanged. Otherwise this is a foreign/cross drag heading for the _vidOvUpNextDrop fallback —
-  // gate it the same way as the toolbox's column (_vidOvBlankDropAllowed) so a grouped child can't
-  // be silently stranded by a blank-space drop here either (2026-09-11).
-  let listHtml=`<div id="vidOvContent" style="padding:4px 10px 0;${_calListW?`width:${_calListW};flex-shrink:0`:'flex:1;min-width:0'};min-height:0;overflow-y:auto" ondragover="event.preventDefault();if(_vidOvChildDrag||_vidOvBDrag){_vidOvDragIndicator(event);this.style.background=''}else{this.style.background=_vidOvBlankDropAllowed()?'':'rgba(239,68,68,.04)'}" ondragleave="_vidOvClearIndicator();this.style.background=''" ondrop="this.style.background='';_vidOvContentDrop(event)">`;
+  // dragover: an in-progress same-container reorder (_vidOvChildDrag/_vidOvBDrag) shows the
+  // reorder-indicator line as usual; any other drag (foreign video, or nothing dragged yet) just
+  // always accepts — a blank-space drop here now does something useful (see _vidOvUpNextDrop) rather
+  // than needing to be gated/rejected (2026-09-14, replaces an earlier red-tint reject indicator).
+  let listHtml=`<div id="vidOvContent" style="padding:4px 10px 0;${_calListW?`width:${_calListW};flex-shrink:0`:'flex:1;min-width:0'};min-height:0;overflow-y:auto" ondragover="event.preventDefault();if(_vidOvChildDrag||_vidOvBDrag)_vidOvDragIndicator(event)" ondragleave="_vidOvClearIndicator()" ondrop="_vidOvContentDrop(event)">`;
   // Column header row — [+btn 16px][name flex][stages+%][post 52px][x 18px]
   listHtml+='<div style="display:flex;align-items:center;padding:3px 19px 3px 6px;gap:5px;position:relative">';
   listHtml+='<div style="width:12px;flex-shrink:0"></div>';
@@ -6229,7 +6229,7 @@ function _vidOvRenderAll(){
   h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1.5px solid rgba(210,205,228,.3);justify-content:flex-start;padding-left:14px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em">In Progress</span></div>`;
   h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="font-size:10px;font-weight:700;width:18px;height:18px;line-height:16px;text-align:center;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;flex-shrink:0" title="Add idea (N)">+</button><button onclick="event.stopPropagation();_vidOvCloseAll()" style="background:none;border:none;cursor:pointer;padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Close all videos"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button></div>`;
   // In Progress column
-  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1.5px solid rgba(210,205,228,.3);padding:4px" ondragover="event.preventDefault();this.style.background=_vidOvBlankDropAllowed()?'rgba(245,158,11,.03)':'rgba(239,68,68,.06)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
+  h+=`<div style="grid-column:1;grid-row:2;min-height:0;overflow-y:auto;border-right:1.5px solid rgba(210,205,228,.3);padding:4px" ondragover="event.preventDefault();this.style.background='rgba(245,158,11,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDrop(event,'in_progress')">`;
   if(inProg.length){
     // Divider before a standalone L that directly follows a Big's own row/children — same "not part
     // of the group above it" clarification as the Up Next list (2026-09-11).
@@ -6267,27 +6267,28 @@ function _vidOvRenderAll(){
   h+='</div></div>';
   panel.innerHTML=h;
 }
-// A video that already belongs to a group (has big_video_id) must go through an explicit nest-drop
-// (onto a specific Big/child row) or an explicit ungroup (Ideas drop / demote) to change status or
-// group — never this generic "anywhere in the column" drop. Without this guard, a child dropped in
-// blank status-only space keeps its OLD big_video_id but gets a NEW status; if no view's filter
-// happens to show that exact combination, the video silently vanishes everywhere with zero feedback
-// — indistinguishable from deletion (2026-09-11 fix, reported as "dragging to an empty spot deletes
-// it"). dragover always preventDefault()s and just tints the zone red (_vidOvBlankDropAllowed) —
-// the actual accept/reject decision happens here on drop, specifically so the reject case still
-// reaches this function and can surface a toast (same showToast() used for task actions) — an
-// always-let-it-bubble dragover gate would silently swallow the drop with no way to tell the user.
+// Dropped in blank column/list space (missed the explicit nest zones — a Big row's middle band, or
+// a specific child row): a BIG video just moves to newStatus, cascading its own children along with
+// it (unchanged, long-standing behavior). A SMALL video instead gets PROMOTED to a standalone Big in
+// newStatus (video_type→'B', big_video_id cleared) — 2026-09-14, replacing an earlier version of
+// this fix that rejected the drop outright. Rejecting left the user with no way to pull a video out
+// of a group via a blank-space drop at all; converting it to its own Big is the actually-useful
+// action for "I dropped this small somewhere that isn't a specific group" — it can never end up in
+// an invisible status+parent combination this way, since a promoted Big always has big_video_id=null.
 function _vidOvAllDrop(event,newStatus){
   event.preventDefault();
   const vidId=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
   if(!vidId)return;
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
-  if(v.big_video_id){if(typeof showToast==='function')showToast("Can't drop here — already in a group",'#ef4444',2200);return;}
-  const prev=v.status;
-  v.status=newStatus;
-  // Promote/demote children when moving a B video
+  const prevType=v.video_type,prevBig=v.big_video_id,prevStatus=v.status,prevOrder=v.vid_order;
   const childUndos=[];
-  if(v.video_type==='B'){
+  const wasL=v.video_type!=='B';
+  if(wasL){
+    v.video_type='B';v.big_video_id=null;v.status=newStatus;
+    const sibs=(st.videos||[]).filter(x=>!x.is_deleted&&x.video_type==='B'&&x.status===newStatus&&String(x.id)!==String(v.id));
+    v.vid_order=(Math.max(0,...sibs.map(x=>x.vid_order??0)))+1;
+  }else{
+    v.status=newStatus;
     (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(vidId)&&c.status!=='published').forEach(c=>{
       const cp=c.status;c.status=newStatus;
       childUndos.push({id:c.id,prev:cp});
@@ -6295,8 +6296,13 @@ function _vidOvAllDrop(event,newStatus){
     });
   }
   save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
-  sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${v.id}`);
-  pushUndo(()=>{v.status=prev;childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});save();_vidOvRenderAll();_renderVidOvMenu();renderAll();sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${v.id}`);},'Changed video status');
+  sbReqSilent('PATCH','videos',wasL?{video_type:'B',big_video_id:null,status:newStatus,vid_order:v.vid_order}:{status:newStatus},`?id=eq.${v.id}`);
+  pushUndo(()=>{
+    v.video_type=prevType;v.big_video_id=prevBig;v.status=prevStatus;v.vid_order=prevOrder;
+    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});
+    save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
+    sbReqSilent('PATCH','videos',{video_type:prevType,big_video_id:prevBig??null,status:prevStatus,vid_order:prevOrder??null},`?id=eq.${v.id}`);
+  },wasL?'Converted to big video':'Changed video status');
 }
 function _vidOvAllDropType(event,newType){
   event.preventDefault();
@@ -6321,23 +6327,33 @@ function _vidOvUpNextDrop(event){
   const vidId=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
   if(!vidId)return;
   const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
-  // Same guard as _vidOvAllDrop — a grouped child dropped in blank space here would otherwise get
-  // status='up_next' while keeping its old (possibly status-mismatched) parent link, which can make
-  // it vanish from every view's filters (2026-09-11 fix).
-  if(v.big_video_id){if(typeof showToast==='function')showToast("Can't drop here — already in a group",'#ef4444',2200);return;}
-  if(v.status==='up_next')return;
-  const prev=v.status;
-  v.status='up_next';
+  const prevType=v.video_type,prevBig=v.big_video_id,prevStatus=v.status,prevOrder=v.vid_order;
   const childUndos=[];
-  if(v.video_type==='B'){
+  const wasL=v.video_type!=='B';
+  // Same "promote a Small to its own Big" behavior as _vidOvAllDrop (2026-09-14) — see its comment.
+  // A Big with no status change (already up_next) still no-ops, same as before; a Small always does
+  // the conversion even if its status happened to already read up_next, since the point here is
+  // pulling it out of its group, not just the status bit.
+  if(!wasL&&v.status==='up_next')return;
+  if(wasL){
+    v.video_type='B';v.big_video_id=null;v.status='up_next';
+    const sibs=(st.videos||[]).filter(x=>!x.is_deleted&&x.video_type==='B'&&x.status==='up_next'&&String(x.id)!==String(v.id));
+    v.vid_order=(Math.max(0,...sibs.map(x=>x.vid_order??0)))+1;
+  }else{
+    v.status='up_next';
     (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(vidId)&&c.status!=='published').forEach(c=>{
       childUndos.push({id:c.id,prev:c.status});c.status='up_next';
       sbReqSilent('PATCH','videos',{status:'up_next'},`?id=eq.${c.id}`);
     });
   }
   save();if(_vidOvAllOpen)_vidOvRenderAll();_renderVidOvMenu();renderAll();
-  sbReqSilent('PATCH','videos',{status:'up_next'},`?id=eq.${v.id}`);
-  pushUndo(()=>{v.status=prev;childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});save();if(_vidOvAllOpen)_vidOvRenderAll();_renderVidOvMenu();renderAll();sbReqSilent('PATCH','videos',{status:prev},`?id=eq.${v.id}`);},'Moved to up next');
+  sbReqSilent('PATCH','videos',wasL?{video_type:'B',big_video_id:null,status:'up_next',vid_order:v.vid_order}:{status:'up_next'},`?id=eq.${v.id}`);
+  pushUndo(()=>{
+    v.video_type=prevType;v.big_video_id=prevBig;v.status=prevStatus;v.vid_order=prevOrder;
+    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});
+    save();if(_vidOvAllOpen)_vidOvRenderAll();_renderVidOvMenu();renderAll();
+    sbReqSilent('PATCH','videos',{video_type:prevType,big_video_id:prevBig??null,status:prevStatus,vid_order:prevOrder??null},`?id=eq.${v.id}`);
+  },wasL?'Converted to big video':'Moved to up next');
 }
 // ── Nest onto a Big video (Up Next list + toolbox In Progress column) ──────────
 // A Big row is a valid nest target — dropping a Small (from Ideas or a standalone in In Progress)
@@ -6351,20 +6367,6 @@ function _vidOvUpNextDrop(event){
 // owns that zone (the Up Next list's own B-reorder indicator line, or the toolbox column's
 // status-change drop) — this is what lets simple reordering/status-drop keep working right next to
 // the new nest behavior instead of the nest zone swallowing every drop on a Big row.
-// Used by the generic "anywhere in this column/list" zones' own dragover, purely to tint the zone
-// red instead of its normal accept color while hovering — a video that already belongs to a group
-// can't use this catch-all, it must land on an explicit nest target (a Big row's middle band, or a
-// specific child row) or an explicit ungroup action instead. dragover still always preventDefault()s
-// regardless of this check (unlike an earlier version of this fix) so 'drop' reliably fires and the
-// matching drop handler (_vidOvAllDrop/_vidOvUpNextDrop) can surface a reject toast — see their
-// comments for why (2026-09-14: switched from silently blocking the drop to toasting on it, at
-// user's request, matching the showToast() pattern used for task actions).
-function _vidOvBlankDropAllowed(){
-  const vid=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
-  if(!vid)return true;
-  const v=(st.videos||[]).find(x=>String(x.id)===String(vid));
-  return !v||!v.big_video_id;
-}
 function _vidOvIsNestZone(e){
   const rect=e.currentTarget.getBoundingClientRect();
   if(!rect.height)return false;
