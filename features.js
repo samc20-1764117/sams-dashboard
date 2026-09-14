@@ -5959,12 +5959,15 @@ function renderGuidePage(){
     ${sRow('M','Month view toggle')}
     ${sRow('F (month view)','Toggle Filters panel')}
     ${sRow('O (month view)','Toggle Objectives panel')}
-    ${sRow('←/→','Previous / next day (nothing selected) — or select the top task in the prev/next day if something is)')}
+    ${sRow('←/→','Previous / next day (nothing selected) — or select the SAME-POSITION task in the prev/next day if something is (clamped to that day\'s last task if it\'s shorter)')}
     ${sRow('W + ←/→','Previous / next week')}
     ${sRow('⌘ ←/→ (selected)','Move task ±1 day')}
     ${sRow('↑/↓ (TB)','Move block ±30 min')}
     ${sRow('⌘ ↑/↓ (TB)','Resize block ±30 min')}
-    ${sRow('↑/↓ (list)','Select prev/next in Today list or a weekly-cal day column — past the top/bottom edge, moves to the prev/next day')}
+    ${sRow('↑/↓ (list)','Select prev/next in Today list or a weekly-cal day column')}
+    ${sRow('↓ (weekly-cal, nothing selected)','Enter the viewed day\'s column at its first task/banner')}
+    ${sRow('↑ (weekly-cal, top of list)','Back out to day selection (same day) — press ↑ again to jump to the PREVIOUS day\'s last item. Down instead crosses straight into the next day\'s first item — no back-out stop')}
+    ${sRow('Today-list edge (↑/↓)','Past the top/bottom, moves to the prev/next day')}
     ${sRow('⌘ ↑/↓ (list)','Reorder selected within the day (Today list, weekly-cal column, or shopping list)')}
     ${sRow('Space','Skip WR rule')}
     ${sRow('Delete / ⌫','Delete selected')}
