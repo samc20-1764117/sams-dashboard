@@ -1501,6 +1501,22 @@ function mSyncBarClearance(barId, listId) {
   });
 }
 
+// Diagnostic (2026-09-14): reports exact measured numbers on the build stamp — a photo
+// can't be measured precisely, so instead of guessing pixel gaps from a screenshot, read
+// the real computed safe-area inset + #mNav's actual on-screen gap from the true bottom
+// of the viewport. Cheap enough to recompute every time the nav is positioned.
+function _mNavDiagUpdate(nav) {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none';
+  document.body.appendChild(probe);
+  const safeBottom = getComputedStyle(probe).paddingBottom;
+  probe.remove();
+  const rect = nav.getBoundingClientRect();
+  const gap = (window.innerHeight - rect.bottom).toFixed(1);
+  const txt = `Build ${window._BUILD || '?'} · safe-bottom ${safeBottom} · nav-gap ${gap}px · innerH ${window.innerHeight}px`;
+  document.querySelectorAll('.m-build-stamp').forEach(el => { el.textContent = txt; });
+}
+
 // Slides #mNavHighlight (the Liquid Glass pill, mobile.css) behind whichever .m-nav-btn
 // currently has .active. animate=false is used on initial load/resize to snap into place
 // without a visible slide-in.
@@ -1513,6 +1529,7 @@ function _mNavMoveHighlight(animate) {
   const barRect = bar.getBoundingClientRect();
   const btnRect = activeBtn.getBoundingClientRect();
   const x = btnRect.left - barRect.left - 6; // 6 = #mNav's own padding, the pill's resting left
+  _mNavDiagUpdate(bar);
   if (!animate) {
     hl.style.transition = 'none';
     hl.style.transform = `translateX(${x}px)`;
