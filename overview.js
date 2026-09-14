@@ -4289,20 +4289,19 @@ function _wkcColKeyNav(e){
     return true;
   }
 
-  // Arrow Up/Down: navigate selection within the column. Bottom edge (no shift) advances into the
-  // next day's column, crossing into next week via shiftWk if needed. Top edge instead backs OUT
-  // to "day selection" — clears the task selection but leaves the day (dayOff/_lastSelWkcDs)
-  // unchanged, so Left/Right's day-shift picks up right where the task list left off, and plain
-  // Down (see the global keydown handler in features.js) re-enters at the first task. This was a
-  // deliberate 2026-09-11 change from the old top-edge-advances-to-prev-day behavior — the day
-  // header and its column are meant to feel like one navigable stack, not two.
+  // Arrow Up/Down: navigate selection within the column — hitting the top/bottom edge (no shift)
+  // advances into the prev/next day's column (mirrored both directions, 2026-09-14 — an earlier
+  // top-edge "back out to day selection" variant made Up stop dead instead of continuing into the
+  // previous day like Down does into the next, breaking continuous up/down scroll through the
+  // week), crossing into prev/next week via shiftWk if needed. Entry INTO task selection from day
+  // selection is via plain Down with nothing selected (see the global keydown handler in
+  // features.js) — that one-way entry point still stands; only this top-edge exit was reverted.
   if(e.key==='ArrowUp'||e.key==='ArrowDown'){
     e.preventDefault();
     const dir=e.key==='ArrowUp'?-1:1;
     const lastSel=colSel[colSel.length-1];
     const curIdx=rowIds.indexOf(lastSel);
     const newIdx=curIdx+dir;
-    if(!e.shiftKey&&dir===-1&&newIdx<0){selectedTasks.clear();lastSelectedId=null;applySelHighlight();return true;}
     if(!e.shiftKey&&(newIdx<0||newIdx>=rowIds.length)){_wkcAdvanceDay(dir,ds);return true;}
     const clamped=Math.max(0,Math.min(rowIds.length-1,newIdx));
     const newId=rowIds[clamped];
