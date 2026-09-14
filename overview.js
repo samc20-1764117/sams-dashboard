@@ -1382,16 +1382,30 @@ function renderWkCal(){
         showCtx(e,null,false,null,null,null,tv.id);
       });
     });
+    // Birthday/holiday banners: previously decorative only (no click/context wiring, no data-sid),
+    // which meant they weren't selectable at all — days that only had a birthday/holiday banner
+    // and no real chips looked "empty" to keyboard nav (_wkcAdvanceDay/_wkcColKeyNav both key off
+    // .chip[data-tid] inside the column) and got silently skipped. Wired up the same way travel
+    // banners already are (click/contextmenu -> selectedTasks, id = the same bd-.../hd-... id
+    // tRowExtra already uses elsewhere via selTask, so highlight/undo/etc. stay consistent app-wide).
     bdayThisWk.forEach(b=>{
       const s=gc('birthday');
       const bdDone=st.blocks.some(bl=>bl.cat==='Birthday'&&bl.title===b.name&&bl._done);
       const bdPast=!bdDone&&b.due_date<today2;
-      addBanner(b.name,b.due_date,b.due_date,s,null,bdDone||bdPast);
+      const ban=addBanner(escHtml(b.name),b.due_date,b.due_date,s,null,bdDone||bdPast);
+      if(!ban)return;
+      ban.dataset.sid=b.id;ban.dataset.cat='birthday';ban.dataset.ds=b.due_date;
+      ban.addEventListener('click',e=>{e.stopPropagation();selectedTasks.clear();selectedTasks.add(b.id);lastSelectedId=b.id;applySelHighlight();});
+      ban.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();selectedTasks.clear();selectedTasks.add(b.id);lastSelectedId=b.id;applySelHighlight();});
     });
     holidayThisWk.forEach(h=>{
       const s=gc('holiday');
       const hdPast=h.due_date<today2;
-      addBanner(h.name,h.due_date,h.due_date,s,null,hdPast);
+      const ban=addBanner(escHtml(h.name),h.due_date,h.due_date,s,null,hdPast);
+      if(!ban)return;
+      ban.dataset.sid=h.id;ban.dataset.cat='holiday';ban.dataset.ds=h.due_date;
+      ban.addEventListener('click',e=>{e.stopPropagation();selectedTasks.clear();selectedTasks.add(h.id);lastSelectedId=h.id;applySelHighlight();});
+      ban.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();selectedTasks.clear();selectedTasks.add(h.id);lastSelectedId=h.id;applySelHighlight();});
     });
 
     // Set banner container height based on lanes used (paddingTop already set synchronously)
@@ -4252,6 +4266,20 @@ function _todAdvanceDay(dir,targetIdx=null){
 // _lastSelSurface==='wkcCol' so this never fights _todListKeyNav for the same keypress even when
 // the same id happens to render in both places (e.g. a task due today shows in both #todList and
 // today's wkc-col) — whichever list the user last clicked into owns the keyboard from then on.
+// Combined keyboard-navigable items for a weekly-cal day column: birthday/holiday banners (which
+// render in the separate #wkcBanners overlay, outside .wkc-col, and never had a data-tid) come
+// first — they sit visually above the column — followed by the column's own chips in DOM order.
+// Without this, a day whose only content was a birthday/holiday banner looked "empty" to nav
+// (_wkcAdvanceDay would silently skip right over it, and _wkcColKeyNav couldn't select into it at
+// all) since those banners lived entirely outside the chip-based lookup (2026-09-14 fix — "all
+// task types should be selectable in weekly view").
+function _wkcDayItems(ds){
+  const banners=[...document.querySelectorAll('.wkc-banner[data-sid][data-ds="'+CSS.escape(ds)+'"]')];
+  const col=document.querySelector('.wkc-col[data-ds="'+CSS.escape(ds)+'"]');
+  const chips=col?[...col.querySelectorAll('.chip[data-tid]')]:[];
+  return[...banners,...chips];
+}
+function _wkcItemId(el){return el.dataset.sid||el.dataset.tid;}
 function _wkcColKeyNav(e){
   if(_lastSelSurface!=='wkcCol')return false;
   if(!lastSelectedId||!_lastSelWkcDs)return false;
@@ -4262,13 +4290,19 @@ function _wkcColKeyNav(e){
   // ("gets stuck around recurring tasks").
   const col=document.querySelector('.wkc-col[data-ds="'+CSS.escape(_lastSelWkcDs)+'"]');
   if(!col)return false;
-  const chips=[...col.querySelectorAll('.chip[data-tid]')];if(!chips.length)return false;
-  const rowIds=chips.map(c=>c.dataset.tid);
-  const colSel=[...selectedTasks].filter(id=>rowIds.includes(id));
-  if(!colSel.length)return false;
   const ds=col.dataset.ds;
+  // rowIds stays CHIP-ONLY — manual day-order (_dayOrder) is a chip/task concept, banners aren't
+  // reorderable this way. navIds is banners+chips, used for plain Up/Down selection movement.
+  const chips=[...col.querySelectorAll('.chip[data-tid]')];
+  const rowIds=chips.map(c=>c.dataset.tid);
+  const navItems=_wkcDayItems(ds);
+  const navIds=navItems.map(_wkcItemId);
+  if(!navIds.length)return false;
+  const colSel=[...selectedTasks].filter(id=>navIds.includes(id));
+  if(!colSel.length)return false;
 
-  // Cmd+Up/Down: reorder selected items (manual day order, same splice pattern as Today list)
+  // Cmd+Up/Down: reorder selected items (manual day order, same splice pattern as Today list).
+  // Banner-only selections have no rowIds match, so idxs ends up empty and this cleanly no-ops.
   if((e.metaKey||e.ctrlKey)&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
     e.preventDefault();
     const dir=e.key==='ArrowUp'?-1:1;
@@ -4293,22 +4327,25 @@ function _wkcColKeyNav(e){
     return true;
   }
 
-  // Arrow Up/Down: navigate selection within the column — hitting the top/bottom edge (no shift)
-  // advances into the prev/next day's column (mirrored both directions, 2026-09-14 — an earlier
-  // top-edge "back out to day selection" variant made Up stop dead instead of continuing into the
-  // previous day like Down does into the next, breaking continuous up/down scroll through the
-  // week), crossing into prev/next week via shiftWk if needed. Entry INTO task selection from day
-  // selection is via plain Down with nothing selected (see the global keydown handler in
-  // features.js) — that one-way entry point still stands; only this top-edge exit was reverted.
+  // Arrow Up/Down: navigate selection within the column (banners+chips, via navIds). Bottom edge
+  // (no shift) advances straight into the next day's column (crossing into next week via shiftWk
+  // if needed) — Down never stops at day selection, confirmed-good behavior. Top edge is
+  // deliberately asymmetric (2026-09-14 spec): it backs OUT to day selection on the SAME day first
+  // (clears the task selection, day stays put) rather than crossing straight to the previous day —
+  // a SECOND plain Up from there (nothing selected) is handled in the global keydown handler in
+  // features.js, which shifts to the previous day AND selects its last item. So climbing all the
+  // way up through the week is a task->day->task->day->... loop, one Up per step, while Down dives
+  // straight through item->item across day boundaries with no stop.
   if(e.key==='ArrowUp'||e.key==='ArrowDown'){
     e.preventDefault();
     const dir=e.key==='ArrowUp'?-1:1;
     const lastSel=colSel[colSel.length-1];
-    const curIdx=rowIds.indexOf(lastSel);
+    const curIdx=navIds.indexOf(lastSel);
     const newIdx=curIdx+dir;
-    if(!e.shiftKey&&(newIdx<0||newIdx>=rowIds.length)){_wkcAdvanceDay(dir,ds);return true;}
-    const clamped=Math.max(0,Math.min(rowIds.length-1,newIdx));
-    const newId=rowIds[clamped];
+    if(!e.shiftKey&&dir===-1&&newIdx<0){selectedTasks.clear();lastSelectedId=null;applySelHighlight();return true;}
+    if(!e.shiftKey&&(newIdx<0||newIdx>=navIds.length)){_wkcAdvanceDay(dir,ds);return true;}
+    const clamped=Math.max(0,Math.min(navIds.length-1,newIdx));
+    const newId=navIds[clamped];
     if(e.shiftKey){selectedTasks.add(newId);lastSelectedId=newId;}
     else{selectedTasks.clear();selectedTasks.add(newId);lastSelectedId=newId;}
     applySelHighlight();
@@ -4325,14 +4362,15 @@ function _wkcColKeyNav(e){
   return false;
 }
 // Advances the weekly-cal focused day column left/right (crossing into next/prev week via
-// shiftWk when it runs past Monday/Sunday) and lands selection on a chip in the next non-empty
-// day, skipping empty days — bounded so a long empty stretch can't hang the keypress. Works in
-// date-space rather than DOM indices since shiftWk fully re-renders #wkcCols. targetIdx (number)
-// preserves the selected chip's horizontal position: plain Left/Right with a selection passes the
-// chip's current index in its own column so the same-position chip gets selected in the next
-// day's column too (clamped to that column's last chip if it's shorter), 2026-09-14. Left
-// null/omitted, it falls back to continuing the Up/Down scroll direction by landing on the far
-// end (dir<0 last chip, dir>0 first chip).
+// shiftWk when it runs past Monday/Sunday) and lands selection on an item (banner or chip, via
+// _wkcDayItems — see that function's comment) in the next non-empty day, skipping empty days —
+// bounded so a long empty stretch can't hang the keypress. Works in date-space rather than DOM
+// indices since shiftWk fully re-renders #wkcCols. targetIdx (number) preserves the selected
+// item's horizontal position: plain Left/Right with a selection passes the item's current index
+// in its own column so the same-position item gets selected in the next day's column too (clamped
+// to that column's last item if it's shorter), 2026-09-14. Left null/omitted, it falls back to
+// continuing the Up/Down scroll direction by landing on the far end (dir<0 last item, dir>0 first
+// item).
 function _wkcAdvanceDay(dir,ds,targetIdx=null){
   let cur=new Date(ds+'T00:00:00');
   let tries=0;
@@ -4345,12 +4383,10 @@ function _wkcAdvanceDay(dir,ds,targetIdx=null){
       const newWkOff=Math.round((new Date(newWkKey+'T00:00:00')-new Date(getWkKey(0)+'T00:00:00'))/(7*86400000));
       shiftWk(newWkOff-wkOff);
     }
-    const col=[...document.querySelectorAll('#wkcCols .wkc-col')].find(c=>c.dataset.ds===newDs);
-    const chips=col?[...col.querySelectorAll('.chip[data-tid]')]:[];
-    if(chips.length){
-      const idx=targetIdx!=null?Math.max(0,Math.min(targetIdx,chips.length-1)):(dir<0?chips.length-1:0);
-      const targetChip=chips[idx];
-      const targetId=targetChip.dataset.tid;
+    const items=_wkcDayItems(newDs);
+    if(items.length){
+      const idx=targetIdx!=null?Math.max(0,Math.min(targetIdx,items.length-1)):(dir<0?items.length-1:0);
+      const targetId=_wkcItemId(items[idx]);
       selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
       _lastSelWkcDs=newDs; // keep the tracked column in sync as we cross into a new day
       applySelHighlight();
@@ -4372,7 +4408,10 @@ function _todListBulkDelete(ids){
     else if(id.startsWith('rec-virt-')||id.startsWith('wrec-'))wrTargets.push({isRec:true,id:id.replace('rec-virt-','').replace('wrec-','')});
     else if(id.startsWith('pup-sess-'))pupIds.push(id.replace('pup-sess-',''));
     else if(id.startsWith('vid-ov-'))vidIds.push(id.replace('vid-ov-',''));
-    else if(!id.startsWith('vidstep-')&&!id.startsWith('tv-')&&!id.startsWith('bday-')&&!id.startsWith('hday-'))taskIds.push(id);
+    // bd-/hd- (NOT bday-/hday- — that was a stale/never-matching prefix check; birthdays/holidays
+    // are only reachable here at all as of 2026-09-14, when they became selectable in weekly view)
+    // are deliberately excluded, same as travel/vidstep — no keyboard-delete path for those yet.
+    else if(!id.startsWith('vidstep-')&&!id.startsWith('tv-')&&!id.startsWith('bd-')&&!id.startsWith('hd-'))taskIds.push(id);
   });
   if(wrTargets.length&&typeof _wrBulkDelete==='function')_wrBulkDelete(wrTargets);
   if(!taskIds.length&&!shopIds.length&&!pupIds.length&&!vidIds.length){selectedTasks.clear();applySelHighlight();return;}

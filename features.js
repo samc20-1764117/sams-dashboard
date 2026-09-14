@@ -6662,6 +6662,14 @@ function applySelHighlight(){
     if(sel)applySelVars(el,gc('travel'));
     else clearSelVars(el);
   });
+  // Birthday/holiday banners (data-sid holds the full bd-.../hd-... id already used by selTask
+  // elsewhere — see tRowExtra) — same sel-row toggle pattern as travel banners just above.
+  document.querySelectorAll('.wkc-banner[data-sid]').forEach(el=>{
+    const sel=selectedTasks.has(el.dataset.sid);
+    el.classList.toggle('sel-row',sel);
+    if(sel)applySelVars(el,gc(el.dataset.cat));
+    else clearSelVars(el);
+  });
   const selAtbIds=new Set([...selectedTasks].filter(id=>id.startsWith('atb::')).map(id=>id.replace('atb::','')));
   document.querySelectorAll('.atb-block[data-atb-id]').forEach(el=>{
     el.classList.toggle('sel-atb',selAtbIds.has(el.dataset.atbId));
@@ -6745,11 +6753,10 @@ document.addEventListener('keydown',async e=>{
   // behavior, _wkcColKeyNav's bottom-edge branch) — so only Up round-trips through day selection.
   if(e.key==='ArrowDown'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!e.shiftKey&&activePg==='overview'&&!selectedTasks.size&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')&&document.getElementById('wkcCols')){
     const ds=d2s(getDayDate(dayOff));
-    const col=document.querySelector('.wkc-col[data-ds="'+CSS.escape(ds)+'"]');
-    const chips=col?[...col.querySelectorAll('.chip[data-tid]')]:[];
-    if(chips.length){
+    const items=typeof _wkcDayItems==='function'?_wkcDayItems(ds):[];
+    if(items.length){
       e.preventDefault();
-      const targetId=chips[0].dataset.tid;
+      const targetId=_wkcItemId(items[0]);
       selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
       _lastSelSurface='wkcCol';_lastSelWkcDs=ds;
       applySelHighlight();
@@ -6757,20 +6764,19 @@ document.addEventListener('keydown',async e=>{
     }
   }
   // ArrowUp from day selection (nothing selected): shift to the previous day AND select its last
-  // task in one press — the second half of the "climb out, then climb into the previous day" loop
+  // item in one press — the second half of the "climb out, then climb into the previous day" loop
   // described above. Uses shiftDay (not _wkcAdvanceDay's own day-walk) since we're not currently
   // anchored to any column/chip to walk from — day selection only tracks dayOff.
   if(e.key==='ArrowUp'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!e.shiftKey&&activePg==='overview'&&!selectedTasks.size&&!document.querySelector('.overlay.open')&&!_qnOpen&&!document.querySelector('.atb-mgr')&&document.getElementById('wkcCols')){
     e.preventDefault();
     // Skip empty days (bounded, same 60-try cap _wkcAdvanceDay uses) so repeated Up always lands
-    // on an actual task rather than stalling day selection on a day with nothing in it.
+    // on an actual item rather than stalling day selection on a day with nothing in it.
     for(let tries=0;tries<60;tries++){
       shiftDay(-1);
       const newDs=d2s(getDayDate(dayOff));
-      const col=document.querySelector('.wkc-col[data-ds="'+CSS.escape(newDs)+'"]');
-      const chips=col?[...col.querySelectorAll('.chip[data-tid]')]:[];
-      if(chips.length){
-        const targetId=chips[chips.length-1].dataset.tid;
+      const items=typeof _wkcDayItems==='function'?_wkcDayItems(newDs):[];
+      if(items.length){
+        const targetId=_wkcItemId(items[items.length-1]);
         selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
         _lastSelSurface='wkcCol';_lastSelWkcDs=newDs;
         applySelHighlight();
@@ -6803,9 +6809,8 @@ document.addEventListener('keydown',async e=>{
       _todAdvanceDay(dir,idx>=0?idx:0);
     }
     else if(_lastSelSurface==='wkcCol'&&_lastSelWkcDs){
-      const col=document.querySelector('.wkc-col[data-ds="'+CSS.escape(_lastSelWkcDs)+'"]');
-      const rowIds=col?[...col.querySelectorAll('.chip[data-tid]')].map(c=>c.dataset.tid):[];
-      const idx=rowIds.indexOf(lastSelectedId);
+      const navIds=typeof _wkcDayItems==='function'?_wkcDayItems(_lastSelWkcDs).map(_wkcItemId):[];
+      const idx=navIds.indexOf(lastSelectedId);
       _wkcAdvanceDay(dir,_lastSelWkcDs,idx>=0?idx:0);
     }
     else shiftDay(dir);
