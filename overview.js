@@ -4342,7 +4342,22 @@ function _wkcColKeyNav(e){
     const lastSel=colSel[colSel.length-1];
     const curIdx=navIds.indexOf(lastSel);
     const newIdx=curIdx+dir;
-    if(!e.shiftKey&&dir===-1&&newIdx<0){selectedTasks.clear();lastSelectedId=null;applySelHighlight();return true;}
+    if(!e.shiftKey&&dir===-1&&newIdx<0){
+      selectedTasks.clear();lastSelectedId=null;
+      // Day selection IS "the viewed day" (dayOff) app-wide — it's what drives the header/column
+      // circle highlight (.wkc-day-sel .wkc-dd, renderWkCal) as well as the Today list/TB grid.
+      // The task being backed out of here was selected on column `ds`, which may not be the
+      // currently-viewed dayOff at all (e.g. the task was reached by directly clicking a chip on
+      // some other day) — without syncing dayOff to it, the circle stayed on whatever day was
+      // last viewed instead of moving to show where the user actually backed out to, so "day
+      // selection" looked like nothing was selected at all. Sync + re-render, same as the header's
+      // own click handler.
+      const todayDs=d2s(new Date());
+      dayOff=Math.round((new Date(ds+'T00:00:00')-new Date(todayDs+'T00:00:00'))/86400000);
+      renderToday();renderDayTB();renderWkCal();
+      applySelHighlight();
+      return true;
+    }
     if(!e.shiftKey&&(newIdx<0||newIdx>=navIds.length)){_wkcAdvanceDay(dir,ds);return true;}
     const clamped=Math.max(0,Math.min(navIds.length-1,newIdx));
     const newId=navIds[clamped];
