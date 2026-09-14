@@ -5324,7 +5324,7 @@ function _renderVidOvMenu(){
   // width and shift the stage-dot columns out of alignment with the actual data rows (see that button's
   // own comment). Shares its right:0 slot; when title mode is also active it steps in to right:16px so
   // the two don't overlap (2026-09-14).
-  listHtml+=`<button onclick="event.stopPropagation();if(typeof _vidOvNewVideo==='function')_vidOvNewVideo('B','up_next')" style="position:absolute;top:50%;right:${_vidOvTitleMode?'16px':'0'};transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Add video to Up Next"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>`;
+  listHtml+=`<button onclick="event.stopPropagation();if(typeof _vidOvNewVideo==='function')_vidOvNewVideo('B','up_next')" style="position:absolute;top:50%;right:${_vidOvTitleMode?'16px':'0'};transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:0;width:14px;height:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Add video to Up Next"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>`;
   listHtml+='<span style="flex:1;min-width:0"></span>';
   listHtml+='<span style="flex-shrink:0;width:10px"></span>';
   if(_vidOvTitleMode)listHtml+='<span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700;line-height:12px">Title</span><span style="flex:1;min-width:0;font-size:9px;color:var(--muted);font-weight:700;line-height:12px">Comment</span>';
@@ -6307,8 +6307,8 @@ function _vidOvRenderAll(){
   // dropped theirs too for consistency. The "+" buttons are plain icon-only buttons (same svg/stroke as
   // the close-all ✕ below, no border box) so every header icon reads at the same visual weight — the
   // old bordered-text "+" looked noticeably smaller/lighter next to the ✕.
-  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1.5px solid rgba(210,205,228,.3);border-bottom:none;justify-content:flex-start;padding-left:14px;min-height:26px;height:26px;box-sizing:border-box;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:#d97706;letter-spacing:.03em;flex:1">In Progress</span><button onclick="event.stopPropagation();if(typeof _vidOvNewVideo==='function')_vidOvNewVideo('B','in_progress')" style="background:none;border:none;cursor:pointer;padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Add video to In Progress"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>`;
-  h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;border-bottom:none;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px;min-height:26px;height:26px;box-sizing:border-box"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="background:none;border:none;cursor:pointer;padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Add idea (N)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><button onclick="event.stopPropagation();_vidOvCloseAll()" style="background:none;border:none;cursor:pointer;padding:0;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Close all videos"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button></div>`;
+  h+=`<div class="tod-tb-header" style="grid-column:1;grid-row:1;border-right:1.5px solid rgba(210,205,228,.3);border-bottom:none;justify-content:flex-start;padding-left:14px;min-height:26px;height:26px;box-sizing:border-box;display:flex;align-items:center;gap:6px"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">In Progress</span><button onclick="event.stopPropagation();if(typeof _vidOvNewVideo==='function')_vidOvNewVideo('B','in_progress')" style="background:none;border:none;cursor:pointer;padding:0;width:14px;height:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Add video to In Progress"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>`;
+  h+=`<div class="tod-tb-header" style="grid-column:2;grid-row:1;border-bottom:none;justify-content:flex-start;padding-left:14px;display:flex;align-items:center;gap:6px;min-height:26px;height:26px;box-sizing:border-box"><span style="font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.03em;flex:1">Ideas</span><button onclick="event.stopPropagation();if(typeof openVidModal==='function')openVidModal()" style="background:none;border:none;cursor:pointer;padding:0;width:14px;height:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Add idea (N)"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><button onclick="event.stopPropagation();_vidOvCloseAll()" style="background:none;border:none;cursor:pointer;padding:0;width:14px;height:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0" title="Close all videos"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><line x1="5" y1="5" x2="19" y2="19"/></svg></button></div>`;
   // In Progress column — dblclick on blank space (not a row/button) adds directly into In Progress
   // instead of falling through to the list's own blank-dblclick handler, which always forces up_next
   // (2026-09-14 fix — previously a double-click here silently created an Up Next video instead).
@@ -6361,85 +6361,119 @@ function _vidOvRenderAll(){
 // of a group via a blank-space drop at all; converting it to its own Big is the actually-useful
 // action for "I dropped this small somewhere that isn't a specific group" — it can never end up in
 // an invisible status+parent combination this way, since a promoted Big always has big_video_id=null.
+//
+// Multi-select-aware (2026-09-14): if the actually-dragged video is part of the current toolbox
+// selection (_voaSel) or the Up Next list's own selection (_vidOvSelSet), and that selection has more
+// than one video in it, the WHOLE selection moves together instead of just the one row the drag
+// happened to start from — dragging several selected Up Next videos onto Ideas/In Progress/Up Next
+// used to silently move only the single dragged one, which read as "multi-select drag is broken."
+function _vidOvDragBatchIds(vidId){
+  if(typeof _voaSel!=='undefined'&&_voaSel.has(vidId)&&_voaSel.size>1)return[..._voaSel];
+  if(typeof _vidOvSelSet!=='undefined'&&_vidOvSelSet.has(vidId)&&_vidOvSelSet.size>1)return[..._vidOvSelSet];
+  return[vidId];
+}
 function _vidOvAllDrop(event,newStatus){
   event.preventDefault();
   const vidId=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
   if(!vidId)return;
-  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
-  const prevType=v.video_type,prevBig=v.big_video_id,prevStatus=v.status,prevOrder=v.vid_order;
-  const childUndos=[];
-  const wasL=v.video_type!=='B';
-  if(wasL){
-    v.video_type='B';v.big_video_id=null;v.status=newStatus;
-    const sibs=(st.videos||[]).filter(x=>!x.is_deleted&&x.video_type==='B'&&x.status===newStatus&&String(x.id)!==String(v.id));
-    v.vid_order=(Math.max(0,...sibs.map(x=>x.vid_order??0)))+1;
-  }else{
-    v.status=newStatus;
-    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(vidId)&&c.status!=='published').forEach(c=>{
-      const cp=c.status;c.status=newStatus;
-      childUndos.push({id:c.id,prev:cp});
-      sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${c.id}`);
-    });
-  }
+  const ids=_vidOvDragBatchIds(vidId);
+  const undos=[];
+  ids.forEach(id=>{
+    const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
+    const prevType=v.video_type,prevBig=v.big_video_id,prevStatus=v.status,prevOrder=v.vid_order;
+    const childUndos=[];
+    const wasL=v.video_type!=='B';
+    if(wasL){
+      v.video_type='B';v.big_video_id=null;v.status=newStatus;
+      const sibs=(st.videos||[]).filter(x=>!x.is_deleted&&x.video_type==='B'&&x.status===newStatus&&String(x.id)!==String(v.id));
+      v.vid_order=(Math.max(0,...sibs.map(x=>x.vid_order??0)))+1;
+    }else{
+      v.status=newStatus;
+      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(id)&&c.status!=='published').forEach(c=>{
+        const cp=c.status;c.status=newStatus;
+        childUndos.push({id:c.id,prev:cp});
+        sbReqSilent('PATCH','videos',{status:newStatus},`?id=eq.${c.id}`);
+      });
+    }
+    sbReqSilent('PATCH','videos',wasL?{video_type:'B',big_video_id:null,status:newStatus,vid_order:v.vid_order}:{status:newStatus},`?id=eq.${v.id}`);
+    undos.push({id:v.id,prevType,prevBig,prevStatus,prevOrder,childUndos});
+  });
   save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
-  sbReqSilent('PATCH','videos',wasL?{video_type:'B',big_video_id:null,status:newStatus,vid_order:v.vid_order}:{status:newStatus},`?id=eq.${v.id}`);
   pushUndo(()=>{
-    v.video_type=prevType;v.big_video_id=prevBig;v.status=prevStatus;v.vid_order=prevOrder;
-    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});
+    undos.forEach(u=>{
+      const v=(st.videos||[]).find(x=>String(x.id)===String(u.id));if(!v)return;
+      v.video_type=u.prevType;v.big_video_id=u.prevBig;v.status=u.prevStatus;v.vid_order=u.prevOrder;
+      u.childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});
+      sbReqSilent('PATCH','videos',{video_type:u.prevType,big_video_id:u.prevBig??null,status:u.prevStatus,vid_order:u.prevOrder??null},`?id=eq.${v.id}`);
+    });
     save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
-    sbReqSilent('PATCH','videos',{video_type:prevType,big_video_id:prevBig??null,status:prevStatus,vid_order:prevOrder??null},`?id=eq.${v.id}`);
-  },wasL?'Converted to big video':'Changed video status');
+  },undos.length>1?`Changed status of ${undos.length} videos`:'Changed video status');
 }
 function _vidOvAllDropType(event,newType){
   event.preventDefault();
   const vidId=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
   if(!vidId)return;
-  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
-  const prevType=v.video_type;const prevStatus=v.status;
-  // Set status to idea and type
-  v.video_type=newType;
-  if(v.status!=='idea')v.status='idea';
-  // If converting to L, clear big_video_id; if converting to B, also clear it
-  const prevBig=v.big_video_id;
-  if(newType==='L')v.big_video_id=null;
-  if(newType==='B')v.big_video_id=null;
-  const patch={video_type:newType,status:'idea',big_video_id:null};
+  const ids=_vidOvDragBatchIds(vidId);
+  const undos=[];
+  ids.forEach(id=>{
+    const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
+    const prevType=v.video_type,prevStatus=v.status,prevBig=v.big_video_id;
+    v.video_type=newType;
+    if(v.status!=='idea')v.status='idea';
+    v.big_video_id=null;
+    sbReqSilent('PATCH','videos',{video_type:newType,status:'idea',big_video_id:null},`?id=eq.${v.id}`);
+    undos.push({id:v.id,prevType,prevStatus,prevBig});
+  });
   save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
-  sbReqSilent('PATCH','videos',patch,`?id=eq.${v.id}`);
-  pushUndo(()=>{v.video_type=prevType;v.status=prevStatus;v.big_video_id=prevBig;save();_vidOvRenderAll();_renderVidOvMenu();renderAll();sbReqSilent('PATCH','videos',{video_type:prevType,status:prevStatus,big_video_id:prevBig??null},`?id=eq.${v.id}`);},'Changed video type');
+  pushUndo(()=>{
+    undos.forEach(u=>{
+      const v=(st.videos||[]).find(x=>String(x.id)===String(u.id));if(!v)return;
+      v.video_type=u.prevType;v.status=u.prevStatus;v.big_video_id=u.prevBig;
+      sbReqSilent('PATCH','videos',{video_type:u.prevType,status:u.prevStatus,big_video_id:u.prevBig??null},`?id=eq.${v.id}`);
+    });
+    save();_vidOvRenderAll();_renderVidOvMenu();renderAll();
+  },undos.length>1?`Changed type of ${undos.length} videos`:'Changed video type');
 }
 function _vidOvUpNextDrop(event){
   event.preventDefault();
   const vidId=(typeof dragId==='string'&&dragId.startsWith('vid::'))?dragId.replace('vid::',''):null;
   if(!vidId)return;
-  const v=(st.videos||[]).find(x=>String(x.id)===String(vidId));if(!v)return;
-  const prevType=v.video_type,prevBig=v.big_video_id,prevStatus=v.status,prevOrder=v.vid_order;
-  const childUndos=[];
-  const wasL=v.video_type!=='B';
-  // Same "promote a Small to its own Big" behavior as _vidOvAllDrop (2026-09-14) — see its comment.
-  // A Big with no status change (already up_next) still no-ops, same as before; a Small always does
-  // the conversion even if its status happened to already read up_next, since the point here is
-  // pulling it out of its group, not just the status bit.
-  if(!wasL&&v.status==='up_next')return;
-  if(wasL){
-    v.video_type='B';v.big_video_id=null;v.status='up_next';
-    const sibs=(st.videos||[]).filter(x=>!x.is_deleted&&x.video_type==='B'&&x.status==='up_next'&&String(x.id)!==String(v.id));
-    v.vid_order=(Math.max(0,...sibs.map(x=>x.vid_order??0)))+1;
-  }else{
-    v.status='up_next';
-    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(vidId)&&c.status!=='published').forEach(c=>{
-      childUndos.push({id:c.id,prev:c.status});c.status='up_next';
-      sbReqSilent('PATCH','videos',{status:'up_next'},`?id=eq.${c.id}`);
-    });
-  }
+  const ids=_vidOvDragBatchIds(vidId);
+  const undos=[];
+  ids.forEach(id=>{
+    const v=(st.videos||[]).find(x=>String(x.id)===String(id));if(!v)return;
+    const prevType=v.video_type,prevBig=v.big_video_id,prevStatus=v.status,prevOrder=v.vid_order;
+    const childUndos=[];
+    const wasL=v.video_type!=='B';
+    // Same "promote a Small to its own Big" behavior as _vidOvAllDrop (2026-09-14) — see its comment.
+    // A Big with no status change (already up_next) still no-ops, same as before; a Small always does
+    // the conversion even if its status happened to already read up_next, since the point here is
+    // pulling it out of its group, not just the status bit.
+    if(!wasL&&v.status==='up_next')return;
+    if(wasL){
+      v.video_type='B';v.big_video_id=null;v.status='up_next';
+      const sibs=(st.videos||[]).filter(x=>!x.is_deleted&&x.video_type==='B'&&x.status==='up_next'&&String(x.id)!==String(v.id));
+      v.vid_order=(Math.max(0,...sibs.map(x=>x.vid_order??0)))+1;
+    }else{
+      v.status='up_next';
+      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(id)&&c.status!=='published').forEach(c=>{
+        childUndos.push({id:c.id,prev:c.status});c.status='up_next';
+        sbReqSilent('PATCH','videos',{status:'up_next'},`?id=eq.${c.id}`);
+      });
+    }
+    sbReqSilent('PATCH','videos',wasL?{video_type:'B',big_video_id:null,status:'up_next',vid_order:v.vid_order}:{status:'up_next'},`?id=eq.${v.id}`);
+    undos.push({id:v.id,prevType,prevBig,prevStatus,prevOrder,childUndos});
+  });
   save();if(_vidOvAllOpen)_vidOvRenderAll();_renderVidOvMenu();renderAll();
-  sbReqSilent('PATCH','videos',wasL?{video_type:'B',big_video_id:null,status:'up_next',vid_order:v.vid_order}:{status:'up_next'},`?id=eq.${v.id}`);
   pushUndo(()=>{
-    v.video_type=prevType;v.big_video_id=prevBig;v.status=prevStatus;v.vid_order=prevOrder;
-    childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});
+    undos.forEach(u=>{
+      const v=(st.videos||[]).find(x=>String(x.id)===String(u.id));if(!v)return;
+      v.video_type=u.prevType;v.big_video_id=u.prevBig;v.status=u.prevStatus;v.vid_order=u.prevOrder;
+      u.childUndos.forEach(cu=>{const c=(st.videos||[]).find(x=>String(x.id)===String(cu.id));if(c){c.status=cu.prev;sbReqSilent('PATCH','videos',{status:cu.prev},`?id=eq.${cu.id}`);}});
+      sbReqSilent('PATCH','videos',{video_type:u.prevType,big_video_id:u.prevBig??null,status:u.prevStatus,vid_order:u.prevOrder??null},`?id=eq.${v.id}`);
+    });
     save();if(_vidOvAllOpen)_vidOvRenderAll();_renderVidOvMenu();renderAll();
-    sbReqSilent('PATCH','videos',{video_type:prevType,big_video_id:prevBig??null,status:prevStatus,vid_order:prevOrder??null},`?id=eq.${v.id}`);
-  },wasL?'Converted to big video':'Moved to up next');
+  },undos.length>1?`Moved ${undos.length} videos to up next`:'Moved to up next');
 }
 // ── Nest onto a Big video (Up Next list + toolbox In Progress column) ──────────
 // A Big row is a valid nest target — dropping a Small (from Ideas or a standalone in In Progress)
