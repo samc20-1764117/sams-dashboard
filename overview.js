@@ -4367,6 +4367,55 @@ function _wkcColKeyNav(e){
     return true;
   }
 
+  const _typing=document.activeElement&&(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA'||document.activeElement.tagName==='SELECT'||document.activeElement.isContentEditable);
+
+  // X: toggle checked/done for every selected item in this column, multi-select aware. Reuses
+  // the chip's own checkbox (`.wchk`) via a real `.click()` rather than re-deriving each type's
+  // toggle logic — guarantees identical behavior to a mouse click (including each tog* function's
+  // own pushUndo/DB-sync) with zero duplicated dispatch code. Re-queried via `document` fresh
+  // inside the loop (not the `col`/chip references captured above) because each toggle's own
+  // renderWkCal() call rebuilds #wkcCols and detaches prior DOM nodes.
+  // Multi-select still needs to feel like ONE undoable action, so the N individual pushUndo
+  // entries each toggle just pushed are popped and replaced with a single combined entry built
+  // from a full-state snapshot — same _stateRestore+_syncRedoDiff idiom doRedo() uses for its own
+  // synthesized undo entry (core.js). That only round-trips correctly for state _stateSnap
+  // actually covers, so types that live outside it (fin-cancel's `_finCancelDone` Set) or that
+  // route through a popup-driven completion flow instead of a plain toggle (vid) are skipped here
+  // — same scoping precedent as _todListBulkDelete's vidstep/travel/bd/hd exclusions above.
+  if(!_typing&&(e.key==='x'||e.key==='X')&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
+    e.preventDefault();
+    const eligible=colSel.filter(sid=>!/^(vid-ov-|vidstep-|fin-cancel-|bd-|hd-|tv-)/.test(sid));
+    if(!eligible.length)return true;
+    const preSnap=_stateSnap();
+    const stackLenBefore=undoStack.length;
+    eligible.forEach(sid=>{
+      const chkEl=document.querySelector('.wkc-col[data-ds="'+CSS.escape(ds)+'"] .chip[data-tid="'+CSS.escape(sid)+'"] .wchk');
+      if(chkEl)chkEl.click();
+    });
+    undoStack.splice(stackLenBefore);
+    pushUndo(()=>{
+      const cur=_stateSnap();
+      _stateRestore(preSnap);
+      _syncRedoDiff(cur,preSnap);
+    },'Toggled '+eligible.length+' item'+(eligible.length>1?'s':''));
+    setTimeout(()=>{eligible.forEach(id=>selectedTasks.add(id));applySelHighlight();},20);
+    return true;
+  }
+
+  // E: open the edit modal for the selected item — single-selection only (an edit modal has no
+  // multi-item form). Dispatches a synthetic dblclick on the chip/banner itself rather than
+  // re-deriving each type's per-type edit dispatch (fin-cancel/vid/pup/shop/wrRule/wrec/rec/plain
+  // task all resolve differently) — guarantees identical behavior to physically double-clicking.
+  if(!_typing&&(e.key==='e'||e.key==='E')&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
+    if(colSel.length!==1)return false;
+    e.preventDefault();
+    const sid=colSel[0];
+    const chipEl=document.querySelector('.wkc-col[data-ds="'+CSS.escape(ds)+'"] .chip[data-tid="'+CSS.escape(sid)+'"]')
+      ||document.querySelector('.wkc-banner[data-sid="'+CSS.escape(sid)+'"]');
+    if(chipEl)chipEl.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+    return true;
+  }
+
   // Delete/Backspace: delete all selected (reuses the Today list's per-type dispatch)
   if(e.key==='Delete'||e.key==='Backspace'){
     e.preventDefault();
