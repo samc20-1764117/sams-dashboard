@@ -13,10 +13,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
    sticky #mHeader would engage relative to that outer scroll and could visually overlap
    a tab's own internally-scrolled content (this was the real cause of "header is in the
    way" on Month — #mMonthScroll was correctly bounded, but #mApp itself wasn't). */
-/* 72px = the floating nav's own footprint (flush to safe-area + 64px bar height) plus an
+/* 64px = the floating nav's own footprint (flush to safe-area + 56px bar height) plus an
    8px breathing-room buffer above it — kept in sync with #mNav/#mNavHighlight below and
    with mShowTab()/mSyncBarClearance() in mobile-overview.js if any of those numbers change. */
-#mApp{display:none;flex-direction:column;height:100dvh;padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+#mApp{display:none;flex-direction:column;height:100dvh;padding-bottom:calc(64px + env(safe-area-inset-bottom))}
 #mApp.ready{display:flex}
 
 /* ── Header ───────────────────────────────────────────────────────────────── */
@@ -106,10 +106,10 @@ body.dark .m-prog.m-prog-complete{color:#86efac}
    #mMain's height resolved, then jumped to the bottom once it did. The corresponding
    list's padding-bottom is measured and set in JS (mSyncBarClearance) rather than
    guessed here, so it always exactly matches this bar's real height. */
-/* 70px = the floating nav's top edge (flush to safe-area + 64px height) plus a 6px gap so
+/* 62px = the floating nav's top edge (flush to safe-area + 56px height) plus a 6px gap so
    the add bar floats clear of the pill below it, matching the reference's separated-
    floating-elements look. */
-#mAddBar,#mShopAddBar{position:fixed;left:0;right:0;bottom:calc(70px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:7px;padding:12px 16px;background:var(--bg-elevated);border-top:1px solid var(--border);box-shadow:0 -4px 14px rgba(0,0,0,.07);z-index:20}
+#mAddBar,#mShopAddBar{position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:7px;padding:12px 16px;background:var(--bg-elevated);border-top:1px solid var(--border);box-shadow:0 -4px 14px rgba(0,0,0,.07);z-index:20}
 #mNewTask,#mShopNewName{width:100%;padding:12px 14px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;box-sizing:border-box}
 #mNewTask:focus,#mShopNewName:focus{border-color:var(--accent)}
 .m-add-row2{display:flex;gap:8px;align-items:center}
@@ -121,7 +121,7 @@ body.dark .m-prog.m-prog-complete{color:#86efac}
    Floating, inset pill (not edge-to-edge) with real background blur behind it,
    plus a single sliding highlight capsule (#mNavHighlight) that spring-slides
    to whichever tab is active — ported from the approved prototype
-   (~/Desktop/mobile-tab-mockups/liquid-glass-tabs.html). The 64px height here
+   (~/Desktop/mobile-tab-mockups/liquid-glass-tabs.html). The 56px height here
    is coupled to #mApp's padding-bottom and #mAddBar/#mShopAddBar's bottom
    offset above, and to mShowTab()/mSyncBarClearance() in mobile-overview.js
    — change all of them together. */
@@ -132,11 +132,12 @@ body.dark .m-prog.m-prog-complete{color:#86efac}
    element's own rendering, not "overflowing content," so it's never clipped by its own
    overflow property). */
 /* Flush to the safe area (no extra breathing room below it) — measured via the
-   #mNav diagnostic (mobile-overview.js _mNavDiagUpdate) as exactly safe-bottom + 6px
-   before this change; confirmed the math was already correct, this just removes the
-   extra 6px per explicit request to sit as low as possible while still floating. */
-#mNav{position:fixed;left:14px;right:14px;bottom:env(safe-area-inset-bottom);height:64px;padding:6px;display:flex;border-radius:32px;background:var(--nav-glass-bg);box-shadow:var(--nav-glass-shadow);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);overflow:hidden;z-index:15}
-.m-nav-highlight{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 5);border-radius:26px;background:var(--nav-pill-bg);box-shadow:var(--nav-pill-shadow);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .5s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+   #mNav diagnostic (mobile-overview.js _mNavDiagUpdate) as exactly safe-bottom, the
+   floor for a floating element that still respects the home-indicator gesture zone.
+   Height reduced 64->56px (2026-09-14) as the one remaining lever to bring the icons
+   themselves closer to that floor without overlapping the safe area. */
+#mNav{position:fixed;left:14px;right:14px;bottom:env(safe-area-inset-bottom);height:56px;padding:6px;display:flex;border-radius:28px;background:var(--nav-glass-bg);box-shadow:var(--nav-glass-shadow);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);overflow:hidden;z-index:15}
+.m-nav-highlight{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 5);border-radius:22px;background:var(--nav-pill-bg);box-shadow:var(--nav-pill-shadow);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .5s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
 .m-nav-btn{flex:1;background:none;border:none;font-family:inherit;color:var(--nav-icon-inactive);cursor:pointer;padding:4px 0;transition:color .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;z-index:1;-webkit-tap-highlight-color:transparent}
 .m-nav-btn span{font-size:10px;font-weight:600;letter-spacing:.02em}
 .m-nav-icon{width:22px;height:22px;transition:color .2s}
