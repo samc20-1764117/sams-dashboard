@@ -6802,6 +6802,19 @@ function _vidOvDragIndicator(e){
       const rv=(st.videos||[]).find(x=>String(x.id)===r.dataset.cvid);
       return rv&&String(rv.big_video_id)===bigId;
     });
+    // If the cursor has left this group's own row span (dragged past it into blank space, or a
+    // different group), don't force a same-parent reorder indicator — clear it and let
+    // _vidOvContentDrop fall through to _vidOvUpNextDrop, which promotes the child to its own
+    // standalone Big at the bottom instead (2026-09-15, per explicit request). Before this check, a
+    // dragged child's target was computed purely from its ORIGINAL parent's siblings regardless of
+    // where the cursor actually was, so it always snapped back into a same-parent reorder no matter
+    // how far away — including into blank space, where nothing should reorder at all.
+    if(rows.length){
+      const parentRow=cont.querySelector(`[data-vidrow="${bigId}"]`);
+      const _top=parentRow?parentRow.getBoundingClientRect().top:rows[0].getBoundingClientRect().top;
+      const _bottom=rows[rows.length-1].getBoundingClientRect().bottom;
+      if(e.clientY<_top-4||e.clientY>_bottom+4){_vidOvClearIndicator();return;}
+    }
   }
   if(!rows.length)return;
   // Find nearest gap — use row centers so cursor anywhere in a row maps to above/below
