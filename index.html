@@ -468,7 +468,7 @@ if(sessionStorage._mReloaded===BUILD);else{
   <div style="flex:1;width:100%;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 2fr;gap:16px;margin-top:20px">
     <div class="card" style="min-height:0;grid-row:1 / span 2">
       <div class="ch">
-        <div class="ct">What to Watch</div>
+        <div class="ct">Watchlist</div>
         <div style="flex:1"></div>
         <select id="cinemaGenreFilter" onchange="_cinemaGenreFilterVal=this.value;renderCinemaPage()" style="padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:10px;max-width:100px"><option value="">All genres</option></select>
         <button class="btn-plus" style="margin-left:6px" onclick="openCinemaModal()">+</button>
@@ -658,6 +658,7 @@ if(sessionStorage._mReloaded===BUILD);else{
     </div>
     <div class="mfield"><label>Title *</label><input id="cinemaTitleInput" placeholder="e.g. Breaking Bad"></div>
     <div class="mimp-row"><input type="checkbox" id="cinemaWatchedInput"><label for="cinemaWatchedInput">✓ Watched</label></div>
+    <div class="mimp-row"><input type="checkbox" id="cinemaNewSeasonInput"><label for="cinemaNewSeasonInput">＋ New season out</label></div>
     <div class="mfield" style="display:flex;gap:8px">
       <div style="flex:1"><label>Genre</label><select id="cinemaGenreInput">
         <option value="">—</option>

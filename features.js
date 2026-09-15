@@ -2121,8 +2121,21 @@ let _cinemaSelIds=new Set();
 let _lastCinemaSelId=null;
 let _cinemaGenreFilterVal='';
 let _cinemaWatchedGenreFilterVal='';
+let _cinemaWatchedSort=null; // null | 'asc' | 'desc'
 let _cinemaLastUpNextShows=[];
 let _cinemaLastUpNextMovies=[];
+function _cinemaToggleWatchedSort(){
+  _cinemaWatchedSort=_cinemaWatchedSort===null?'asc':_cinemaWatchedSort==='asc'?'desc':null;
+  renderCinemaPage();
+}
+function _cinemaSortHeader(){
+  const arrow=_cinemaWatchedSort==='asc'?' ▲':_cinemaWatchedSort==='desc'?' ▼':'';
+  const color=_cinemaWatchedSort?'var(--accent)':'var(--muted)';
+  return`<div style="display:flex;align-items:center;padding:2px 7px 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)">
+    <span style="flex:1">Title</span>
+    <span onclick="_cinemaToggleWatchedSort()" style="cursor:pointer;user-select:none;color:${color}">Rating${arrow}</span>
+  </div>`;
+}
 
 function _cinemaGenresIn(items){
   const set=new Set();
@@ -2159,14 +2172,19 @@ function renderCinemaPage(){
   if(_cinemaWatchedGenreFilterVal)watched=watched.filter(i=>(i.genre||'').split(',').map(s=>s.trim()).includes(_cinemaWatchedGenreFilterVal));
   const watchedShows=watched.filter(i=>i.type==='show');
   const watchedMovies=watched.filter(i=>i.type==='movie');
+  if(_cinemaWatchedSort){
+    const dir=_cinemaWatchedSort==='asc'?1:-1;
+    const byRating=(a,b)=>((a.rating??-1)-(b.rating??-1))*dir;
+    watchedShows.sort(byRating);watchedMovies.sort(byRating);
+  }
 
   const topMovies=st.cinemaItems.filter(i=>i.status==='watched'&&i.type==='movie'&&i.rating!=null).sort((a,b)=>b.rating-a.rating).slice(0,10);
   const topShows=st.cinemaItems.filter(i=>i.status==='watched'&&i.type==='show'&&i.rating!=null).sort((a,b)=>b.rating-a.rating).slice(0,10);
 
   upShowsEl.innerHTML=`<div id="cinemaUpNextShowsList">${upNextShows.length?upNextShows.map(_cinemaUpNextRow).join(''):_cinemaEmpty('Nothing here.')}</div>`;
   upMoviesEl.innerHTML=`<div id="cinemaUpNextMoviesList">${upNextMovies.length?upNextMovies.map(_cinemaUpNextRow).join(''):_cinemaEmpty('Nothing here.')}</div>`;
-  watchShowsEl.innerHTML=`<div id="cinemaWatchedShowsList">${watchedShows.length?watchedShows.map(_cinemaWatchedRow).join(''):_cinemaEmpty('Nothing here.')}</div>`;
-  watchMoviesEl.innerHTML=`<div id="cinemaWatchedMoviesList">${watchedMovies.length?watchedMovies.map(_cinemaWatchedRow).join(''):_cinemaEmpty('Nothing here.')}</div>`;
+  watchShowsEl.innerHTML=_cinemaSortHeader()+`<div id="cinemaWatchedShowsList">${watchedShows.length?watchedShows.map(_cinemaWatchedRow).join(''):_cinemaEmpty('Nothing here.')}</div>`;
+  watchMoviesEl.innerHTML=_cinemaSortHeader()+`<div id="cinemaWatchedMoviesList">${watchedMovies.length?watchedMovies.map(_cinemaWatchedRow).join(''):_cinemaEmpty('Nothing here.')}</div>`;
   topMEl.innerHTML=topMovies.length?topMovies.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty('Rate some watched movies to build this list.');
   topSEl.innerHTML=topShows.length?topShows.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty('Rate some watched shows to build this list.');
   _cinemaSetupDrag();
@@ -2205,6 +2223,9 @@ function _cinemaApplySelHighlight(){
 }
 function _cinemaEmpty(msg){return`<div style="text-align:center;color:var(--muted);padding:16px 0;font-size:11px">${msg}</div>`;}
 function _cinemaFmtRating(r){return r==null?'':(Number.isInteger(Number(r))?String(r):Number(r).toFixed(1));}
+function _cinemaNewSeasonBadge(item){
+  return item.new_season?`<span title="New season out" style="flex-shrink:0;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;padding:1px 4px;border-radius:4px;background:rgba(245,158,11,.15);color:#b45309">New</span>`:'';
+}
 function _cinemaTitleLine(item){
   const subBits=[];
   if(item.genre)subBits.push(escHtml(item.genre));
@@ -2212,44 +2233,47 @@ function _cinemaTitleLine(item){
   const sub=subBits.length?` <span style="color:var(--muted);font-weight:400">— ${subBits.join(' · ')}</span>`:'';
   return`<span style="flex:1;min-width:0;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.title)}${sub}</span>`;
 }
-function _cinemaRowShell(item,inner,draggable,extraAttrs){
+function _cinemaRowShell(item,inner,draggable,extraAttrs,compact){
   const dk=document.body.classList.contains('dark');
   const bg=dk?'rgba(255,255,255,.06)':'rgba(255,255,255,.85)';
   const bdr=dk?'rgba(255,255,255,.08)':'rgba(210,205,228,.3)';
   const dragAttrs=draggable?`draggable="true" ondragstart="_cinemaDragStart(event,'${item.id}')" ondragend="_cinemaDragEnd(event)"`:'';
-  return`<div class="cinema-row" data-cinema-id="${item.id}" ${dragAttrs} ${extraAttrs||''} style="padding:3px 7px;margin-bottom:3px;border-radius:7px;background:${bg};border:1px solid ${bdr};display:flex;align-items:center;gap:6px;${draggable?'cursor:grab':''}">${inner}</div>`;
+  const pad=compact?'2px 7px':'3px 7px';
+  const mb=compact?'2px':'3px';
+  const gap=compact?'4px':'6px';
+  return`<div class="cinema-row" data-cinema-id="${item.id}" ${dragAttrs} ${extraAttrs||''} style="padding:${pad};margin-bottom:${mb};border-radius:7px;background:${bg};border:1px solid ${bdr};display:flex;align-items:center;gap:${gap};${draggable?'cursor:grab':''}">${inner}</div>`;
 }
-function _cinemaCheckBtn(item,checked){
-  const action=checked?'moveCinemaToUpNext':'moveCinemaToWatched';
-  const title=checked?'Mark as not watched':'Mark watched';
-  const bg=checked?'#22c55e':'transparent';
-  const border=checked?'#22c55e':'var(--border)';
-  const color=checked?'#fff':'var(--muted)';
-  return`<button onclick="event.stopPropagation();${action}('${item.id}')" title="${title}" style="flex-shrink:0;width:15px;height:15px;padding:0;border-radius:50%;border:1.5px solid ${border};background:${bg};color:${color};cursor:pointer;display:flex;align-items:center;justify-content:center" onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='${border}'"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`;
+function _cinemaWatchBtn(item,watched){
+  const action=watched?'moveCinemaToUpNext':'moveCinemaToWatched';
+  const title=watched?'Move back to Watchlist':'I watched this';
+  const bg=watched?'rgba(16,185,129,.16)':'transparent';
+  const border=watched?'rgba(16,185,129,.4)':'var(--border)';
+  const color=watched?'#059669':'var(--muted)';
+  return`<button onclick="event.stopPropagation();${action}('${item.id}')" title="${title}" style="flex-shrink:0;width:17px;height:17px;padding:0;border-radius:50%;border:1.5px solid ${border};background:${bg};color:${color};cursor:pointer;display:flex;align-items:center;justify-content:center" onmouseover="this.style.borderColor='#059669';this.style.color='#059669'" onmouseout="this.style.borderColor='${border}';this.style.color='${color}'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg></button>`;
 }
 function _cinemaUpNextRow(item){
   return _cinemaRowShell(item,`
-    <span style="color:var(--muted);font-size:10px;flex-shrink:0">⠿</span>
-    ${_cinemaCheckBtn(item,false)}
+    ${_cinemaWatchBtn(item,false)}
     ${_cinemaTitleLine(item)}
+    ${_cinemaNewSeasonBadge(item)}
     <button onclick="event.stopPropagation();deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:1px 3px;flex-shrink:0;opacity:0;transition:opacity .15s">✕</button>
   `,true,`onclick="selCinemaRow(event,'${item.id}')" ondblclick="if(!event.target.closest('button')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
 }
 function _cinemaWatchedRow(item){
   return _cinemaRowShell(item,`
-    <span style="color:var(--muted);font-size:10px;flex-shrink:0">⠿</span>
-    ${_cinemaCheckBtn(item,true)}
+    ${_cinemaWatchBtn(item,true)}
     ${_cinemaTitleLine(item)}
-    <input type="number" min="1" max="10" step="0.1" value="${item.rating??''}" placeholder="–" class="cinema-rating-input" onclick="event.stopPropagation()" onchange="setCinemaRating('${item.id}',this.value)" title="Your rating (1-10)" style="width:30px;flex-shrink:0;text-align:center;padding:1px 2px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:11px">
+    ${_cinemaNewSeasonBadge(item)}
+    <input type="number" min="1" max="10" step="0.1" value="${item.rating??''}" placeholder="–" class="cinema-rating-input" onclick="event.stopPropagation()" onchange="setCinemaRating('${item.id}',this.value)" title="Your rating (1-10)" style="width:30px;flex-shrink:0;text-align:right;padding:1px 2px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:11px">
     <button onclick="event.stopPropagation();deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:1px 3px;flex-shrink:0;opacity:0;transition:opacity .15s">✕</button>
   `,true,`onclick="selCinemaRow(event,'${item.id}')" ondblclick="if(!event.target.closest('button')&&!event.target.matches('input')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
 }
 function _cinemaTopRow(item,rank){
   return _cinemaRowShell(item,`
-    <span style="font-size:11px;font-weight:700;color:var(--muted);width:13px;flex-shrink:0">${rank}</span>
-    <span style="flex:1;min-width:0;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.title)}</span>
-    <span style="font-size:11px;font-weight:600;color:var(--accent);flex-shrink:0">${_cinemaFmtRating(item.rating)}/10</span>
-  `,false,`ondblclick="event.stopPropagation();openCinemaModal('${item.id}')"`);
+    <span style="font-size:11px;font-weight:700;color:var(--muted);width:12px;flex-shrink:0;text-align:right">${rank}</span>
+    <span style="flex:1;min-width:0;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-left:2px">${escHtml(item.title)}</span>
+    <span style="font-size:11px;font-weight:600;color:var(--accent);flex-shrink:0;text-align:right">${_cinemaFmtRating(item.rating)}</span>
+  `,false,`ondblclick="event.stopPropagation();openCinemaModal('${item.id}')"`,true);
 }
 let _cinemaModalEditId=null;
 let _cinemaModalDefaultStatus='up_next';
@@ -2277,6 +2301,7 @@ function openCinemaModal(editId,defaultStatus,defaultType){
   _cinemaRenderTypeToggle();
   document.getElementById('cinemaRatingInput').value=item?(item.rating??''):'';
   document.getElementById('cinemaWatchedInput').checked=item?item.status==='watched':(_cinemaModalDefaultStatus==='watched');
+  document.getElementById('cinemaNewSeasonInput').checked=item?!!item.new_season:false;
   const genres=item&&item.genre?item.genre.split(',').map(s=>s.trim()).filter(Boolean):[];
   document.getElementById('cinemaGenreInput').value=genres[0]||'';
   document.getElementById('cinemaGenre2Input').value=genres[1]||'';
@@ -2309,12 +2334,13 @@ async function saveNewCinemaItem(){
   const notes=(document.getElementById('cinemaNotesInput')||{}).value?.trim()||null;
   if(!title){renderCinemaPage();return;}
   const status=document.getElementById('cinemaWatchedInput').checked?'watched':'up_next';
+  const new_season=document.getElementById('cinemaNewSeasonInput').checked;
   const upNext=st.cinemaItems.filter(i=>i.status==='up_next');
   const sort_order=upNext.length?Math.max(...upNext.map(i=>i.sort_order??0))+1:0;
   const localId='l-'+Date.now();
-  const row={id:localId,title,type,status,rating,genre,where_to_watch,notes,sort_order,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+  const row={id:localId,title,type,status,rating,genre,where_to_watch,notes,new_season,sort_order,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
   st.cinemaItems.push(row);renderCinemaPage();save();
-  const sv=await sbReq('POST','cinema_items',{title,type,status,rating,sort_order,genre,where_to_watch,notes});
+  const sv=await sbReq('POST','cinema_items',{title,type,status,rating,sort_order,genre,where_to_watch,notes,new_season});
   if(sv&&sv[0]){const idx=st.cinemaItems.findIndex(i=>i.id===localId);if(idx>=0)st.cinemaItems[idx]=sv[0];renderCinemaPage();save();}
 }
 async function saveCinemaEdit(id){
@@ -2327,14 +2353,15 @@ async function saveCinemaEdit(id){
   const notes=(document.getElementById('cinemaNotesInput')||{}).value?.trim()||null;
   const watched=document.getElementById('cinemaWatchedInput').checked;
   const status=watched?'watched':'up_next';
+  const new_season=document.getElementById('cinemaNewSeasonInput').checked;
   let sort_order=item.sort_order;
   if(status!==item.status&&status==='up_next'){
     const upNext=st.cinemaItems.filter(i=>i.status==='up_next');
     sort_order=upNext.length?Math.max(...upNext.map(i=>i.sort_order??0))+1:0;
   }
-  Object.assign(item,{title,type,rating,genre,where_to_watch,notes,status,sort_order,updated_at:new Date().toISOString()});
+  Object.assign(item,{title,type,rating,genre,where_to_watch,notes,status,new_season,sort_order,updated_at:new Date().toISOString()});
   renderCinemaPage();save();
-  if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{title,type,rating,genre,where_to_watch,notes,status,sort_order},`?id=eq.${id}`);
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{title,type,rating,genre,where_to_watch,notes,status,new_season,sort_order},`?id=eq.${id}`);
 }
 async function moveCinemaSelectedToWatched(ids){
   const items=ids.map(id=>st.cinemaItems.find(i=>String(i.id)===String(id))).filter(it=>it&&it.status!=='watched');
@@ -2357,7 +2384,7 @@ async function moveCinemaSelectedToUpNext(ids){
   const base=upNext.length?Math.max(...upNext.map(i=>i.sort_order??0))+1:0;
   items.forEach((it,i)=>{it.status='up_next';it.sort_order=base+i;it.updated_at=new Date().toISOString();});
   renderCinemaPage();save();
-  const label=items.length>1?`Moved ${items.length} items to What to Watch`:'Moved "'+items[0].title+'" to What to Watch';
+  const label=items.length>1?`Moved ${items.length} items to Watchlist`:'Moved "'+items[0].title+'" to Watchlist';
   pushUndo(()=>{
     prev.forEach(p=>{const it=st.cinemaItems.find(x=>String(x.id)===String(p.id));if(it){it.status=p.status;it.sort_order=p.sort_order;if(!String(p.id).startsWith('l-'))sbReqSilent('PATCH','cinema_items',{status:p.status,sort_order:p.sort_order},`?id=eq.${p.id}`);}});
     renderCinemaPage();save();
@@ -2381,7 +2408,17 @@ async function deleteCinemaItems(ids){
   _cinemaSelIds.clear();
   renderCinemaPage();save();
   const label=removed.length>1?`Deleted ${removed.length} items`:'Deleted "'+removed[0].title+'"';
-  pushUndo(()=>{removed.forEach(r=>st.cinemaItems.push(r));renderCinemaPage();save();},label);
+  pushUndo(async()=>{
+    removed.forEach(r=>st.cinemaItems.push(r));renderCinemaPage();save();
+    // Re-insert server-side too — the DELETE below already removed these rows from Supabase,
+    // so without a re-POST here the undo only lives in localStorage and vanishes on next refresh/sync.
+    for(const r of removed){
+      if(String(r.id).startsWith('l-'))continue;
+      const{id,created_at,updated_at,...body}=r;
+      const sv=await sbReq('POST','cinema_items',body);
+      if(sv&&sv[0]){const idx=st.cinemaItems.findIndex(x=>String(x.id)===String(id));if(idx>=0)st.cinemaItems[idx]=sv[0];renderCinemaPage();save();}
+    }
+  },label);
   for(const it of removed){if(!String(it.id).startsWith('l-'))await sbReq('DELETE','cinema_items',null,`?id=eq.${it.id}`);}
 }
 function deleteCinemaItem(id){return deleteCinemaItems([id]);}
@@ -2431,7 +2468,7 @@ function _cinemaSetupReorderList(listId,arrGetter){
     pushUndo(()=>{
       prevOrders.forEach(({id,order})=>{const it=st.cinemaItems.find(x=>String(x.id)===String(id));if(it){it.sort_order=order;if(!String(id).startsWith('l-'))sbReqSilent('PATCH','cinema_items',{sort_order:order},`?id=eq.${id}`);}});
       save();renderCinemaPage();
-    },'Reordered What to Watch');
+    },'Reordered Watchlist');
   });
 }
 function _cinemaSetupDropOnly(listId){

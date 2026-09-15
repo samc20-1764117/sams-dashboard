@@ -301,8 +301,8 @@ body.dark .menu-open:hover{background:rgba(40,40,46,.95)}
 body.dark .ideas-card{background:rgba(24,24,28,.35)!important;backdrop-filter:blur(32px)!important;-webkit-backdrop-filter:blur(32px)!important}
 .idea-row:hover .idea-x-btn{opacity:1!important}.idea-x-btn:hover{color:#ef4444!important}
 .cinema-row:hover .idea-x-btn{opacity:1!important}
-.cinema-row.cinema-sel{background:rgba(109,95,230,.14)!important;border-color:rgba(109,95,230,.4)!important}
-body.dark .cinema-row.cinema-sel{background:rgba(109,95,230,.22)!important;border-color:rgba(109,95,230,.5)!important}
+.cinema-row.cinema-sel{background:rgba(14,165,233,.14)!important;border-color:rgba(14,165,233,.45)!important}
+body.dark .cinema-row.cinema-sel{background:rgba(14,165,233,.22)!important;border-color:rgba(14,165,233,.55)!important}
 .cinema-rating-input::-webkit-inner-spin-button,.cinema-rating-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .cinema-rating-input{-moz-appearance:textfield}
 
