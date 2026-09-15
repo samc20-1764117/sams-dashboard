@@ -2118,8 +2118,15 @@ function renderBdayPage(){
 let _cinemaDragId=null;
 let _cinemaGenreFilterVal='';
 let _cinemaTypeFilterVal='';
+let _cinemaWatchedGenreFilterVal='';
+let _cinemaWatchedTypeFilterVal='';
 let _cinemaLastUpNext=[];
 
+function _cinemaGenresIn(items){
+  const set=new Set();
+  items.forEach(i=>(i.genre||'').split(',').map(s=>s.trim()).filter(Boolean).forEach(g=>set.add(g)));
+  return[...set].sort();
+}
 function renderCinemaPage(){
   const upEl=document.getElementById('cinemaUpNextContent');
   if(!upEl)return;
@@ -2128,11 +2135,11 @@ function renderCinemaPage(){
   const topSEl=document.getElementById('cinemaTop10ShowsContent');
   const genreFilterEl=document.getElementById('cinemaGenreFilter');
   const typeFilterEl=document.getElementById('cinemaTypeFilter');
+  const wGenreFilterEl=document.getElementById('cinemaWatchedGenreFilter');
+  const wTypeFilterEl=document.getElementById('cinemaWatchedTypeFilter');
 
   const upNextAll=st.cinemaItems.filter(i=>i.status==='up_next').sort((a,b)=>(a.sort_order??9999)-(b.sort_order??9999));
-  const genreSet=new Set();
-  upNextAll.forEach(i=>(i.genre||'').split(',').map(s=>s.trim()).filter(Boolean).forEach(g=>genreSet.add(g)));
-  const genres=[...genreSet].sort();
+  const genres=_cinemaGenresIn(upNextAll);
   if(!genres.includes(_cinemaGenreFilterVal))_cinemaGenreFilterVal='';
   if(genreFilterEl)genreFilterEl.innerHTML='<option value="">All genres</option>'+genres.map(g=>`<option value="${escHtml(g)}" ${g===_cinemaGenreFilterVal?'selected':''}>${escHtml(g)}</option>`).join('');
   if(typeFilterEl)typeFilterEl.value=_cinemaTypeFilterVal;
@@ -2141,14 +2148,20 @@ function renderCinemaPage(){
   if(_cinemaTypeFilterVal)upNext=upNext.filter(i=>i.type===_cinemaTypeFilterVal);
   _cinemaLastUpNext=upNext;
 
-  const watched=st.cinemaItems.filter(i=>i.status==='watched').sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
+  const watchedAll=st.cinemaItems.filter(i=>i.status==='watched').sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
+  const wGenres=_cinemaGenresIn(watchedAll);
+  if(!wGenres.includes(_cinemaWatchedGenreFilterVal))_cinemaWatchedGenreFilterVal='';
+  if(wGenreFilterEl)wGenreFilterEl.innerHTML='<option value="">All genres</option>'+wGenres.map(g=>`<option value="${escHtml(g)}" ${g===_cinemaWatchedGenreFilterVal?'selected':''}>${escHtml(g)}</option>`).join('');
+  if(wTypeFilterEl)wTypeFilterEl.value=_cinemaWatchedTypeFilterVal;
+  let watched=watchedAll;
+  if(_cinemaWatchedGenreFilterVal)watched=watched.filter(i=>(i.genre||'').split(',').map(s=>s.trim()).includes(_cinemaWatchedGenreFilterVal));
+  if(_cinemaWatchedTypeFilterVal)watched=watched.filter(i=>i.type===_cinemaWatchedTypeFilterVal);
+
   const topMovies=st.cinemaItems.filter(i=>i.status==='watched'&&i.type==='movie'&&i.rating!=null).sort((a,b)=>b.rating-a.rating).slice(0,10);
   const topShows=st.cinemaItems.filter(i=>i.status==='watched'&&i.type==='show'&&i.rating!=null).sort((a,b)=>b.rating-a.rating).slice(0,10);
 
-  const watchCnt=document.getElementById('cinemaWatchedCount');if(watchCnt)watchCnt.textContent=watched.length;
-
   upEl.innerHTML=upNext.length?`<div id="cinemaUpNextList">${upNext.map(_cinemaUpNextRow).join('')}</div>`:_cinemaEmpty(upNextAll.length?'No items match these filters.':'Nothing queued yet. Click + or double-click here to add a movie or show.');
-  watchEl.innerHTML=watched.length?watched.map(_cinemaWatchedRow).join(''):_cinemaEmpty('Nothing watched yet. Double-click here to add one.');
+  watchEl.innerHTML=watched.length?watched.map(_cinemaWatchedRow).join(''):_cinemaEmpty(watchedAll.length?'No items match these filters.':'Nothing watched yet. Double-click here to add one.');
   topMEl.innerHTML=topMovies.length?topMovies.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty('Rate some watched movies to build this list.');
   topSEl.innerHTML=topShows.length?topShows.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty('Rate some watched shows to build this list.');
   _cinemaSetupDrag();
@@ -2195,7 +2208,7 @@ function _cinemaTopRow(item,rank){
     <span style="font-size:12px;font-weight:700;color:var(--muted);width:16px;flex-shrink:0">${rank}</span>
     ${_cinemaTitleLine(item)}
     <span style="font-size:12px;font-weight:600;color:var(--accent);flex-shrink:0">${_cinemaFmtRating(item.rating)}/10</span>
-  `);
+  `,false,`ondblclick="event.stopPropagation();openCinemaModal('${item.id}')"`);
 }
 let _cinemaModalEditId=null;
 let _cinemaModalDefaultStatus='up_next';
@@ -2206,7 +2219,7 @@ function _cinemaContainerDblClick(e,status){
 function _cinemaRenderTypeToggle(){
   const cur=(document.getElementById('cinemaTypeInput')||{}).value||'movie';
   const wrap=document.getElementById('cinemaTypeToggle');if(!wrap)return;
-  const btn=(val,label)=>`<button type="button" onclick="_cinemaSetModalType('${val}')" style="padding:6px 12px;border-radius:6px;border:none;font-family:inherit;font-size:12px;cursor:pointer;background:${cur===val?'var(--accent)':'rgba(0,0,0,.06)'};color:${cur===val?'#fff':'var(--muted)'}">${label}</button>`;
+  const btn=(val,label)=>`<button type="button" onclick="_cinemaSetModalType('${val}')" style="padding:4px 9px;border-radius:6px;border:none;font-family:inherit;font-size:11px;cursor:pointer;background:${cur===val?'var(--accent)':'rgba(0,0,0,.06)'};color:${cur===val?'#fff':'var(--muted)'}">${label}</button>`;
   wrap.innerHTML=btn('movie','Movie')+btn('show','Show');
 }
 function _cinemaSetModalType(type){
@@ -2287,7 +2300,7 @@ async function setCinemaRating(id,val){
   const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
   let rating=parseFloat(val);
   if(isNaN(rating))rating=null;else{if(rating<1)rating=1;if(rating>10)rating=10;rating=Math.round(rating*10)/10;}
-  item.rating=rating;save();
+  item.rating=rating;renderCinemaPage();save();
   if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{rating},`?id=eq.${id}`);
 }
 async function deleteCinemaItem(id){
