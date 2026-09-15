@@ -5411,7 +5411,13 @@ function _renderVidOvMenu(){
   const _extOpen=_vidCalOpen||_vidOvAllOpen;
   const _embedId=_vidCalOpen?'vidOvCalEmbed':'vidOvAllEmbed';
   let html=_hdr;
-  html+=_extOpen?`<div style="display:flex;align-items:stretch;height:calc(100% - 31px);min-height:0">${listHtml}<div id="${_embedId}" style="flex:1;min-width:0;border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0;overflow:hidden"></div></div>`:listHtml;
+  // Always wrap the list in the flex row (not just when the calendar/toolbox is also open) — #vidOvPanel
+  // itself is plain display:block, so #vidOvContent's own inline flex:1 was a no-op without a flex
+  // parent around it: the list only ever took its natural content height and left a dead zone below the
+  // last row (down to the popup's actual bottom) with no drop handler on it at all. That's what made
+  // "drag a small video to the blank space at the bottom to promote it" impossible whenever the list was
+  // shorter than the popup — there was no real blank space inside #vidOvContent to drop onto (2026-09-15).
+  html+=`<div style="display:flex;align-items:stretch;height:calc(100% - 31px);min-height:0">${listHtml}${_extOpen?`<div id="${_embedId}" style="flex:1;min-width:0;border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0;overflow:hidden"></div>`:''}</div>`;
   menu.innerHTML=html;
   // Insert zone hover delay
   menu.querySelectorAll('.vid-insert-zone').forEach(iz=>{
