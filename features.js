@@ -2116,6 +2116,9 @@ function renderBdayPage(){
 
 // ── Cinema ───────────────────────────────────────────────────────────────────
 let _cinemaDragId=null;
+let _cinemaDragIds=[];
+let _cinemaSelIds=new Set();
+let _lastCinemaSelId=null;
 let _cinemaGenreFilterVal='';
 let _cinemaWatchedGenreFilterVal='';
 let _cinemaLastUpNextShows=[];
@@ -2167,6 +2170,38 @@ function renderCinemaPage(){
   topMEl.innerHTML=topMovies.length?topMovies.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty('Rate some watched movies to build this list.');
   topSEl.innerHTML=topShows.length?topShows.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty('Rate some watched shows to build this list.');
   _cinemaSetupDrag();
+  _cinemaApplySelHighlight();
+  if(window._cinemaOutsideClick)document.removeEventListener('click',window._cinemaOutsideClick);
+  window._cinemaOutsideClick=ev=>{
+    if(!document.getElementById('page-cinema')?.classList.contains('active'))return;
+    if(!ev.target.closest('.cinema-row')){_cinemaSelIds.clear();_lastCinemaSelId=null;_cinemaApplySelHighlight();}
+  };
+  document.addEventListener('click',window._cinemaOutsideClick);
+}
+function selCinemaRow(e,id){
+  if(e.target.closest('input,button,select'))return;
+  e.stopPropagation();
+  id=String(id);
+  if(e.metaKey||e.ctrlKey){
+    if(_cinemaSelIds.has(id))_cinemaSelIds.delete(id);else _cinemaSelIds.add(id);
+    _lastCinemaSelId=id;
+  } else if(e.shiftKey&&_lastCinemaSelId){
+    const list=e.target.closest('.cinema-row')?.parentElement;
+    const rows=list?[...list.querySelectorAll('.cinema-row')].map(r=>r.dataset.cinemaId):[];
+    const a=rows.indexOf(_lastCinemaSelId),b=rows.indexOf(id);
+    if(a>-1&&b>-1){const lo=Math.min(a,b),hi=Math.max(a,b);rows.slice(lo,hi+1).forEach(rid=>_cinemaSelIds.add(rid));}
+    else _cinemaSelIds.add(id);
+    _lastCinemaSelId=id;
+  } else {
+    if(_cinemaSelIds.size===1&&_cinemaSelIds.has(id)){_cinemaSelIds.clear();_lastCinemaSelId=null;}
+    else{_cinemaSelIds.clear();_cinemaSelIds.add(id);_lastCinemaSelId=id;}
+  }
+  _cinemaApplySelHighlight();
+}
+function _cinemaApplySelHighlight(){
+  document.querySelectorAll('.cinema-row[data-cinema-id]').forEach(row=>{
+    row.classList.toggle('cinema-sel',_cinemaSelIds.has(row.dataset.cinemaId));
+  });
 }
 function _cinemaEmpty(msg){return`<div style="text-align:center;color:var(--muted);padding:16px 0;font-size:11px">${msg}</div>`;}
 function _cinemaFmtRating(r){return r==null?'':(Number.isInteger(Number(r))?String(r):Number(r).toFixed(1));}
@@ -2198,7 +2233,7 @@ function _cinemaUpNextRow(item){
     ${_cinemaCheckBtn(item,false)}
     ${_cinemaTitleLine(item)}
     <button onclick="event.stopPropagation();deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:1px 3px;flex-shrink:0;opacity:0;transition:opacity .15s">✕</button>
-  `,true,`ondblclick="if(!event.target.closest('button')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
+  `,true,`onclick="selCinemaRow(event,'${item.id}')" ondblclick="if(!event.target.closest('button')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
 }
 function _cinemaWatchedRow(item){
   return _cinemaRowShell(item,`
@@ -2207,7 +2242,7 @@ function _cinemaWatchedRow(item){
     ${_cinemaTitleLine(item)}
     <input type="number" min="1" max="10" step="0.1" value="${item.rating??''}" placeholder="–" class="cinema-rating-input" onclick="event.stopPropagation()" onchange="setCinemaRating('${item.id}',this.value)" title="Your rating (1-10)" style="width:30px;flex-shrink:0;text-align:center;padding:1px 2px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:11px">
     <button onclick="event.stopPropagation();deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:1px 3px;flex-shrink:0;opacity:0;transition:opacity .15s">✕</button>
-  `,true,`ondblclick="if(!event.target.closest('button')&&!event.target.matches('input')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
+  `,true,`onclick="selCinemaRow(event,'${item.id}')" ondblclick="if(!event.target.closest('button')&&!event.target.matches('input')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
 }
 function _cinemaTopRow(item,rank){
   return _cinemaRowShell(item,`
@@ -2241,6 +2276,7 @@ function openCinemaModal(editId,defaultStatus,defaultType){
   document.getElementById('cinemaTypeInput').value=item?item.type:(defaultType||'show');
   _cinemaRenderTypeToggle();
   document.getElementById('cinemaRatingInput').value=item?(item.rating??''):'';
+  document.getElementById('cinemaWatchedInput').checked=item?item.status==='watched':(_cinemaModalDefaultStatus==='watched');
   const genres=item&&item.genre?item.genre.split(',').map(s=>s.trim()).filter(Boolean):[];
   document.getElementById('cinemaGenreInput').value=genres[0]||'';
   document.getElementById('cinemaGenre2Input').value=genres[1]||'';
@@ -2272,14 +2308,14 @@ async function saveNewCinemaItem(){
   const where_to_watch=(document.getElementById('cinemaWhereInput')||{}).value?.trim()||null;
   const notes=(document.getElementById('cinemaNotesInput')||{}).value?.trim()||null;
   if(!title){renderCinemaPage();return;}
-  const status=_cinemaModalDefaultStatus==='watched'?'watched':'up_next';
+  const status=document.getElementById('cinemaWatchedInput').checked?'watched':'up_next';
   const upNext=st.cinemaItems.filter(i=>i.status==='up_next');
   const sort_order=upNext.length?Math.max(...upNext.map(i=>i.sort_order??0))+1:0;
   const localId='l-'+Date.now();
   const row={id:localId,title,type,status,rating,genre,where_to_watch,notes,sort_order,created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
   st.cinemaItems.push(row);renderCinemaPage();save();
   const sv=await sbReq('POST','cinema_items',{title,type,status,rating,sort_order,genre,where_to_watch,notes});
-  if(sv&&sv[0]){const idx=st.cinemaItems.findIndex(i=>i.id===localId);if(idx>=0)st.cinemaItems[idx]=sv[0];save();}
+  if(sv&&sv[0]){const idx=st.cinemaItems.findIndex(i=>i.id===localId);if(idx>=0)st.cinemaItems[idx]=sv[0];renderCinemaPage();save();}
 }
 async function saveCinemaEdit(id){
   const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
@@ -2289,28 +2325,47 @@ async function saveCinemaEdit(id){
   const genre=_cinemaReadGenreInput();
   const where_to_watch=(document.getElementById('cinemaWhereInput')||{}).value?.trim()||null;
   const notes=(document.getElementById('cinemaNotesInput')||{}).value?.trim()||null;
-  Object.assign(item,{title,type,rating,genre,where_to_watch,notes,updated_at:new Date().toISOString()});
+  const watched=document.getElementById('cinemaWatchedInput').checked;
+  const status=watched?'watched':'up_next';
+  let sort_order=item.sort_order;
+  if(status!==item.status&&status==='up_next'){
+    const upNext=st.cinemaItems.filter(i=>i.status==='up_next');
+    sort_order=upNext.length?Math.max(...upNext.map(i=>i.sort_order??0))+1:0;
+  }
+  Object.assign(item,{title,type,rating,genre,where_to_watch,notes,status,sort_order,updated_at:new Date().toISOString()});
   renderCinemaPage();save();
-  if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{title,type,rating,genre,where_to_watch,notes},`?id=eq.${id}`);
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{title,type,rating,genre,where_to_watch,notes,status,sort_order},`?id=eq.${id}`);
 }
-async function moveCinemaToWatched(id){
-  const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
-  const prevStatus=item.status;
-  item.status='watched';item.updated_at=new Date().toISOString();
+async function moveCinemaSelectedToWatched(ids){
+  const items=ids.map(id=>st.cinemaItems.find(i=>String(i.id)===String(id))).filter(it=>it&&it.status!=='watched');
+  if(!items.length)return;
+  const prev=items.map(it=>({id:it.id,status:it.status}));
+  items.forEach(it=>{it.status='watched';it.updated_at=new Date().toISOString();});
   renderCinemaPage();save();
-  pushUndo(()=>{item.status=prevStatus;renderCinemaPage();save();if(!String(id).startsWith('l-'))sbReqSilent('PATCH','cinema_items',{status:prevStatus},`?id=eq.${id}`);},'Moved "'+item.title+'" to Watched');
-  if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{status:'watched'},`?id=eq.${id}`);
+  const label=items.length>1?`Moved ${items.length} items to Watched`:'Moved "'+items[0].title+'" to Watched';
+  pushUndo(()=>{
+    prev.forEach(p=>{const it=st.cinemaItems.find(x=>String(x.id)===String(p.id));if(it){it.status=p.status;if(!String(p.id).startsWith('l-'))sbReqSilent('PATCH','cinema_items',{status:p.status},`?id=eq.${p.id}`);}});
+    renderCinemaPage();save();
+  },label);
+  for(const it of items){if(!String(it.id).startsWith('l-'))await sbReq('PATCH','cinema_items',{status:'watched'},`?id=eq.${it.id}`);}
 }
-async function moveCinemaToUpNext(id){
-  const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
-  const prevStatus=item.status,prevSort=item.sort_order;
+async function moveCinemaSelectedToUpNext(ids){
+  const items=ids.map(id=>st.cinemaItems.find(i=>String(i.id)===String(id))).filter(it=>it&&it.status!=='up_next');
+  if(!items.length)return;
+  const prev=items.map(it=>({id:it.id,status:it.status,sort_order:it.sort_order}));
   const upNext=st.cinemaItems.filter(i=>i.status==='up_next');
-  const sort_order=upNext.length?Math.max(...upNext.map(i=>i.sort_order??0))+1:0;
-  item.status='up_next';item.sort_order=sort_order;item.updated_at=new Date().toISOString();
+  const base=upNext.length?Math.max(...upNext.map(i=>i.sort_order??0))+1:0;
+  items.forEach((it,i)=>{it.status='up_next';it.sort_order=base+i;it.updated_at=new Date().toISOString();});
   renderCinemaPage();save();
-  pushUndo(()=>{item.status=prevStatus;item.sort_order=prevSort;renderCinemaPage();save();if(!String(id).startsWith('l-'))sbReqSilent('PATCH','cinema_items',{status:prevStatus,sort_order:prevSort},`?id=eq.${id}`);},'Moved "'+item.title+'" to What to Watch');
-  if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{status:'up_next',sort_order},`?id=eq.${id}`);
+  const label=items.length>1?`Moved ${items.length} items to What to Watch`:'Moved "'+items[0].title+'" to What to Watch';
+  pushUndo(()=>{
+    prev.forEach(p=>{const it=st.cinemaItems.find(x=>String(x.id)===String(p.id));if(it){it.status=p.status;it.sort_order=p.sort_order;if(!String(p.id).startsWith('l-'))sbReqSilent('PATCH','cinema_items',{status:p.status,sort_order:p.sort_order},`?id=eq.${p.id}`);}});
+    renderCinemaPage();save();
+  },label);
+  for(const it of items){if(!String(it.id).startsWith('l-'))await sbReq('PATCH','cinema_items',{status:'up_next',sort_order:it.sort_order},`?id=eq.${it.id}`);}
 }
+function moveCinemaToWatched(id){return moveCinemaSelectedToWatched([id]);}
+function moveCinemaToUpNext(id){return moveCinemaSelectedToUpNext([id]);}
 async function setCinemaRating(id,val){
   const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
   let rating=parseFloat(val);
@@ -2318,15 +2373,25 @@ async function setCinemaRating(id,val){
   item.rating=rating;renderCinemaPage();save();
   if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{rating},`?id=eq.${id}`);
 }
-async function deleteCinemaItem(id){
-  const old=st.cinemaItems.find(i=>String(i.id)===String(id));if(!old)return;
-  st.cinemaItems=st.cinemaItems.filter(i=>String(i.id)!==String(id));
+async function deleteCinemaItems(ids){
+  const removed=ids.map(id=>st.cinemaItems.find(i=>String(i.id)===String(id))).filter(Boolean);
+  if(!removed.length)return;
+  const removedIds=removed.map(it=>String(it.id));
+  st.cinemaItems=st.cinemaItems.filter(i=>!removedIds.includes(String(i.id)));
+  _cinemaSelIds.clear();
   renderCinemaPage();save();
-  pushUndo(()=>{st.cinemaItems.push(old);renderCinemaPage();save();},'Deleted "'+old.title+'"');
-  if(!String(id).startsWith('l-'))await sbReq('DELETE','cinema_items',null,`?id=eq.${id}`);
+  const label=removed.length>1?`Deleted ${removed.length} items`:'Deleted "'+removed[0].title+'"';
+  pushUndo(()=>{removed.forEach(r=>st.cinemaItems.push(r));renderCinemaPage();save();},label);
+  for(const it of removed){if(!String(it.id).startsWith('l-'))await sbReq('DELETE','cinema_items',null,`?id=eq.${it.id}`);}
 }
-function _cinemaDragStart(e,id){_cinemaDragId=id;e.dataTransfer.effectAllowed='move';e.target.style.opacity='.4';}
-function _cinemaDragEnd(e){_cinemaDragId=null;e.target.style.opacity='';}
+function deleteCinemaItem(id){return deleteCinemaItems([id]);}
+function deleteCinemaSelected(){deleteCinemaItems([..._cinemaSelIds]);}
+function _cinemaDragStart(e,id){
+  _cinemaDragId=id;
+  _cinemaDragIds=(_cinemaSelIds.has(String(id))&&_cinemaSelIds.size>1)?[..._cinemaSelIds]:[id];
+  e.dataTransfer.effectAllowed='move';e.target.style.opacity='.4';
+}
+function _cinemaDragEnd(e){_cinemaDragId=null;_cinemaDragIds=[];e.target.style.opacity='';}
 function _cinemaSetupReorderList(listId,arrGetter){
   const list=document.getElementById(listId);if(!list)return;
   list.addEventListener('dragover',e=>{
@@ -2345,8 +2410,8 @@ function _cinemaSetupReorderList(listId,arrGetter){
     if(!_cinemaDragId)return;
     const draggedId=_cinemaDragId;
     const draggedItem=st.cinemaItems.find(i=>String(i.id)===String(draggedId));
-    if(!draggedItem){_cinemaDragId=null;return;}
-    if(draggedItem.status!=='up_next'){_cinemaDragId=null;moveCinemaToUpNext(draggedId);return;}
+    if(!draggedItem){_cinemaDragId=null;_cinemaDragIds=[];return;}
+    if(draggedItem.status!=='up_next'){const ids=_cinemaDragIds.length?_cinemaDragIds:[draggedId];_cinemaDragId=null;_cinemaDragIds=[];moveCinemaSelectedToUpNext(ids);return;}
     const rows=[...list.querySelectorAll('.cinema-row')];
     let dropIdx=rows.length;
     for(let i=0;i<rows.length;i++){const rc=rows[i].getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){dropIdx=i;break;}}
@@ -2375,9 +2440,9 @@ function _cinemaSetupDropOnly(listId){
   list.addEventListener('drop',e=>{
     e.preventDefault();
     if(!_cinemaDragId)return;
-    const id=_cinemaDragId;_cinemaDragId=null;
-    const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
-    if(item.status!=='watched')moveCinemaToWatched(id);
+    const ids=_cinemaDragIds.length?_cinemaDragIds:[_cinemaDragId];
+    _cinemaDragId=null;_cinemaDragIds=[];
+    moveCinemaSelectedToWatched(ids);
   });
 }
 function _cinemaSetupDrag(){

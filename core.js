@@ -1538,6 +1538,10 @@ document.addEventListener('keydown',e=>{
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     if(document.getElementById('page-cinema')?.classList.contains('active')){e.preventDefault();openCinemaModal();return;}
   }
+  // Delete/Backspace on cinema page = delete selected items
+  if((e.key==='Delete'||e.key==='Backspace')&&typeof _cinemaSelIds!=='undefined'&&_cinemaSelIds.size&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    if(document.getElementById('page-cinema')?.classList.contains('active')){e.preventDefault();deleteCinemaSelected();return;}
+  }
 });
 
 // ── Help Overlay ─────────────────────────────────────────────────────────────
