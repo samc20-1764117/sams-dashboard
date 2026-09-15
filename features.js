@@ -2170,44 +2170,44 @@ function _cinemaEmpty(msg){return`<div style="text-align:center;color:var(--mute
 function _cinemaFmtRating(r){return r==null?'':(Number.isInteger(Number(r))?String(r):Number(r).toFixed(1));}
 function _cinemaTypeBadge(type){
   const isMovie=type==='movie';
-  return`<span style="flex-shrink:0;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding:2px 6px;border-radius:4px;background:${isMovie?'rgba(236,72,153,.12)':'rgba(14,165,233,.12)'};color:${isMovie?'#ec4899':'#0ea5e9'}">${isMovie?'Movie':'Show'}</span>`;
+  return`<span style="flex-shrink:0;font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding:1px 5px;border-radius:4px;background:${isMovie?'rgba(236,72,153,.12)':'rgba(14,165,233,.12)'};color:${isMovie?'#ec4899':'#0ea5e9'}">${isMovie?'Movie':'Show'}</span>`;
 }
 function _cinemaTitleLine(item){
   const subBits=[];
   if(item.genre)subBits.push(escHtml(item.genre));
   if(item.where_to_watch)subBits.push(escHtml(item.where_to_watch));
   const sub=subBits.length?` <span style="color:var(--muted);font-weight:400">— ${subBits.join(' · ')}</span>`:'';
-  return`<span style="flex:1;min-width:0;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.title)}${sub}</span>`;
+  return`<span style="flex:1;min-width:0;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.title)}${sub}</span>`;
 }
 function _cinemaRowShell(item,inner,draggable,extraAttrs){
   const dk=document.body.classList.contains('dark');
   const bg=dk?'rgba(255,255,255,.06)':'rgba(255,255,255,.85)';
   const bdr=dk?'rgba(255,255,255,.08)':'rgba(210,205,228,.3)';
   const dragAttrs=draggable?`draggable="true" ondragstart="_cinemaDragStart(event,'${item.id}')" ondragend="_cinemaDragEnd(event)"`:'';
-  return`<div class="cinema-row" data-cinema-id="${item.id}" ${dragAttrs} ${extraAttrs||''} style="padding:6px 10px;margin-bottom:6px;border-radius:8px;background:${bg};border:1px solid ${bdr};display:flex;align-items:center;gap:8px;${draggable?'cursor:grab':''}">${inner}</div>`;
+  return`<div class="cinema-row" data-cinema-id="${item.id}" ${dragAttrs} ${extraAttrs||''} style="padding:3px 7px;margin-bottom:3px;border-radius:7px;background:${bg};border:1px solid ${bdr};display:flex;align-items:center;gap:6px;${draggable?'cursor:grab':''}">${inner}</div>`;
 }
 function _cinemaUpNextRow(item){
   return _cinemaRowShell(item,`
-    <span style="color:var(--muted);font-size:12px;flex-shrink:0">⠿</span>
+    <span style="color:var(--muted);font-size:11px;flex-shrink:0">⠿</span>
     ${_cinemaTypeBadge(item.type)}
     ${_cinemaTitleLine(item)}
-    <button onclick="event.stopPropagation();moveCinemaToWatched('${item.id}')" title="Mark watched" style="flex-shrink:0;width:19px;height:19px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center" onmouseover="this.style.borderColor='#22c55e';this.style.color='#22c55e'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
-    <button onclick="event.stopPropagation();deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0;opacity:0;transition:opacity .15s">✕</button>
+    <button onclick="event.stopPropagation();moveCinemaToWatched('${item.id}')" title="Mark watched" style="flex-shrink:0;width:16px;height:16px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center" onmouseover="this.style.borderColor='#22c55e';this.style.color='#22c55e'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
+    <button onclick="event.stopPropagation();deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:1px 3px;flex-shrink:0;opacity:0;transition:opacity .15s">✕</button>
   `,true,`ondblclick="if(!event.target.closest('button')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
 }
 function _cinemaWatchedRow(item){
   return _cinemaRowShell(item,`
     ${_cinemaTypeBadge(item.type)}
     ${_cinemaTitleLine(item)}
-    <input type="number" min="1" max="10" step="0.1" value="${item.rating??''}" placeholder="–" onclick="event.stopPropagation()" onchange="setCinemaRating('${item.id}',this.value)" title="Your rating (1-10)" style="width:38px;flex-shrink:0;text-align:center;padding:2px 3px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:12px">
-    <button onclick="event.stopPropagation();deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--muted);padding:2px 4px;flex-shrink:0;opacity:0;transition:opacity .15s">✕</button>
+    <input type="number" min="1" max="10" step="0.1" value="${item.rating??''}" placeholder="–" class="cinema-rating-input" onclick="event.stopPropagation()" onchange="setCinemaRating('${item.id}',this.value)" title="Your rating (1-10)" style="width:32px;flex-shrink:0;text-align:center;padding:1px 2px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:11px">
+    <button onclick="event.stopPropagation();deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:1px 3px;flex-shrink:0;opacity:0;transition:opacity .15s">✕</button>
   `,false,`ondblclick="if(!event.target.closest('button')&&!event.target.matches('input')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
 }
 function _cinemaTopRow(item,rank){
   return _cinemaRowShell(item,`
-    <span style="font-size:12px;font-weight:700;color:var(--muted);width:16px;flex-shrink:0">${rank}</span>
-    ${_cinemaTitleLine(item)}
-    <span style="font-size:12px;font-weight:600;color:var(--accent);flex-shrink:0">${_cinemaFmtRating(item.rating)}/10</span>
+    <span style="font-size:11px;font-weight:700;color:var(--muted);width:13px;flex-shrink:0">${rank}</span>
+    <span style="flex:1;min-width:0;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.title)}</span>
+    <span style="font-size:11px;font-weight:600;color:var(--accent);flex-shrink:0">${_cinemaFmtRating(item.rating)}/10</span>
   `,false,`ondblclick="event.stopPropagation();openCinemaModal('${item.id}')"`);
 }
 let _cinemaModalEditId=null;
@@ -2219,7 +2219,7 @@ function _cinemaContainerDblClick(e,status){
 function _cinemaRenderTypeToggle(){
   const cur=(document.getElementById('cinemaTypeInput')||{}).value||'movie';
   const wrap=document.getElementById('cinemaTypeToggle');if(!wrap)return;
-  const btn=(val,label)=>`<button type="button" onclick="_cinemaSetModalType('${val}')" style="padding:4px 9px;border-radius:6px;border:none;font-family:inherit;font-size:11px;cursor:pointer;background:${cur===val?'var(--accent)':'rgba(0,0,0,.06)'};color:${cur===val?'#fff':'var(--muted)'}">${label}</button>`;
+  const btn=(val,label)=>`<button type="button" onclick="_cinemaSetModalType('${val}')" style="padding:4px 10px;border-radius:6px;border:none;font-family:inherit;font-size:11px;cursor:pointer;background:${cur===val?'var(--accent)':'transparent'};color:${cur===val?'#fff':'var(--muted)'};transition:background .15s">${label}</button>`;
   wrap.innerHTML=btn('movie','Movie')+btn('show','Show');
 }
 function _cinemaSetModalType(type){

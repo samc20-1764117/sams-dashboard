@@ -482,11 +482,11 @@ if(sessionStorage._mReloaded===BUILD);else{
     </div>
     <div style="min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div class="card" style="min-height:0">
-        <div class="ch"><div class="ct">Top 10 Movies</div></div>
+        <div class="ch"><div class="ct" style="text-align:center;color:#ec4899">Top 10 Movies</div></div>
         <div id="cinemaTop10MoviesContent" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
       </div>
       <div class="card" style="min-height:0">
-        <div class="ch"><div class="ct">Top 10 Shows</div></div>
+        <div class="ch"><div class="ct" style="text-align:center;color:#0ea5e9">Top 10 Shows</div></div>
         <div id="cinemaTop10ShowsContent" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
       </div>
     </div>
@@ -644,9 +644,9 @@ if(sessionStorage._mReloaded===BUILD);else{
   <div class="modal task-modal" style="width:340px">
     <div class="mt" style="display:flex;align-items:center;gap:8px">
       <span id="cinemaMTitle" style="flex:1">Add Movie/Show</span>
-      <div id="cinemaTypeToggle" style="display:flex;gap:4px;flex-shrink:0"></div>
+      <div id="cinemaTypeToggle" style="display:flex;gap:0;flex-shrink:0;background:rgba(0,0,0,.06);border-radius:var(--rxs);padding:2px"></div>
       <input type="hidden" id="cinemaTypeInput" value="movie">
-      <input id="cinemaRatingInput" type="number" step="0.1" min="1" max="10" placeholder="Rating" title="My rating" style="width:56px;flex-shrink:0;padding:4px 6px;border-radius:6px;border:1px solid var(--border);font-family:inherit;font-size:11px;color:var(--text);outline:none;background:rgba(255,255,255,.8)">
+      <input id="cinemaRatingInput" class="cinema-rating-input" type="number" step="0.1" min="1" max="10" placeholder="Rating" title="My rating" style="width:64px;flex-shrink:0;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none;background:rgba(255,255,255,.8)">
     </div>
     <div class="mfield"><label>Title *</label><input id="cinemaTitleInput" placeholder="e.g. Breaking Bad"></div>
     <div class="mfield" style="display:flex;gap:8px">
@@ -660,7 +660,7 @@ if(sessionStorage._mReloaded===BUILD);else{
       </select></div>
     </div>
     <div class="mfield"><label>Where to watch</label><input id="cinemaWhereInput" placeholder="e.g. Netflix"></div>
-    <div class="mfield"><label>Notes</label><textarea id="cinemaNotesInput" placeholder="Add notes…" style="resize:none;min-height:52px;width:100%;box-sizing:border-box;font-family:inherit;font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);color:var(--text);outline:none"></textarea></div>
+    <div class="mfield"><label>Notes</label><textarea id="cinemaNotesInput" placeholder="Add notes…" style="resize:none;min-height:52px;overflow-x:hidden"></textarea></div>
     <div class="mact"><button class="btn btn-ghost" onclick="closeMod('cinemaModal')">Cancel</button><button class="btn btn-dark" id="cinemaSaveBtn" onclick="saveCinemaModal()">Add</button></div>
   </div>
 </div>

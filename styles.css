@@ -301,6 +301,8 @@ body.dark .menu-open:hover{background:rgba(40,40,46,.95)}
 body.dark .ideas-card{background:rgba(24,24,28,.35)!important;backdrop-filter:blur(32px)!important;-webkit-backdrop-filter:blur(32px)!important}
 .idea-row:hover .idea-x-btn{opacity:1!important}.idea-x-btn:hover{color:#ef4444!important}
 .cinema-row:hover .idea-x-btn{opacity:1!important}
+.cinema-rating-input::-webkit-inner-spin-button,.cinema-rating-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.cinema-rating-input{-moz-appearance:textfield}
 
 /* Undo toast */
 .back-btn{display:none}
