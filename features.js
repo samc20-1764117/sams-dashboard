@@ -2117,10 +2117,9 @@ function renderBdayPage(){
 // ── Cinema ───────────────────────────────────────────────────────────────────
 let _cinemaDragId=null;
 let _cinemaGenreFilterVal='';
-let _cinemaTypeFilterVal='';
 let _cinemaWatchedGenreFilterVal='';
-let _cinemaWatchedTypeFilterVal='';
-let _cinemaLastUpNext=[];
+let _cinemaLastUpNextShows=[];
+let _cinemaLastUpNextMovies=[];
 
 function _cinemaGenresIn(items){
   const set=new Set();
@@ -2128,50 +2127,49 @@ function _cinemaGenresIn(items){
   return[...set].sort();
 }
 function renderCinemaPage(){
-  const upEl=document.getElementById('cinemaUpNextContent');
-  if(!upEl)return;
-  const watchEl=document.getElementById('cinemaWatchedContent');
+  const upShowsEl=document.getElementById('cinemaUpNextShowsContent');
+  if(!upShowsEl)return;
+  const upMoviesEl=document.getElementById('cinemaUpNextMoviesContent');
+  const watchShowsEl=document.getElementById('cinemaWatchedShowsContent');
+  const watchMoviesEl=document.getElementById('cinemaWatchedMoviesContent');
   const topMEl=document.getElementById('cinemaTop10MoviesContent');
   const topSEl=document.getElementById('cinemaTop10ShowsContent');
   const genreFilterEl=document.getElementById('cinemaGenreFilter');
-  const typeFilterEl=document.getElementById('cinemaTypeFilter');
   const wGenreFilterEl=document.getElementById('cinemaWatchedGenreFilter');
-  const wTypeFilterEl=document.getElementById('cinemaWatchedTypeFilter');
 
   const upNextAll=st.cinemaItems.filter(i=>i.status==='up_next').sort((a,b)=>(a.sort_order??9999)-(b.sort_order??9999));
   const genres=_cinemaGenresIn(upNextAll);
   if(!genres.includes(_cinemaGenreFilterVal))_cinemaGenreFilterVal='';
   if(genreFilterEl)genreFilterEl.innerHTML='<option value="">All genres</option>'+genres.map(g=>`<option value="${escHtml(g)}" ${g===_cinemaGenreFilterVal?'selected':''}>${escHtml(g)}</option>`).join('');
-  if(typeFilterEl)typeFilterEl.value=_cinemaTypeFilterVal;
   let upNext=upNextAll;
   if(_cinemaGenreFilterVal)upNext=upNext.filter(i=>(i.genre||'').split(',').map(s=>s.trim()).includes(_cinemaGenreFilterVal));
-  if(_cinemaTypeFilterVal)upNext=upNext.filter(i=>i.type===_cinemaTypeFilterVal);
-  _cinemaLastUpNext=upNext;
+  const upNextShows=upNext.filter(i=>i.type==='show');
+  const upNextMovies=upNext.filter(i=>i.type==='movie');
+  _cinemaLastUpNextShows=upNextShows;
+  _cinemaLastUpNextMovies=upNextMovies;
 
   const watchedAll=st.cinemaItems.filter(i=>i.status==='watched').sort((a,b)=>new Date(b.updated_at||b.created_at)-new Date(a.updated_at||a.created_at));
   const wGenres=_cinemaGenresIn(watchedAll);
   if(!wGenres.includes(_cinemaWatchedGenreFilterVal))_cinemaWatchedGenreFilterVal='';
   if(wGenreFilterEl)wGenreFilterEl.innerHTML='<option value="">All genres</option>'+wGenres.map(g=>`<option value="${escHtml(g)}" ${g===_cinemaWatchedGenreFilterVal?'selected':''}>${escHtml(g)}</option>`).join('');
-  if(wTypeFilterEl)wTypeFilterEl.value=_cinemaWatchedTypeFilterVal;
   let watched=watchedAll;
   if(_cinemaWatchedGenreFilterVal)watched=watched.filter(i=>(i.genre||'').split(',').map(s=>s.trim()).includes(_cinemaWatchedGenreFilterVal));
-  if(_cinemaWatchedTypeFilterVal)watched=watched.filter(i=>i.type===_cinemaWatchedTypeFilterVal);
+  const watchedShows=watched.filter(i=>i.type==='show');
+  const watchedMovies=watched.filter(i=>i.type==='movie');
 
   const topMovies=st.cinemaItems.filter(i=>i.status==='watched'&&i.type==='movie'&&i.rating!=null).sort((a,b)=>b.rating-a.rating).slice(0,10);
   const topShows=st.cinemaItems.filter(i=>i.status==='watched'&&i.type==='show'&&i.rating!=null).sort((a,b)=>b.rating-a.rating).slice(0,10);
 
-  upEl.innerHTML=upNext.length?`<div id="cinemaUpNextList">${upNext.map(_cinemaUpNextRow).join('')}</div>`:_cinemaEmpty(upNextAll.length?'No items match these filters.':'Nothing queued yet. Click + or double-click here to add a movie or show.');
-  watchEl.innerHTML=watched.length?watched.map(_cinemaWatchedRow).join(''):_cinemaEmpty(watchedAll.length?'No items match these filters.':'Nothing watched yet. Double-click here to add one.');
+  upShowsEl.innerHTML=`<div id="cinemaUpNextShowsList">${upNextShows.length?upNextShows.map(_cinemaUpNextRow).join(''):_cinemaEmpty('Nothing here.')}</div>`;
+  upMoviesEl.innerHTML=`<div id="cinemaUpNextMoviesList">${upNextMovies.length?upNextMovies.map(_cinemaUpNextRow).join(''):_cinemaEmpty('Nothing here.')}</div>`;
+  watchShowsEl.innerHTML=`<div id="cinemaWatchedShowsList">${watchedShows.length?watchedShows.map(_cinemaWatchedRow).join(''):_cinemaEmpty('Nothing here.')}</div>`;
+  watchMoviesEl.innerHTML=`<div id="cinemaWatchedMoviesList">${watchedMovies.length?watchedMovies.map(_cinemaWatchedRow).join(''):_cinemaEmpty('Nothing here.')}</div>`;
   topMEl.innerHTML=topMovies.length?topMovies.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty('Rate some watched movies to build this list.');
   topSEl.innerHTML=topShows.length?topShows.map((it,i)=>_cinemaTopRow(it,i+1)).join(''):_cinemaEmpty('Rate some watched shows to build this list.');
   _cinemaSetupDrag();
 }
-function _cinemaEmpty(msg){return`<div style="text-align:center;color:var(--muted);padding:30px 0;font-size:12px">${msg}</div>`;}
+function _cinemaEmpty(msg){return`<div style="text-align:center;color:var(--muted);padding:16px 0;font-size:11px">${msg}</div>`;}
 function _cinemaFmtRating(r){return r==null?'':(Number.isInteger(Number(r))?String(r):Number(r).toFixed(1));}
-function _cinemaTypeBadge(type){
-  const isMovie=type==='movie';
-  return`<span style="flex-shrink:0;font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding:1px 5px;border-radius:4px;background:${isMovie?'rgba(236,72,153,.12)':'rgba(14,165,233,.12)'};color:${isMovie?'#ec4899':'#0ea5e9'}">${isMovie?'Movie':'Show'}</span>`;
-}
 function _cinemaTitleLine(item){
   const subBits=[];
   if(item.genre)subBits.push(escHtml(item.genre));
@@ -2186,22 +2184,30 @@ function _cinemaRowShell(item,inner,draggable,extraAttrs){
   const dragAttrs=draggable?`draggable="true" ondragstart="_cinemaDragStart(event,'${item.id}')" ondragend="_cinemaDragEnd(event)"`:'';
   return`<div class="cinema-row" data-cinema-id="${item.id}" ${dragAttrs} ${extraAttrs||''} style="padding:3px 7px;margin-bottom:3px;border-radius:7px;background:${bg};border:1px solid ${bdr};display:flex;align-items:center;gap:6px;${draggable?'cursor:grab':''}">${inner}</div>`;
 }
+function _cinemaCheckBtn(item,checked){
+  const action=checked?'moveCinemaToUpNext':'moveCinemaToWatched';
+  const title=checked?'Mark as not watched':'Mark watched';
+  const bg=checked?'#22c55e':'transparent';
+  const border=checked?'#22c55e':'var(--border)';
+  const color=checked?'#fff':'var(--muted)';
+  return`<button onclick="event.stopPropagation();${action}('${item.id}')" title="${title}" style="flex-shrink:0;width:15px;height:15px;padding:0;border-radius:50%;border:1.5px solid ${border};background:${bg};color:${color};cursor:pointer;display:flex;align-items:center;justify-content:center" onmouseover="this.style.borderColor='#22c55e'" onmouseout="this.style.borderColor='${border}'"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>`;
+}
 function _cinemaUpNextRow(item){
   return _cinemaRowShell(item,`
-    <span style="color:var(--muted);font-size:11px;flex-shrink:0">⠿</span>
-    ${_cinemaTypeBadge(item.type)}
+    <span style="color:var(--muted);font-size:10px;flex-shrink:0">⠿</span>
+    ${_cinemaCheckBtn(item,false)}
     ${_cinemaTitleLine(item)}
-    <button onclick="event.stopPropagation();moveCinemaToWatched('${item.id}')" title="Mark watched" style="flex-shrink:0;width:16px;height:16px;padding:0;border-radius:50%;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center" onmouseover="this.style.borderColor='#22c55e';this.style.color='#22c55e'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>
     <button onclick="event.stopPropagation();deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:1px 3px;flex-shrink:0;opacity:0;transition:opacity .15s">✕</button>
   `,true,`ondblclick="if(!event.target.closest('button')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
 }
 function _cinemaWatchedRow(item){
   return _cinemaRowShell(item,`
-    ${_cinemaTypeBadge(item.type)}
+    <span style="color:var(--muted);font-size:10px;flex-shrink:0">⠿</span>
+    ${_cinemaCheckBtn(item,true)}
     ${_cinemaTitleLine(item)}
-    <input type="number" min="1" max="10" step="0.1" value="${item.rating??''}" placeholder="–" class="cinema-rating-input" onclick="event.stopPropagation()" onchange="setCinemaRating('${item.id}',this.value)" title="Your rating (1-10)" style="width:32px;flex-shrink:0;text-align:center;padding:1px 2px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:11px">
+    <input type="number" min="1" max="10" step="0.1" value="${item.rating??''}" placeholder="–" class="cinema-rating-input" onclick="event.stopPropagation()" onchange="setCinemaRating('${item.id}',this.value)" title="Your rating (1-10)" style="width:30px;flex-shrink:0;text-align:center;padding:1px 2px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:11px">
     <button onclick="event.stopPropagation();deleteCinemaItem('${item.id}')" class="idea-x-btn" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--muted);padding:1px 3px;flex-shrink:0;opacity:0;transition:opacity .15s">✕</button>
-  `,false,`ondblclick="if(!event.target.closest('button')&&!event.target.matches('input')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
+  `,true,`ondblclick="if(!event.target.closest('button')&&!event.target.matches('input')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
 }
 function _cinemaTopRow(item,rank){
   return _cinemaRowShell(item,`
@@ -2212,28 +2218,27 @@ function _cinemaTopRow(item,rank){
 }
 let _cinemaModalEditId=null;
 let _cinemaModalDefaultStatus='up_next';
-function _cinemaContainerDblClick(e,status){
+function _cinemaContainerDblClick(e,status,type){
   if(e.target.closest('.cinema-row'))return;
-  openCinemaModal(null,status);
+  openCinemaModal(null,status,type);
 }
 function _cinemaRenderTypeToggle(){
-  const cur=(document.getElementById('cinemaTypeInput')||{}).value||'movie';
+  const cur=(document.getElementById('cinemaTypeInput')||{}).value||'show';
   const wrap=document.getElementById('cinemaTypeToggle');if(!wrap)return;
   const btn=(val,label)=>`<button type="button" onclick="_cinemaSetModalType('${val}')" style="padding:4px 10px;border-radius:6px;border:none;font-family:inherit;font-size:11px;cursor:pointer;background:${cur===val?'var(--accent)':'transparent'};color:${cur===val?'#fff':'var(--muted)'};transition:background .15s">${label}</button>`;
-  wrap.innerHTML=btn('movie','Movie')+btn('show','Show');
+  wrap.innerHTML=btn('show','Show')+btn('movie','Movie');
 }
 function _cinemaSetModalType(type){
   document.getElementById('cinemaTypeInput').value=type;
   _cinemaRenderTypeToggle();
 }
-function openCinemaModal(editId,defaultStatus){
+function openCinemaModal(editId,defaultStatus,defaultType){
   _cinemaModalEditId=editId||null;
   _cinemaModalDefaultStatus=defaultStatus||'up_next';
   const item=editId?st.cinemaItems.find(i=>String(i.id)===String(editId)):null;
-  document.getElementById('cinemaMTitle').textContent=editId?'Edit Movie/Show':'Add Movie/Show';
-  document.getElementById('cinemaSaveBtn').textContent=editId?'Save':'Add';
+  document.getElementById('cinemaMTitle').textContent=editId?'Edit':'Add';
   document.getElementById('cinemaTitleInput').value=item?item.title:'';
-  document.getElementById('cinemaTypeInput').value=item?item.type:'movie';
+  document.getElementById('cinemaTypeInput').value=item?item.type:(defaultType||'show');
   _cinemaRenderTypeToggle();
   document.getElementById('cinemaRatingInput').value=item?(item.rating??''):'';
   const genres=item&&item.genre?item.genre.split(',').map(s=>s.trim()).filter(Boolean):[];
@@ -2261,7 +2266,7 @@ function _cinemaReadGenreInput(){
 }
 async function saveNewCinemaItem(){
   const title=(document.getElementById('cinemaTitleInput')||{}).value?.trim()||'';
-  const type=(document.getElementById('cinemaTypeInput')||{}).value||'movie';
+  const type=(document.getElementById('cinemaTypeInput')||{}).value||'show';
   const rating=_cinemaReadRatingInput();
   const genre=_cinemaReadGenreInput();
   const where_to_watch=(document.getElementById('cinemaWhereInput')||{}).value?.trim()||null;
@@ -2296,6 +2301,16 @@ async function moveCinemaToWatched(id){
   pushUndo(()=>{item.status=prevStatus;renderCinemaPage();save();if(!String(id).startsWith('l-'))sbReqSilent('PATCH','cinema_items',{status:prevStatus},`?id=eq.${id}`);},'Moved "'+item.title+'" to Watched');
   if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{status:'watched'},`?id=eq.${id}`);
 }
+async function moveCinemaToUpNext(id){
+  const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
+  const prevStatus=item.status,prevSort=item.sort_order;
+  const upNext=st.cinemaItems.filter(i=>i.status==='up_next');
+  const sort_order=upNext.length?Math.max(...upNext.map(i=>i.sort_order??0))+1:0;
+  item.status='up_next';item.sort_order=sort_order;item.updated_at=new Date().toISOString();
+  renderCinemaPage();save();
+  pushUndo(()=>{item.status=prevStatus;item.sort_order=prevSort;renderCinemaPage();save();if(!String(id).startsWith('l-'))sbReqSilent('PATCH','cinema_items',{status:prevStatus,sort_order:prevSort},`?id=eq.${id}`);},'Moved "'+item.title+'" to What to Watch');
+  if(!String(id).startsWith('l-'))await sbReq('PATCH','cinema_items',{status:'up_next',sort_order},`?id=eq.${id}`);
+}
 async function setCinemaRating(id,val){
   const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
   let rating=parseFloat(val);
@@ -2312,13 +2327,13 @@ async function deleteCinemaItem(id){
 }
 function _cinemaDragStart(e,id){_cinemaDragId=id;e.dataTransfer.effectAllowed='move';e.target.style.opacity='.4';}
 function _cinemaDragEnd(e){_cinemaDragId=null;e.target.style.opacity='';}
-function _cinemaSetupDrag(){
-  const list=document.getElementById('cinemaUpNextList');if(!list)return;
+function _cinemaSetupReorderList(listId,arrGetter){
+  const list=document.getElementById(listId);if(!list)return;
   list.addEventListener('dragover',e=>{
     if(!_cinemaDragId)return;e.preventDefault();
     const rows=[...list.querySelectorAll('.cinema-row')];
     let ph=list.querySelector('.cinema-drop-ph');
-    if(!ph){ph=document.createElement('div');ph.className='cinema-drop-ph';ph.style.cssText='height:2px;margin:4px 0;border-radius:99px;background:var(--accent);pointer-events:none';list.appendChild(ph);}
+    if(!ph){ph=document.createElement('div');ph.className='cinema-drop-ph';ph.style.cssText='height:2px;margin:2px 0;border-radius:99px;background:var(--accent);pointer-events:none';list.appendChild(ph);}
     let inserted=false;
     for(const r of rows){const rc=r.getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){list.insertBefore(ph,r);inserted=true;break;}}
     if(!inserted){const last=rows[rows.length-1];if(last)last.after(ph);}
@@ -2328,13 +2343,17 @@ function _cinemaSetupDrag(){
     e.preventDefault();
     const ph=list.querySelector('.cinema-drop-ph');if(ph)ph.remove();
     if(!_cinemaDragId)return;
+    const draggedId=_cinemaDragId;
+    const draggedItem=st.cinemaItems.find(i=>String(i.id)===String(draggedId));
+    if(!draggedItem){_cinemaDragId=null;return;}
+    if(draggedItem.status!=='up_next'){_cinemaDragId=null;moveCinemaToUpNext(draggedId);return;}
     const rows=[...list.querySelectorAll('.cinema-row')];
     let dropIdx=rows.length;
     for(let i=0;i<rows.length;i++){const rc=rows[i].getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){dropIdx=i;break;}}
-    const items=_cinemaLastUpNext.slice();
+    const items=arrGetter().slice();
     const origIds=items.map(i=>String(i.id));
     const prevOrders=items.map(i=>({id:i.id,order:i.sort_order}));
-    const dragIdx=items.findIndex(i=>String(i.id)===String(_cinemaDragId));
+    const dragIdx=items.findIndex(i=>String(i.id)===String(draggedId));
     if(dragIdx<0){_cinemaDragId=null;return;}
     const[moved]=items.splice(dragIdx,1);
     if(dropIdx>dragIdx)dropIdx--;
@@ -2347,8 +2366,25 @@ function _cinemaSetupDrag(){
     pushUndo(()=>{
       prevOrders.forEach(({id,order})=>{const it=st.cinemaItems.find(x=>String(x.id)===String(id));if(it){it.sort_order=order;if(!String(id).startsWith('l-'))sbReqSilent('PATCH','cinema_items',{sort_order:order},`?id=eq.${id}`);}});
       save();renderCinemaPage();
-    },'Reordered Up Next');
+    },'Reordered What to Watch');
   });
+}
+function _cinemaSetupDropOnly(listId){
+  const list=document.getElementById(listId);if(!list)return;
+  list.addEventListener('dragover',e=>{if(!_cinemaDragId)return;e.preventDefault();});
+  list.addEventListener('drop',e=>{
+    e.preventDefault();
+    if(!_cinemaDragId)return;
+    const id=_cinemaDragId;_cinemaDragId=null;
+    const item=st.cinemaItems.find(i=>String(i.id)===String(id));if(!item)return;
+    if(item.status!=='watched')moveCinemaToWatched(id);
+  });
+}
+function _cinemaSetupDrag(){
+  _cinemaSetupReorderList('cinemaUpNextShowsList',()=>_cinemaLastUpNextShows);
+  _cinemaSetupReorderList('cinemaUpNextMoviesList',()=>_cinemaLastUpNextMovies);
+  _cinemaSetupDropOnly('cinemaWatchedShowsList');
+  _cinemaSetupDropOnly('cinemaWatchedMoviesList');
 }
 // ══════════════════════════════════════════════════════════════════════════════
 // ── HABITS PAGE ──────────────────────────────────────────────────────────────
@@ -8459,7 +8495,7 @@ document.addEventListener('keydown',e=>{
   const tag=document.activeElement?.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||document.activeElement?.isContentEditable)return;
   if(e.metaKey||e.ctrlKey||e.altKey)return;
-  if(e.key==='n'){const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block')return;if(typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)return;e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
+  if(e.key==='n'){if(activePg==='cinema')return;const _vp=document.getElementById('vidOvPanel');if(_vp&&_vp.style.display==='block')return;if(typeof _vidOvAllOpen!=='undefined'&&_vidOvAllOpen)return;e.preventDefault();openQA('today',null,d2s(getDayDate(dayOff)));}
   if(e.key==='r'){e.preventDefault();location.reload();}
   // S = toggle sidebar; S then H (within 400ms) = shopping/grocery modal. When the videos popup is
   // open, S instead toggles its Schedule (calendar) sub-view — checked first, same pattern as 'n'

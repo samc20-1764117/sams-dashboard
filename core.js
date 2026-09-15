@@ -1534,6 +1534,10 @@ document.addEventListener('keydown',e=>{
   if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
     if(document.getElementById('page-ideas')?.classList.contains('active')){e.preventDefault();openIdeasAddForm();return;}
   }
+  // N on cinema page = new movie/show
+  if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+    if(document.getElementById('page-cinema')?.classList.contains('active')){e.preventDefault();openCinemaModal();return;}
+  }
 });
 
 // ── Help Overlay ─────────────────────────────────────────────────────────────

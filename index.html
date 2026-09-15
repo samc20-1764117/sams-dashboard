@@ -465,29 +465,33 @@ if(sessionStorage._mReloaded===BUILD);else{
     <span class="ov-topbar-date topbar-date"></span>
     <div class="ov-topbar-right"><span class="ov-topbar-dot"></span><span class="ov-topbar-time topbar-time"></span></div>
   </div>
-  <div style="flex:1;width:100%;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:16px;margin-top:20px">
+  <div style="flex:1;width:100%;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 2fr;gap:16px;margin-top:20px">
     <div class="card" style="min-height:0;grid-row:1 / span 2">
       <div class="ch">
         <div class="ct">What to Watch</div>
         <div style="flex:1"></div>
         <select id="cinemaGenreFilter" onchange="_cinemaGenreFilterVal=this.value;renderCinemaPage()" style="padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:10px;max-width:100px"><option value="">All genres</option></select>
-        <select id="cinemaTypeFilter" onchange="_cinemaTypeFilterVal=this.value;renderCinemaPage()" style="margin-left:6px;padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:10px">
-          <option value="">All types</option>
-          <option value="movie">Movie</option>
-          <option value="show">Show</option>
-        </select>
         <button class="btn-plus" style="margin-left:6px" onclick="openCinemaModal()">+</button>
       </div>
-      <div id="cinemaUpNextContent" ondblclick="_cinemaContainerDblClick(event,'up_next')" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
+      <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr">
+        <div style="min-height:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
+          <div style="padding:6px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);flex-shrink:0">Shows</div>
+          <div id="cinemaUpNextShowsContent" ondblclick="_cinemaContainerDblClick(event,'up_next','show')" style="flex:1;min-height:0;overflow-y:auto;padding:4px 8px 8px"></div>
+        </div>
+        <div style="min-height:0;display:flex;flex-direction:column">
+          <div style="padding:6px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);flex-shrink:0">Movies</div>
+          <div id="cinemaUpNextMoviesContent" ondblclick="_cinemaContainerDblClick(event,'up_next','movie')" style="flex:1;min-height:0;overflow-y:auto;padding:4px 8px 8px"></div>
+        </div>
+      </div>
     </div>
     <div style="min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div class="card" style="min-height:0">
         <div class="ch"><div class="ct" style="text-align:center;color:#ec4899">Top 10 Movies</div></div>
-        <div id="cinemaTop10MoviesContent" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
+        <div id="cinemaTop10MoviesContent" style="flex:1;min-height:0;overflow-y:auto;padding:8px 12px"></div>
       </div>
       <div class="card" style="min-height:0">
         <div class="ch"><div class="ct" style="text-align:center;color:#0ea5e9">Top 10 Shows</div></div>
-        <div id="cinemaTop10ShowsContent" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
+        <div id="cinemaTop10ShowsContent" style="flex:1;min-height:0;overflow-y:auto;padding:8px 12px"></div>
       </div>
     </div>
     <div class="card" style="min-height:0">
@@ -495,13 +499,17 @@ if(sessionStorage._mReloaded===BUILD);else{
         <div class="ct">Watched</div>
         <div style="flex:1"></div>
         <select id="cinemaWatchedGenreFilter" onchange="_cinemaWatchedGenreFilterVal=this.value;renderCinemaPage()" style="padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:10px;max-width:100px"><option value="">All genres</option></select>
-        <select id="cinemaWatchedTypeFilter" onchange="_cinemaWatchedTypeFilterVal=this.value;renderCinemaPage()" style="margin-left:6px;padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:10px">
-          <option value="">All types</option>
-          <option value="movie">Movie</option>
-          <option value="show">Show</option>
-        </select>
       </div>
-      <div id="cinemaWatchedContent" ondblclick="_cinemaContainerDblClick(event,'watched')" style="flex:1;min-height:0;overflow-y:auto;padding:12px"></div>
+      <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr">
+        <div style="min-height:0;display:flex;flex-direction:column;border-right:1px solid var(--border)">
+          <div style="padding:6px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);flex-shrink:0">Shows</div>
+          <div id="cinemaWatchedShowsContent" ondblclick="_cinemaContainerDblClick(event,'watched','show')" style="flex:1;min-height:0;overflow-y:auto;padding:4px 8px 8px"></div>
+        </div>
+        <div style="min-height:0;display:flex;flex-direction:column">
+          <div style="padding:6px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);flex-shrink:0">Movies</div>
+          <div id="cinemaWatchedMoviesContent" ondblclick="_cinemaContainerDblClick(event,'watched','movie')" style="flex:1;min-height:0;overflow-y:auto;padding:4px 8px 8px"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -646,7 +654,7 @@ if(sessionStorage._mReloaded===BUILD);else{
       <span id="cinemaMTitle" style="flex:1">Add Movie/Show</span>
       <div id="cinemaTypeToggle" style="display:flex;gap:0;flex-shrink:0;background:rgba(0,0,0,.06);border-radius:var(--rxs);padding:2px"></div>
       <input type="hidden" id="cinemaTypeInput" value="movie">
-      <input id="cinemaRatingInput" class="cinema-rating-input" type="number" step="0.1" min="1" max="10" placeholder="Rating" title="My rating" style="width:64px;flex-shrink:0;padding:6px 8px;border-radius:var(--rs);border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none;background:rgba(255,255,255,.8)">
+      <input id="cinemaRatingInput" class="cinema-rating-input" type="number" step="0.1" min="1" max="10" placeholder="Rating" title="My rating" style="width:60px;flex-shrink:0;padding:6px 8px;border-radius:var(--rxs);border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none;background:rgba(255,255,255,.8)">
     </div>
     <div class="mfield"><label>Title *</label><input id="cinemaTitleInput" placeholder="e.g. Breaking Bad"></div>
     <div class="mfield" style="display:flex;gap:8px">
@@ -660,8 +668,7 @@ if(sessionStorage._mReloaded===BUILD);else{
       </select></div>
     </div>
     <div class="mfield"><label>Where to watch</label><input id="cinemaWhereInput" placeholder="e.g. Netflix"></div>
-    <div class="mfield"><label>Notes</label><textarea id="cinemaNotesInput" placeholder="Add notes…" style="resize:none;min-height:52px;overflow-x:hidden"></textarea></div>
-    <div class="mact"><button class="btn btn-ghost" onclick="closeMod('cinemaModal')">Cancel</button><button class="btn btn-dark" id="cinemaSaveBtn" onclick="saveCinemaModal()">Add</button></div>
+    <div class="mfield" style="margin-bottom:0"><label>Notes</label><textarea id="cinemaNotesInput" placeholder="Add notes…" style="resize:none;min-height:52px;overflow-x:hidden"></textarea></div>
   </div>
 </div>
 
