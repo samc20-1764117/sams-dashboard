@@ -6374,8 +6374,15 @@ function _vidOvRenderAll(){
   }
   else h+='<div style="color:var(--muted);font-size:11px;padding:12px 10px;opacity:.5">Drag ideas here to start</div>';
   h+='</div>';
-  // Ideas column — matching videos page style
-  h+=`<div style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto;padding:4px;display:flex;flex-direction:column">`;
+  // Ideas column — matching videos page style. The Big/Little sub-sections below are flex-shrink:0
+  // (natural height, not stretched to fill), so whenever there aren't enough rows to fill the column
+  // there's genuinely empty space beneath Little with no drop target of its own — a Small dropped there
+  // used to just do nothing. ondragover/ondrop on this outer container now catch that blank space and
+  // default to promoting the dropped video to a standalone Big (2026-09-15, per explicit request —
+  // "pull a small video into the empty space to convert it to a big video"). The inner Big/Little
+  // zones stopPropagation in their own ondrop so a drop actually landing on one of them isn't also
+  // caught here and double-applied.
+  h+=`<div ondragover="event.preventDefault()" ondrop="_vidOvAllDropType(event,'B')" style="grid-column:2;grid-row:2;min-height:0;overflow-y:auto;padding:4px;display:flex;flex-direction:column">`;
   if(bigIdeas.length||littleIdeas.length){
     // flex-shrink:0 — without it, this section's box (a flex child of the Ideas column) can be
     // squeezed shorter than its actual rows need whenever there isn't enough room, since its rows
@@ -6383,7 +6390,7 @@ function _vidOvRenderAll(){
     // the last few spill downward past the box's bottom edge, straight into the Little section that
     // starts right there — read as "Little's header overlapping Little's rows" (2026-09-02 fix,
     // confirmed live: box height measured shorter than scrollHeight until this was added).
-    h+=`<div ondblclick="if(!event.target.closest('[data-vidrow]')&&!event.target.closest('button')){event.stopPropagation();if(typeof openVidModal==='function')openVidModal('B');}" style="min-height:30px;padding-bottom:4px;flex-shrink:0" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'B')">`;
+    h+=`<div ondblclick="if(!event.target.closest('[data-vidrow]')&&!event.target.closest('button')){event.stopPropagation();if(typeof openVidModal==='function')openVidModal('B');}" style="min-height:30px;padding-bottom:4px;flex-shrink:0" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="event.stopPropagation();this.style.background='';_vidOvAllDropType(event,'B')">`;
     // Big/Little labels tinted differently (subtle — same 9px/600/tracking treatment as before, just
     // no longer both flat var(--muted) grey) so the two idea sub-sections are easier to tell apart at
     // a glance (2026-09-14, per explicit request — kept low-contrast on purpose).
@@ -6391,7 +6398,7 @@ function _vidOvRenderAll(){
     if(bigIdeas.length)bigIdeas.forEach(v=>{h+=_vidOvAllIdeaRow(v);});
     else h+='<div style="color:var(--muted);font-size:10px;padding:4px 10px;opacity:.5">None</div>';
     h+='</div>';
-    h+=`<div ondblclick="if(!event.target.closest('[data-vidrow]')&&!event.target.closest('button')){event.stopPropagation();if(typeof openVidModal==='function')openVidModal('L');}" style="min-height:30px;border-top:1px solid rgba(210,205,228,.15);padding-bottom:4px;flex-shrink:0" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="this.style.background='';_vidOvAllDropType(event,'L')">`;
+    h+=`<div ondblclick="if(!event.target.closest('[data-vidrow]')&&!event.target.closest('button')){event.stopPropagation();if(typeof openVidModal==='function')openVidModal('L');}" style="min-height:30px;border-top:1px solid rgba(210,205,228,.15);padding-bottom:4px;flex-shrink:0" ondragover="event.preventDefault();this.style.background='rgba(139,92,246,.03)'" ondragleave="this.style.background=''" ondrop="event.stopPropagation();this.style.background='';_vidOvAllDropType(event,'L')">`;
     h+=`<div style="font-size:9px;font-weight:600;color:rgba(14,165,233,.65);padding:4px 6px 4px 10px;letter-spacing:.03em">Little</div>`;
     if(littleIdeas.length)littleIdeas.forEach(v=>{h+=_vidOvAllIdeaRow(v);});
     else h+='<div style="color:var(--muted);font-size:10px;padding:4px 10px;opacity:.5">None</div>';
