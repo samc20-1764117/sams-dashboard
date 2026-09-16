@@ -31,6 +31,7 @@ Grep the relevant file only — do not read files not needed for the task:
 - `rules/wr-system.md` — WR rules, non-WR recurring, X menus, skip behavior, WR-specific drag/drop
 - `rules/pages.md` — per-page rules (overview, shopping, travel, pup skills, birthdays, recipes, HEB/grocery, etc.)
 - `rules/videos.md` — videos page (data model, views, stages, inline editing, grouping, keyboard shortcuts)
+- `rules/cinema.md` — cinema page (data model, layout, drag/drop + selection gotchas, modal tab/Enter flow, keyboard shortcuts)
 - `rules/deploy.md` — push to production steps
 - `rules/dark-mode.md` — dark mode design system, CSS/JS patterns, per-page checklist, completed/remaining pages
 - `rules/mobile.md` — **mobile PWA only** (mobile.html/css/mobile-overview.js). Architecture, tab system, all interaction patterns, iOS rules, init flow. Read this before any mobile work. Do NOT read for desktop tasks.

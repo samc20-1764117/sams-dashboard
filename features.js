@@ -6114,12 +6114,13 @@ function renderGuidePage(){
     ${sRow('F','Finance')}
     ${sRow('H','Holidays')}
     ${sRow('B','Birthdays')}
+    ${sRow('C','Cinema')}
     ${sRow('W','Weekly Reset / Recurring Tasks')}
     ${sRow('G','Grid lines (debug)')}
     ${sRow('GG','Help overlay')}
     ${sRow('L','Style Guide')}
     ${sRow('I','Ideas')}
-    ${sRow('N','Quick Add task / New idea')}
+    ${sRow('N','Quick Add task / New idea / New cinema item (page-scoped)')}
     ${sRow('R','Reload page')}
     ${sRow('S','Toggle sidebar')}
     ${sRow('S H','Open shopping / HEB modal')}
@@ -6179,6 +6180,22 @@ function renderGuidePage(){
     ${sRow('←/→','Switch tabs')}
     ${sRow('↑/↓','Scroll top / current')}
     ${sRow('Delete / ⌫','Delete selected')}
+    </table>
+  </div>
+  <div style="${panel}">
+    ${secT('Cinema Shortcuts')}
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    ${tHead('Key','Action')}
+    ${sRow('N (page-scoped)','Add movie/show')}
+    ${sRow('Click','Select row')}
+    ${sRow('⌘/Ctrl + Click','Toggle in selection')}
+    ${sRow('Shift + Click','Range-select within same column')}
+    ${sRow('Double-click row','Edit')}
+    ${sRow('Drag → Watched/Watchlist','Moves selection (type stays put — a show dropped in the Movies side still files under Shows)')}
+    ${sRow('Drag within Watchlist','Reorders (sort_order)')}
+    ${sRow('Delete / ⌫','Delete selected (bulk, one undo)')}
+    ${sRow('Play icon','Toggle watched (outline=queued, filled green=watched)')}
+    ${sRow('Movie / Show color','Pink #ec4899 / Blue #0ea5e9')}
     </table>
   </div>
 </div>
