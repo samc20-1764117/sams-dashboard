@@ -498,6 +498,7 @@ if(sessionStorage._mReloaded===BUILD);else{
       <div class="ch">
         <div class="ct">Watched</div>
         <div style="flex:1"></div>
+        <span id="cinemaWatchedSortBtn" onclick="_cinemaToggleWatchedSort()" style="cursor:pointer;user-select:none;font-size:10px;color:var(--muted);padding:2px 4px"></span>
         <select id="cinemaWatchedGenreFilter" onchange="_cinemaWatchedGenreFilterVal=this.value;renderCinemaPage()" style="padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:inherit;font-size:10px;max-width:100px"><option value="">All genres</option></select>
       </div>
       <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr">
@@ -657,8 +658,10 @@ if(sessionStorage._mReloaded===BUILD);else{
       <input id="cinemaRatingInput" class="cinema-rating-input" type="number" step="0.1" min="1" max="10" placeholder="Rating" title="My rating" style="width:60px;flex-shrink:0;padding:6px 8px;border-radius:var(--rxs);border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none;background:rgba(255,255,255,.8)">
     </div>
     <div class="mfield"><label>Title *</label><input id="cinemaTitleInput" placeholder="e.g. Breaking Bad"></div>
-    <div class="mimp-row"><input type="checkbox" id="cinemaWatchedInput"><label for="cinemaWatchedInput">✓ Watched</label></div>
-    <div class="mimp-row"><input type="checkbox" id="cinemaNewSeasonInput"><label for="cinemaNewSeasonInput">＋ New season out</label></div>
+    <div class="mimp-row" style="gap:22px">
+      <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cinemaWatchedInput"><label for="cinemaWatchedInput">✓ Watched</label></div>
+      <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cinemaNewSeasonInput"><label for="cinemaNewSeasonInput">＋ New season out</label></div>
+    </div>
     <div class="mfield" style="display:flex;gap:8px">
       <div style="flex:1"><label>Genre</label><select id="cinemaGenreInput">
         <option value="">—</option>
