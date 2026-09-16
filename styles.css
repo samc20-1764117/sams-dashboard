@@ -302,6 +302,7 @@ body.dark .ideas-card{background:rgba(24,24,28,.35)!important;backdrop-filter:bl
 .idea-row:hover .idea-x-btn{opacity:1!important}.idea-x-btn:hover{color:#ef4444!important}
 .cinema-row:hover .idea-x-btn{opacity:1!important}
 .cinema-row.cinema-sel{background:rgba(14,165,233,.14)!important;border-color:rgba(14,165,233,.45)!important}
+.cinema-top-row:last-child{border-bottom:none}
 body.dark .cinema-row.cinema-sel{background:rgba(14,165,233,.22)!important;border-color:rgba(14,165,233,.55)!important}
 .cinema-rating-input::-webkit-inner-spin-button,.cinema-rating-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .cinema-rating-input{-moz-appearance:textfield}

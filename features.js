@@ -2130,9 +2130,12 @@ function _cinemaToggleWatchedSort(){
 }
 function _cinemaUpdateSortBtn(){
   const btn=document.getElementById('cinemaWatchedSortBtn');if(!btn)return;
-  const arrow=_cinemaWatchedSort==='asc'?' ▲':_cinemaWatchedSort==='desc'?' ▼':'';
-  btn.textContent='Rating'+arrow;
-  btn.style.color=_cinemaWatchedSort?'var(--accent)':'var(--muted)';
+  const arrow=_cinemaWatchedSort==='asc'?'▲':_cinemaWatchedSort==='desc'?'▼':'⇅';
+  const active=!!_cinemaWatchedSort;
+  btn.innerHTML=`Rating <span style="font-size:8px">${arrow}</span>`;
+  btn.style.color=active?'#fff':'var(--muted)';
+  btn.style.background=active?'var(--accent)':'transparent';
+  btn.style.borderColor=active?'var(--accent)':'var(--border)';
 }
 
 function _cinemaGenresIn(items){
@@ -2269,11 +2272,13 @@ function _cinemaWatchedRow(item){
   `,true,`onclick="selCinemaRow(event,'${item.id}')" ondblclick="if(!event.target.closest('button')&&!event.target.matches('input')){event.stopPropagation();openCinemaModal('${item.id}')}"`);
 }
 function _cinemaTopRow(item,rank){
-  return _cinemaRowShell(item,`
+  const dk=document.body.classList.contains('dark');
+  const bdr=dk?'rgba(255,255,255,.07)':'rgba(210,205,228,.35)';
+  return`<div class="cinema-top-row" data-cinema-id="${item.id}" ondblclick="event.stopPropagation();openCinemaModal('${item.id}')" style="display:flex;align-items:center;gap:5px;padding:3px 7px;border-bottom:1px solid ${bdr}">
     <span style="font-size:10px;font-weight:400;color:var(--muted);flex-shrink:0">${rank}.</span>
     <span style="flex:1;min-width:0;font-size:10px;font-weight:400;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(item.title)}</span>
     <span style="font-size:10px;font-weight:600;color:var(--accent);flex-shrink:0">${_cinemaFmtRating(item.rating)}</span>
-  `,false,`ondblclick="event.stopPropagation();openCinemaModal('${item.id}')"`,true);
+  </div>`;
 }
 let _cinemaModalEditId=null;
 let _cinemaModalDefaultStatus='up_next';
@@ -2284,7 +2289,7 @@ function _cinemaContainerDblClick(e,status,type){
 function _cinemaRenderTypeToggle(){
   const cur=(document.getElementById('cinemaTypeInput')||{}).value||'show';
   const wrap=document.getElementById('cinemaTypeToggle');if(!wrap)return;
-  const btn=(val,label)=>`<button type="button" onclick="_cinemaSetModalType('${val}')" style="padding:4px 10px;border-radius:6px;border:none;font-family:inherit;font-size:11px;cursor:pointer;background:${cur===val?'var(--accent)':'transparent'};color:${cur===val?'#fff':'var(--muted)'};transition:background .15s">${label}</button>`;
+  const btn=(val,label)=>`<button type="button" tabindex="-1" onclick="_cinemaSetModalType('${val}')" style="padding:4px 10px;border-radius:6px;border:none;font-family:inherit;font-size:11px;cursor:pointer;background:${cur===val?'var(--accent)':'transparent'};color:${cur===val?'#fff':'var(--muted)'};transition:background .15s">${label}</button>`;
   wrap.innerHTML=btn('show','Show')+btn('movie','Movie');
 }
 function _cinemaSetModalType(type){
@@ -2429,26 +2434,34 @@ function _cinemaDragStart(e,id){
   e.dataTransfer.effectAllowed='move';e.target.style.opacity='.4';
 }
 function _cinemaDragEnd(e){_cinemaDragId=null;_cinemaDragIds=[];e.target.style.opacity='';}
-function _cinemaSetupReorderList(listId,arrGetter){
-  const list=document.getElementById(listId);if(!list)return;
-  list.addEventListener('dragover',e=>{
+// Drop zones bind to the OUTER, persistent content divs (which fill the whole visible column,
+// including empty space below the last row) rather than the tight-fitting inner list divs that
+// get rebuilt every render — binding to the inner divs left most of each column dead to drops.
+// Bound once per zone (dataset flag) since the outer divs are never destroyed/recreated.
+function _cinemaSetupReorderZone(zoneId,listId,arrGetter){
+  const zone=document.getElementById(zoneId);if(!zone||zone.dataset.dragBound)return;
+  zone.dataset.dragBound='1';
+  zone.addEventListener('dragover',e=>{
     if(!_cinemaDragId)return;e.preventDefault();
+    const list=document.getElementById(listId);if(!list)return;
     const rows=[...list.querySelectorAll('.cinema-row')];
     let ph=list.querySelector('.cinema-drop-ph');
     if(!ph){ph=document.createElement('div');ph.className='cinema-drop-ph';ph.style.cssText='height:2px;margin:2px 0;border-radius:99px;background:var(--accent);pointer-events:none';list.appendChild(ph);}
     let inserted=false;
     for(const r of rows){const rc=r.getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){list.insertBefore(ph,r);inserted=true;break;}}
-    if(!inserted){const last=rows[rows.length-1];if(last)last.after(ph);}
+    if(!inserted){const last=rows[rows.length-1];if(last)last.after(ph);else list.appendChild(ph);}
   });
-  list.addEventListener('dragleave',e=>{if(!list.contains(e.relatedTarget)){const ph=list.querySelector('.cinema-drop-ph');if(ph)ph.remove();}});
-  list.addEventListener('drop',e=>{
+  zone.addEventListener('dragleave',e=>{if(!zone.contains(e.relatedTarget)){const list=document.getElementById(listId);const ph=list?.querySelector('.cinema-drop-ph');if(ph)ph.remove();}});
+  zone.addEventListener('drop',e=>{
     e.preventDefault();
-    const ph=list.querySelector('.cinema-drop-ph');if(ph)ph.remove();
+    const list=document.getElementById(listId);
+    const ph=list?.querySelector('.cinema-drop-ph');if(ph)ph.remove();
     if(!_cinemaDragId)return;
     const draggedId=_cinemaDragId;
     const draggedItem=st.cinemaItems.find(i=>String(i.id)===String(draggedId));
     if(!draggedItem){_cinemaDragId=null;_cinemaDragIds=[];return;}
     if(draggedItem.status!=='up_next'){const ids=_cinemaDragIds.length?_cinemaDragIds:[draggedId];_cinemaDragId=null;_cinemaDragIds=[];moveCinemaSelectedToUpNext(ids);return;}
+    if(!list){_cinemaDragId=null;_cinemaDragIds=[];return;}
     const rows=[...list.querySelectorAll('.cinema-row')];
     let dropIdx=rows.length;
     for(let i=0;i<rows.length;i++){const rc=rows[i].getBoundingClientRect();if(e.clientY<rc.top+rc.height/2){dropIdx=i;break;}}
@@ -2456,11 +2469,11 @@ function _cinemaSetupReorderList(listId,arrGetter){
     const origIds=items.map(i=>String(i.id));
     const prevOrders=items.map(i=>({id:i.id,order:i.sort_order}));
     const dragIdx=items.findIndex(i=>String(i.id)===String(draggedId));
-    if(dragIdx<0){_cinemaDragId=null;return;}
+    if(dragIdx<0){_cinemaDragId=null;_cinemaDragIds=[];return;}
     const[moved]=items.splice(dragIdx,1);
     if(dropIdx>dragIdx)dropIdx--;
     items.splice(dropIdx,0,moved);
-    _cinemaDragId=null;
+    _cinemaDragId=null;_cinemaDragIds=[];
     if(JSON.stringify(items.map(i=>String(i.id)))===JSON.stringify(origIds))return;
     items.forEach((it,i)=>{it.sort_order=i;});
     renderCinemaPage();save();
@@ -2471,10 +2484,11 @@ function _cinemaSetupReorderList(listId,arrGetter){
     },'Reordered Watchlist');
   });
 }
-function _cinemaSetupDropOnly(listId){
-  const list=document.getElementById(listId);if(!list)return;
-  list.addEventListener('dragover',e=>{if(!_cinemaDragId)return;e.preventDefault();});
-  list.addEventListener('drop',e=>{
+function _cinemaSetupDropOnly(zoneId){
+  const zone=document.getElementById(zoneId);if(!zone||zone.dataset.dragBound)return;
+  zone.dataset.dragBound='1';
+  zone.addEventListener('dragover',e=>{if(!_cinemaDragId)return;e.preventDefault();});
+  zone.addEventListener('drop',e=>{
     e.preventDefault();
     if(!_cinemaDragId)return;
     const ids=_cinemaDragIds.length?_cinemaDragIds:[_cinemaDragId];
@@ -2483,10 +2497,10 @@ function _cinemaSetupDropOnly(listId){
   });
 }
 function _cinemaSetupDrag(){
-  _cinemaSetupReorderList('cinemaUpNextShowsList',()=>_cinemaLastUpNextShows);
-  _cinemaSetupReorderList('cinemaUpNextMoviesList',()=>_cinemaLastUpNextMovies);
-  _cinemaSetupDropOnly('cinemaWatchedShowsList');
-  _cinemaSetupDropOnly('cinemaWatchedMoviesList');
+  _cinemaSetupReorderZone('cinemaUpNextShowsContent','cinemaUpNextShowsList',()=>_cinemaLastUpNextShows);
+  _cinemaSetupReorderZone('cinemaUpNextMoviesContent','cinemaUpNextMoviesList',()=>_cinemaLastUpNextMovies);
+  _cinemaSetupDropOnly('cinemaWatchedShowsContent');
+  _cinemaSetupDropOnly('cinemaWatchedMoviesContent');
 }
 // ══════════════════════════════════════════════════════════════════════════════
 // ── HABITS PAGE ──────────────────────────────────────────────────────────────
