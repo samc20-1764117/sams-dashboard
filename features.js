@@ -381,15 +381,20 @@ function renderRtHeatmap(){
   const gridEl=document.getElementById('rt-heat-grid');if(!gridEl)return;
   const now=new Date();
   const year=_rtHeatYear??now.getFullYear(),month=_rtHeatMonth??now.getMonth();
+  const isDefaultView=_rtHeatMonth===null&&_rtHeatYear===null;
   const first=new Date(year,month,1);
   const startDow=(first.getDay()+6)%7; // Monday=0
-  const gridStart=new Date(year,month,1-startDow);
   const daysInMonth=new Date(year,month+1,0).getDate();
-  const weeks=Math.ceil((startDow+daysInMonth)/7)+1; // +1 extra week of trailing context
+  const todayMon=getWkBounds(0).mon;
+  // Default (unnavigated) view starts at the current week, not the month's 1st — so the grid
+  // opens showing this week forward instead of burning rows on already-passed weeks.
+  const gridStart=isDefaultView?todayMon:new Date(year,month,1-startDow);
+  const weeks=isDefaultView
+    ?Math.ceil(((new Date(year,month+1,0)-gridStart)/86400000+1)/7)+1
+    :Math.ceil((startDow+daysInMonth)/7)+1; // +1 extra week of trailing context
   const todayDs=tod();
   const lblEl=document.getElementById('rt-heat-lbl');if(lblEl)lblEl.textContent=first.toLocaleDateString('en-US',{month:'long',year:'numeric'});
 
-  const todayMon=getWkBounds(0).mon;
   const wkOffFor=d=>Math.round((d-todayMon)/(7*86400000));
   const chip=(name,cad,src,onclick)=>`<span class="rt-heat-chip" style="background:${_rtChipBg(cad,src)}" title="${escHtml(name)}" onclick="event.stopPropagation();${onclick}">${escHtml(name)}</span>`;
 
@@ -505,11 +510,12 @@ function renderRtWrGroup(containerId, rules, cadence){
     const isSel=selectedTasks.has('wrrule-'+rid);
     const nd=_rtWrNextDate(r);
     const nextTxt=nd?(nd.exact?fmtD(nd.ds):'Wk of '+fmtD(nd.ds)):'—';
+    const rowClr=_rtChipBg(r.cadence,'wr');
     tbody+=`<tr class="rt-row${isSel?' sel-row':''}" id="ti-rt-wrrule-${rid}" data-sid="wrrule-${rid}"
       onclick="selTask(event,'wrrule-${rid}')"
       ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openWrEditModal('${rid}',null,'all');}"
       oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))">
-      <td class="rt-editable" title="${esc(r.name)}">${esc(r.name)}${cadence==='other'?(()=>{const _KB=['weekly','biweekly','monthly'];const _CB={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};const _bl=_CB[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})():''}</td>
+      <td class="rt-editable" style="box-shadow:inset 3px 0 0 ${rowClr}" title="${esc(r.name)}">${esc(r.name)}${cadence==='other'?(()=>{const _KB=['weekly','biweekly','monthly'];const _CB={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};const _bl=_CB[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})():''}</td>
       <td class="rt-meta" style="text-align:center">${nextTxt}</td>
       <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><div class="rt-actions"><button class="delbtn" onclick="_rtDelClick('${rid}',false)">✕</button></div></td>
       <td data-pup="1" style="text-align:center;cursor:pointer;font-size:12px" onclick="event.stopPropagation();rtToggleWrPup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
@@ -520,7 +526,7 @@ function renderRtWrGroup(containerId, rules, cadence){
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
   el.innerHTML=`<div class="card" style="padding:6px 10px;box-shadow:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;padding:0 2px">
-      <span style="font-size:10.5px;font-weight:800;color:var(--text);display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot wr-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${rules.length?' <span style="opacity:.45;font-weight:400;font-size:9.5px">· '+rules.length+'</span>':''}</span>
+      <span style="font-size:10.5px;font-weight:800;color:${CATS.weekly_reset.t};display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot wr-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${rules.length?' <span style="opacity:.45;font-weight:400;font-size:9.5px">· '+rules.length+'</span>':''}</span>
       <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openWrRuleAddModal('${cadence==='other'?'quarterly':cadence}','wr')">+</button>
     </div>
     ${tableHtml}
@@ -575,7 +581,8 @@ function renderRtGroup(containerId, tasks, cadence){
     const _KB_RT=['weekly','biweekly','monthly'];const _CB_RT={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};
     const _rtBadge=(()=>{const _bl=!_KB_RT.includes(r.cadence)&&_CB_RT[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})();
     const nextDs=_rtNextDate(r);
-    const tds=`<td class="rt-editable">${esc(r.name)}${cadence==='other'?_rtBadge:''}</td>
+    const rowClr=_rtChipBg(r.cadence,'sch');
+    const tds=`<td class="rt-editable" style="box-shadow:inset 3px 0 0 ${rowClr}">${esc(r.name)}${cadence==='other'?_rtBadge:''}</td>
       <td class="rt-editable rt-meta" style="text-align:center" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','appears_on_date')">${dayDisp}</td>
       <td class="rt-editable rt-meta" style="text-align:right" ondblclick="event.stopPropagation();rtDblEdit(this,'${rid}','starting_date')">${r.starting_date?fmtD(r.starting_date):'—'}</td>
       <td class="rt-meta" style="text-align:right" title="Next computed occurrence">${nextDs?fmtD(nextDs):'—'}</td>`;

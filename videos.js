@@ -2420,15 +2420,44 @@ function showVidCtx(e,id){
   if(dot){e.preventDefault();e.stopPropagation();const vid=dot.dataset.vid;const step=dot.dataset.step;if(vid&&step)_vidToggleStepNa(vid,step);return;}
   e.preventDefault();e.stopPropagation();
   _vidCtxId=String(id);
-  if(!_vidSelected.has(_vidCtxId)){_vidSelected.clear();_vidSelected.add(_vidCtxId);_applyVidSel();}
+  // showVidCtx/vidCtxMenu is shared between the full Videos page (_vidSelected) and the Overview
+  // popup + its toolbox (_vidOvSelSet / _voaSel) — three separate selection systems. Right-clicking a
+  // row that's already part of a >1 selection in ONE of those must not collapse it down to just this
+  // row via a DIFFERENT system's state, or Delete/Duplicate below silently act on only the one row you
+  // right-clicked instead of the whole multi-select (2026-09-17 fix — this always reset _vidSelected
+  // regardless of which selection the row actually belonged to).
+  const _ovMulti=typeof _vidOvSelSet!=='undefined'&&_vidOvSelSet.has(_vidCtxId)&&_vidOvSelSet.size>1;
+  const _tbMulti=typeof _voaSel!=='undefined'&&_voaSel.has(_vidCtxId)&&_voaSel.size>1;
+  if(!_ovMulti&&!_tbMulti&&!_vidSelected.has(_vidCtxId)){_vidSelected.clear();_vidSelected.add(_vidCtxId);_applyVidSel();}
   const menu=document.getElementById('vidCtxMenu');
   menu.style.display='block';
   menu.style.left=Math.min(e.clientX,window.innerWidth-165)+'px';
   menu.style.top=Math.min(e.clientY,window.innerHeight-120)+'px';
 }
+// Resolves which ids Edit/Duplicate/Delete below should act on — see showVidCtx's comment for why this
+// has to check all three selection systems instead of just _vidSelected.
+function _vidCtxEffectiveIds(){
+  if(typeof _vidOvSelSet!=='undefined'&&_vidOvSelSet.has(_vidCtxId)&&_vidOvSelSet.size>1)return[..._vidOvSelSet];
+  if(typeof _voaSel!=='undefined'&&_voaSel.has(_vidCtxId)&&_voaSel.size>1)return[..._voaSel];
+  return[...new Set([..._vidSelected,..._vidChildSelected])];
+}
 function vidCtxEdit(){document.getElementById('vidCtxMenu').style.display='none';if(_vidCtxId)openVidEdit(_vidCtxId);}
-function vidCtxDuplicate(){document.getElementById('vidCtxMenu').style.display='none';_vidSelected.forEach(id=>_vidDuplicate(id));}
-function vidCtxDelete(){document.getElementById('vidCtxMenu').style.display='none';const all=new Set([..._vidSelected,..._vidChildSelected]);all.forEach(id=>delVideo(id));_vidSelected.clear();_vidChildSelected.clear();}
+function vidCtxDuplicate(){document.getElementById('vidCtxMenu').style.display='none';_vidCtxEffectiveIds().forEach(id=>_vidDuplicate(id));}
+function vidCtxDelete(){
+  document.getElementById('vidCtxMenu').style.display='none';
+  const ids=_vidCtxEffectiveIds();
+  // Overview popup / toolbox selections route through _vidOvBulkDelete — same function their own
+  // Delete-key action menu already uses, with its own undo entry and re-render of those views.
+  if(typeof _vidOvSelSet!=='undefined'&&_vidOvSelSet.has(_vidCtxId)&&_vidOvSelSet.size>1){
+    _vidOvBulkDelete(ids);_vidOvSelSet.clear();_vidOvSelIdx=-1;_vidOvSelVid=null;
+    return;
+  }
+  if(typeof _voaSel!=='undefined'&&_voaSel.has(_vidCtxId)&&_voaSel.size>1){
+    _vidOvBulkDelete(ids);_voaSel.clear();if(typeof _voaLast!=='undefined')_voaLast=null;if(typeof _voaApplySel==='function')_voaApplySel();
+    return;
+  }
+  ids.forEach(id=>delVideo(id));_vidSelected.clear();_vidChildSelected.clear();
+}
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 let _vidDropdownData={BigVideo:[]};
