@@ -6112,7 +6112,7 @@ function renderGuidePage(){
     ${sRow('O','Overview')}
     ${sRow('V','Videos')}
     ${sRow('F','Finance')}
-    ${sRow('H','Holidays')}
+    ${sRow('H','Habits')}
     ${sRow('B','Birthdays')}
     ${sRow('C','Cinema')}
     ${sRow('W','Weekly Reset / Recurring Tasks')}

@@ -1580,6 +1580,8 @@ function _showHelpOverlay(){
       ['↑/↓ (time block selected)','Move block ±30 min'],
       ['Space','Toggle skip on WR rule'],
       ['Delete / ⌫','Delete selected tasks'],
+      ['X (weekly cal)','Toggle checked/done for selected task(s)'],
+      ['E (weekly cal)','Edit selected task (single selection only)'],
       ['⌘C / ⌘V','Copy / paste tasks'],
       ['⌘I','Toggle importance highlight'],
       ['⌘A','Select all (when not in input)'],

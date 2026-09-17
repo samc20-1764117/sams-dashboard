@@ -1518,6 +1518,20 @@ function _mNavDiagUpdate(nav) {
   document.querySelectorAll('.m-build-stamp').forEach(el => { el.textContent = txt; });
 }
 
+// TEMP DEBUG (2026-09-17) — draws #mNavDebugLine across #mNav at the exact measured
+// vertical center of the FIRST icon (Today's), so any other icon/label sitting off that
+// line is an objective, visible mismatch rather than a guess from a screenshot. Remove
+// this function, its call site in _mNavMoveHighlight, the #mNavDebugLine div (mobile.html)
+// and its CSS rule (mobile.css) once alignment is confirmed.
+function _mNavDebugLine(nav) {
+  const line = document.getElementById('mNavDebugLine');
+  const icon = nav.querySelector('.m-nav-icon');
+  if (!line || !icon) return;
+  const navRect = nav.getBoundingClientRect();
+  const iconRect = icon.getBoundingClientRect();
+  line.style.top = (iconRect.top + iconRect.height / 2 - navRect.top) + 'px';
+}
+
 // Slides #mNavHighlight (the Liquid Glass pill, mobile.css) behind whichever .m-nav-btn
 // currently has .active. animate=false is used on initial load/resize to snap into place
 // without a visible slide-in.
@@ -1531,6 +1545,7 @@ function _mNavMoveHighlight(animate) {
   const btnRect = activeBtn.getBoundingClientRect();
   const x = btnRect.left - barRect.left - 6; // 6 = #mNav's own padding, the pill's resting left
   _mNavDiagUpdate(bar);
+  _mNavDebugLine(bar);
   if (!animate) {
     hl.style.transition = 'none';
     hl.style.transform = `translateX(${x}px)`;
