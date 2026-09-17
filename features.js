@@ -526,7 +526,7 @@ function renderRtWrGroup(containerId, rules, cadence){
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
   el.innerHTML=`<div class="card" style="padding:6px 10px;box-shadow:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;padding:0 2px">
-      <span style="font-size:10.5px;font-weight:800;color:${CATS.weekly_reset.t};display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot wr-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${rules.length?' <span style="opacity:.45;font-weight:400;font-size:9.5px">· '+rules.length+'</span>':''}</span>
+      <span style="font-size:10.5px;font-weight:800;color:${_catStyle('weekly_reset').t};display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot wr-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${rules.length?' <span style="opacity:.45;font-weight:400;font-size:9.5px">· '+rules.length+'</span>':''}</span>
       <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="openWrRuleAddModal('${cadence==='other'?'quarterly':cadence}','wr')">+</button>
     </div>
     ${tableHtml}
@@ -596,7 +596,7 @@ function renderRtGroup(containerId, tasks, cadence){
     :`<div style="padding:6px 4px;font-size:11px;color:var(--subtle);font-style:italic">None</div>`;
   el.innerHTML=`<div class="card" style="padding:6px 10px;box-shadow:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;padding:0 2px">
-      <span style="font-size:10.5px;font-weight:800;color:var(--text);display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot sch-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${tasks.length?' <span style="opacity:.45;font-weight:400;font-size:9.5px">· '+tasks.length+'</span>':''}</span>
+      <span style="font-size:10.5px;font-weight:800;color:${_catStyle('recurring').t};display:inline-flex;align-items:center;gap:5px"><span class="rt-heat-dot sch-${cadence}" style="width:7px;height:7px"></span>${cadLabel}${tasks.length?' <span style="opacity:.45;font-weight:400;font-size:9.5px">· '+tasks.length+'</span>':''}</span>
       <button class="btn-plus" style="padding:0px 5px;font-size:10px;line-height:1.4" onclick="${cadence==='other'?`openWrRuleAddModal('quarterly','sch')`:`openRecModalForSection('scheduled','${cadence}')`}">+</button>
     </div>
     ${tableHtml}

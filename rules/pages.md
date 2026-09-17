@@ -115,7 +115,7 @@ Fixed range Jan 1 (curYr-3) → Dec 31 (curYr+2). `scrollMoToday()` BEFORE `.ope
 - Goals chips: IMP override applies. Sort: important+undone first.
 
 ### Recurring Monthly View (`overview.js`, `#recMoModal`)
-**Grid**: 8 cols — 7 day + WR col (blue-tinted, `columns:2`). No Goals column. Width: `min(98vw,1200px)`. 22-week range.
+**Grid**: 8 cols — 7 day + WR col (blue-tinted, `columns:2`). No Goals column. Width: inherits `.month-modal`'s `min(94vw,1320px)` (matches `#mModal`, no inline override). 22-week range.
 **X button**: WR→skip/delete; WRec→skip/`delRec`; non-WR→`skipRecVirtThisWk`/`delRec`.
 **Right-click** (`showWrRuleCtx`): Skip/Move/Edit/Delete.
 **Header rebuild**: `dowEl.innerHTML=''` before repopulating — `if(!dowEl.children.length)` guard prevents stale removal otherwise.

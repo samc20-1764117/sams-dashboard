@@ -357,7 +357,7 @@ if(sessionStorage._mReloaded===BUILD);else{
   <input id="nsN" style="display:none"><input id="nsS" style="display:none">
   <datalist id="storeListFull"><option value="HEB"></option><option value="Ikea"></option><option value="Online"></option><option value="Other"></option></datalist>
 
-  <div style="display:flex;gap:14px;width:100%;height:80vh">
+  <div style="display:flex;gap:14px;width:100%;height:calc(100vh - 84px)">
     <!-- Left: Weekly Reset lists (side by side) + calendar below -->
     <div style="flex:2;min-width:0;display:flex;flex-direction:column;gap:12px;min-height:0">
       <div id="rt-outer" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0;width:100%">
@@ -786,7 +786,7 @@ if(sessionStorage._mReloaded===BUILD);else{
 
 <!-- Recurring Monthly View Modal -->
 <div class="overlay" id="recMoModal" style="z-index:490" onclick="closeMod('recMoModal',event)">
-  <div class="modal month-modal" style="width:min(98vw,1200px)">
+  <div class="modal month-modal">
     <div class="mcal-side" style="flex:1">
       <div class="mhead">
         <div style="flex:1;font-size:14px;font-weight:700;letter-spacing:-.3px">Recurring Tasks</div>
