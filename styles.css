@@ -486,6 +486,12 @@ body.dark .inline-date-picker input[type="date"]{background:rgba(255,255,255,.08
 .delbtn{opacity:0;background:none;border:none;cursor:pointer;color:var(--subtle);font-size:10px;padding:1px 2px;border-radius:3px;flex-shrink:0;transition:opacity .1s;position:absolute;right:3px;top:50%;transform:translateY(-50%)}
 #todList .delbtn{right:3px;width:17px;height:17px;display:flex;align-items:center;justify-content:center;padding:0}
 .ti:hover .delbtn,.ti.sel-row .delbtn,.ti.ov-row .delbtn{opacity:1;color:var(--subtle)}.delbtn:hover{color:#ef4444!important}
+.ti.has-link{padding-right:36px}
+.shop-link-badge{opacity:0;position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;color:var(--subtle);text-decoration:none;transition:opacity .1s}
+.ti:hover .shop-link-badge,.ti.sel-row .shop-link-badge,.ti.ov-row .shop-link-badge{opacity:1}
+.shop-link-badge:hover{color:var(--accent)!important}
+.shop-link-badge-inline{display:inline-flex;align-items:center;color:var(--subtle);text-decoration:none;margin-left:3px;vertical-align:middle}
+.shop-link-badge-inline:hover{color:var(--accent)}
 .wr-ov-row{display:flex;align-items:center;gap:4px}
 .wr-ov-move{margin-left:auto;background:#ef4444;color:#fff;border:none;border-radius:5px;padding:2px 7px;font-size:8.5px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap}
 .wr-ov-move:hover{background:#dc2626}

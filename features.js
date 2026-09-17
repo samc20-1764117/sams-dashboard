@@ -897,8 +897,8 @@ function renderShopFull(){save();
     const sorted=[..._shopOvSort(todo),...done];
     sorted.forEach(s=>{
       const el=document.createElement('div');
-      el.className='ti'+(s.done?' done':'');el.id='ti-shop-cal-'+s.id;
-      el.innerHTML=`<input type="checkbox" class="chk"${s.done?' checked':''}><span class="tn">${escHtml(s.name)}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${escHtml(s.store||'Online')}</span><button class="delbtn">✕</button>`;
+      el.className='ti'+(s.done?' done':'')+(s.link?' has-link':'');el.id='ti-shop-cal-'+s.id;
+      el.innerHTML=`<input type="checkbox" class="chk"${s.done?' checked':''}><span class="tn">${escHtml(s.name)}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${escHtml(s.store||'Online')}</span>${_shopLinkBadge(s.link)}<button class="delbtn">✕</button>`;
       el.querySelector('.chk').addEventListener('change',e=>togShop(s.id,e.target.checked));
       el.querySelector('.delbtn').addEventListener('click',e=>{e.stopPropagation();delShop(s.id);});
       let _shopDragged=false;
@@ -950,11 +950,11 @@ function renderShopFull(){save();
   let html='';
   if(mode==='alpha'){
     const all=[...todo,...done].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
-    html=all.map(s=>`<div class="ti ${s.done?'done':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Online'}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('');
+    html=all.map(s=>`<div class="ti ${s.done?'done':''}${s.link?' has-link':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Online'}</span>${_shopLinkBadge(s.link)}<button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('');
   } else {
     const g={};[...todo,...done].forEach(s=>{const k=s.store||'Online';if(!g[k])g[k]=[];g[k].push(s);});
     html=Object.entries(g).sort(([a],[b])=>a.localeCompare(b)).map(([store,items])=>
-      `<div style="padding:5px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px">${store}</div>${items.map(s=>`<div class="ti ${s.done?'done':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Online'}</span><button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('')}`
+      `<div style="padding:5px 10px 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px">${store}</div>${items.map(s=>`<div class="ti ${s.done?'done':''}${s.link?' has-link':''}" id="ti-shop-cal-${s.id}" draggable="true" ondragstart="dragId='shop::${s.id}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true);" ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);" onclick="tiClickShop(event,'${s.id}')" ondblclick="tiDblShop(event,'${s.id}')"><input type="checkbox" class="chk" ${s.done?'checked':''} onchange="togShop('${s.id}',this.checked)"><span class="tn">${s.name}</span><span class="cpill" style="background:none;color:#94a3b8;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0;margin-left:auto;margin-right:4px">${s.store||'Online'}</span>${_shopLinkBadge(s.link)}<button class="delbtn" onclick="delShop('${s.id}')">✕</button></div>`).join('')}`
     ).join('');
   }
   sf.innerHTML=html;
@@ -7550,6 +7550,7 @@ function openEditShop(id){
   _sel.innerHTML=_stores.map(x=>`<option value="${escHtml(x)}">${escHtml(x)}</option>`).join('')+'<option value="__custom">Custom\u2026</option>';
   if(inList){_sel.value=cur;_sel.style.display='';_ci.style.display='none';_ci.value='';}
   else{_sel.value='__custom';_sel.style.display='none';_ci.style.display='';_ci.value=cur;}
+  document.getElementById('shopEditLink').value=s.link||'';
   document.getElementById('shopEditModal').classList.add('open');
   setTimeout(()=>{const _el=document.getElementById('shopEditName');if(_el){_el.focus();const _l=_el.value.length;_el.setSelectionRange(_l,_l);}},80);
 }
@@ -7560,13 +7561,14 @@ function saveShopEdit(){
   let store=document.getElementById('shopEditStore').value.trim();
   if(store==='__custom')store=(document.getElementById('shopEditStoreCustom')?.value||'').trim();
   if(!store)store='Online';
+  const link=document.getElementById('shopEditLink').value.trim()||null;
   if(!name){closeMod('shopEditModal');return;}
   closeMod('shopEditModal');
-  const prev={name:s.name,store:s.store};
-  s.name=name;s.store=store||prev.store;
-  renderShopFull();
-  sbReq('PATCH','shopping_list',{name:s.name,store:s.store},`?id=eq.${id}`);
-  pushUndo(()=>{s.name=prev.name;s.store=prev.store;renderShopFull();sbReq('PATCH','shopping_list',{name:prev.name,store:prev.store},`?id=eq.${id}`);},'Edited item');
+  const prev={name:s.name,store:s.store,link:s.link};
+  s.name=name;s.store=store||prev.store;s.link=link;
+  renderShopFull();renderToday();renderWkCal();
+  sbReq('PATCH','shopping_list',{name:s.name,store:s.store,link:s.link},`?id=eq.${id}`);
+  pushUndo(()=>{s.name=prev.name;s.store=prev.store;s.link=prev.link;renderShopFull();renderToday();renderWkCal();sbReq('PATCH','shopping_list',{name:prev.name,store:prev.store,link:prev.link},`?id=eq.${id}`);},'Edited item');
 }
 let _recEditId=null,_recEditWkKey=null,_recEditScope='all';
 function setRecEditScope(scope){

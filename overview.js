@@ -72,6 +72,11 @@ function _moveOtherSelected(ds,excludeSid,undos,excludePrefixes){
 function _hebBadge(name,wkKey){if(!/\bheb\b/i.test(name||''))return'';const arg=wkKey?`'${wkKey}'`:'';return`<span class="heb-cnt" onclick="event.stopPropagation();openGroceryModal(${arg});"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>`}
 function _pupBadge(name){if(!/prep pup training/i.test(name||''))return'';return`<span class="pup-link-badge" onclick="event.stopPropagation();if(typeof _openPupFocusModal==='function')_openPupFocusModal(null);" title="Weekly pup skills"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>`}
 function _recWkNote(r,wkKey){if(!r||!wkKey||!r._dateOverrides)return'';const ov=r._dateOverrides['name::'+wkKey];return(ov&&ov.notes)||'';}
+const _LINK_SVG='<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+// Absolute-positioned, hover-revealed (sits left of the .delbtn ✕ in .ti shopping rows — caller must add class="has-link" to the row).
+function _shopLinkBadge(link){if(!link)return'';return`<a class="shop-link-badge" href="${escHtml(link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open link">${_LINK_SVG}</a>`;}
+// Inline, always-visible — sits right after the item name (weekly-cal chips, today list, #wkList).
+function _shopLinkBadgeInline(link){if(!link)return'';return`<a class="shop-link-badge-inline" href="${escHtml(link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open link">${_LINK_SVG}</a>`;}
 
 function _toggleTodTbCollapse(e){if(e){e.stopPropagation();e.preventDefault();}_todTbCollapsed=!_todTbCollapsed;localStorage.setItem('_todTbCollapsed',_todTbCollapsed?'1':'0');_applyTodTbCollapse();}
 function _applyTodTbCollapse(){
@@ -157,7 +162,7 @@ function renderToday(){
   // Shopping items due today (or overdue when viewing today)
   const shopToday=st.shopping
     .filter(s=>!s.done&&s.due_date&&(s.due_date===ds||(dayOff===0&&isOv(s.due_date))))
-    .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:!!s.done,_shopId:s.id,_virtual:true,_type:'shop',store:s.store}));
+    .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:!!s.done,_shopId:s.id,_virtual:true,_type:'shop',store:s.store,link:s.link}));
   const pupSessToday=(st.pupSessions||[])
     .filter(s=>s.day_date===ds||(dayOff===0&&isOv(s.day_date)&&!s.done))
     .map(s=>{const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));if(!skill)return null;return{id:'pup-sess-'+s.id,name:skill.skill,category:'Recurring',due_date:s.day_date,done:s.done,_pupSessId:s.id,_skillId:s.skill_id,_pup:skill.pup,_virtual:true,_type:'pup'};}).filter(Boolean);
@@ -1100,7 +1105,7 @@ function tRowShopVirt(t,noDate=false,tbArrow=false,noColor=false){
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false);"
     onclick="selTask(event,'${t.id}')" ondblclick="tiDblShop(event,'${t._shopId}')" oncontextmenu="showCtxShop(event,'${t._shopId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="togShop('${t._shopId}',this.checked)"></label>
-    <span class="tn">${t.name}</span>
+    <span class="tn">${t.name}${_shopLinkBadgeInline(t.link)}</span>
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${ps.bg}" stroke="${ps.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${tbArrow?'<span class="tb-arrow">›</span>':''}
     ${(!noDate||ov)&&t.due_date?(ov?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_shopMoveToToday('${t._shopId}')`):`<span class="dlbl">${fmtD(t.due_date)}</span>`):''}
@@ -1194,10 +1199,10 @@ function renderWkSummary(){
     .filter(v=>v.due_date);
   const shopThisWk=st.shopping
     .filter(s=>s.due_date&&isInWk(s.due_date,wkOff)&&!s.done)
-    .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:false,_shopId:s.id,_virtual:true,_type:'shop',store:s.store}));
+    .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:false,_shopId:s.id,_virtual:true,_type:'shop',store:s.store,link:s.link}));
   const shopThisWkDone=st.shopping
     .filter(s=>s.due_date&&isInWk(s.due_date,wkOff)&&s.done)
-    .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:true,_shopId:s.id,_virtual:true,_type:'shop',store:s.store}));
+    .map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:s.due_date,done:true,_shopId:s.id,_virtual:true,_type:'shop',store:s.store,link:s.link}));
   const doneThisWk=[
     ...st.tasks.filter(t=>isInWk(t.due_date,wkOff)&&t.done),
     ...virtRec.filter(v=>v.done),
@@ -1865,8 +1870,8 @@ function renderWkCal(){
       });
     }
     // Add shopping items assigned to this date
-    const shopForDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop'}));
-    const shopForDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name,category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop'}));
+    const shopForDay=st.shopping.filter(s=>s.due_date===ds&&!s.done).map(s=>({id:'shop-cal-'+s.id,name:s.name,category:'Shopping',due_date:ds,done:false,_shopId:s.id,_virtual:true,_type:'shop',link:s.link}));
+    const shopForDayDone=st.shopping.filter(s=>s.due_date===ds&&s.done).map(s=>({id:'shop-cal-done-'+s.id,name:s.name,category:'Shopping',due_date:ds,done:true,_shopId:s.id,_virtual:true,_type:'shop',link:s.link}));
     const _mkPupSessItem=(s,done)=>{const skill=(st.pup_skills||[]).find(x=>String(x.id)===String(s.skill_id));if(!skill)return null;return{id:'pup-sess-'+(done?'done-':'')+s.id,name:skill.skill,category:'Recurring',due_date:ds,done,_pupSessId:s.id,_skillId:s.skill_id,_pup:skill.pup,_virtual:true,_type:'pup'};};
     const pupSessForDay=(st.pupSessions||[]).filter(s=>s.day_date===ds&&!s.done).map(s=>_mkPupSessItem(s,false)).filter(Boolean);
     const pupSessForDayDone=(st.pupSessions||[]).filter(s=>s.day_date===ds&&s.done).map(s=>_mkPupSessItem(s,true)).filter(Boolean);
@@ -1957,7 +1962,7 @@ function renderWkCal(){
       });
       const _chipPrefix=_hebBadge(t.name,t._wkKey)+_pupBadge(t.name);
       const _wkNoteSuffix=t._wkNote?` <span style="opacity:.5;font-size:8px">@${escHtml(t._wkNote)}</span>`:'';
-      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=_chipPrefix+tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+_wkNoteSuffix;
+      const nm=document.createElement('span');nm.className='chip-name';nm.innerHTML=_chipPrefix+tmIcon(t)+escHtml(t._type==='pup'?_pupDisplayName(t):t.name)+(t._type==='shop'?_shopLinkBadgeInline(t.link):'')+_wkNoteSuffix;
       // name click handled by chip click→selTask, dblclick→openEditTask
       chip.appendChild(chk);chip.appendChild(nm);
       // Bind click handlers for inline badge icons
@@ -7298,7 +7303,7 @@ function renderShopOv(){
   }
   shopSorted.forEach(s=>{
     const el=document.createElement('div');
-    el.className='ti';el.id='ti-shop-cal-'+s.id;el.style.cssText='margin:0 6px;padding:3px 22px 3px 10px';
+    el.className='ti'+(s.link?' has-link':'');el.id='ti-shop-cal-'+s.id;el.style.cssText='margin:0 6px;padding:3px 22px 3px 10px';
     el.draggable=true;
     el.addEventListener('dragstart',e=>{if(e.target.closest('.chk-wrap,.delbtn'))return;e.stopPropagation();dragId='shop::'+s.id;e.dataTransfer.effectAllowed='move';el.style.opacity='.4';document.body.classList.add('body-dragging');showWkcEdges(true);});
     el.addEventListener('dragend',()=>{el.style.opacity='';document.body.classList.remove('body-dragging');showWkcEdges(false);const ph=container.querySelector('.shop-ov-ph');if(ph)ph.remove();dragId=null;});
@@ -7306,6 +7311,7 @@ function renderShopOv(){
       `<label class="chk-wrap"><input type="checkbox" class="chk"${s.done?' checked':''}></label>`+
       `<span class="tn">${escHtml(s.name)}</span>`+
       `<span class="cpill" style="background:none;color:var(--subtle);border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0;flex-shrink:0">${escHtml(s.store||'')}</span>`+
+      _shopLinkBadge(s.link)+
       `<button class="delbtn">✕</button>`;
     el.addEventListener('click',e=>tiClickShop(e,s.id));
     el.addEventListener('dblclick',e=>tiDblShop(e,s.id));
