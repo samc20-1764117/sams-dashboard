@@ -6149,6 +6149,8 @@ function renderGuidePage(){
     ${sRow('⌘ ↑/↓ (list)','Reorder selected within the day (Today list, weekly-cal column, or shopping list)')}
     ${sRow('Space','Skip WR rule')}
     ${sRow('Delete / ⌫','Delete selected')}
+    ${sRow('X (weekly cal)','Toggle checked/done for selected task(s) — multi-select aware, single combined undo')}
+    ${sRow('E (weekly cal)','Edit selected task (single selection only)')}
     ${sRow('⌘C / ⌘V','Copy / paste tasks')}
     ${sRow('⌘I','Toggle important')}
     ${sRow('A','Add auto-blocks')}
