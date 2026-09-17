@@ -7489,7 +7489,13 @@ document.addEventListener('mousedown',e=>{
   // Week/day navigation must NOT clear the selection — a selected weekly-reset/recurring task should
   // stay selected as you move across weeks (these buttons fire on mousedown before their click→nav runs).
   if(e.target.closest('[onclick*="shiftWk"],[onclick*="shiftWrRec"],[onclick*="shiftDay"],[onclick*="goThisWk"],[onclick*="goToday"]'))return;
-  if(!e.target.closest('.ti')&&!e.target.closest('.kol-item')&&!e.target.closest('.chip')&&!e.target.closest('.mcell-t')&&!e.target.closest('.tb-block')&&!e.target.closest('.wkc-banner')&&!e.target.closest('#ctxMenu')&&!e.target.closest('.rt-row')){
+  // [data-vidrow]/[data-alldrag] = the video popup's own rows (Up Next list + toolbox). Missing this
+  // exemption meant a mousedown there (any left-click OR right-click) cleared the generic selectedTasks
+  // set first, which cascades into _vidOvSyncFromGlobalSel wiping the popup's own multi-select
+  // (_vidOvSelSet) right out from under it. A left-click recovers because _vidOvClickSelect runs on the
+  // later 'click' event and rebuilds it — but a right-click never fires 'click' at all, so the wipe from
+  // mousedown stuck and showVidCtx/vidCtxDelete saw an empty selection (2026-09-17 fix).
+  if(!e.target.closest('.ti')&&!e.target.closest('.kol-item')&&!e.target.closest('.chip')&&!e.target.closest('.mcell-t')&&!e.target.closest('.tb-block')&&!e.target.closest('.wkc-banner')&&!e.target.closest('#ctxMenu')&&!e.target.closest('.rt-row')&&!e.target.closest('[data-vidrow]')&&!e.target.closest('[data-alldrag]')){
     clearSelection();
   }
 });
