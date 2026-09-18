@@ -654,20 +654,22 @@ if(sessionStorage._mReloaded===BUILD);else{
      the two checkboxes (see their onkeydown), inserts a newline in Notes (native textarea behavior),
      and activates Save once Tab reaches it (native button behavior) — see feedback that "click
      outside then Enter" was the only way to save under the old blanket Enter-submits-everywhere rule. -->
-<div class="overlay" id="cinemaModal" onclick="closeMod('cinemaModal',event)" onkeydown="if(event.key==='Escape'){event.stopPropagation();closeMod('cinemaModal');}">
+<div class="overlay" id="cinemaModal" onclick="closeMod('cinemaModal',event)" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();event.stopPropagation();if(document.getElementById('cinemaTitleInput').value.trim())saveCinemaModal();}if(event.key==='Escape'){event.stopPropagation();closeMod('cinemaModal');}">
   <div class="modal task-modal" style="width:340px">
     <div class="mt" style="display:flex;align-items:center;gap:8px">
       <span id="cinemaMTitle" style="flex:1">Add Movie/Show</span>
       <input type="hidden" id="cinemaTypeInput" value="movie">
-      <input id="cinemaRatingInput" class="cinema-rating-input" type="number" step="0.1" min="1" max="10" placeholder="Rating" title="My rating" tabindex="-1" style="width:60px;flex-shrink:0;padding:6px 8px;border-radius:var(--rxs);border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none;background:rgba(255,255,255,.8)">
+      <label for="cinemaNewSeasonInput" id="cinemaNewSeasonBadge" tabindex="-1" style="display:flex;align-items:center;gap:3px;flex-shrink:0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;padding:4px 8px;border-radius:var(--rxs);cursor:pointer;background:rgba(0,0,0,.06);color:var(--muted)">
+        <input type="checkbox" id="cinemaNewSeasonInput" tabindex="-1" style="display:none" onchange="_cinemaRenderNewSeasonBadge()">＋ New season
+      </label>
     </div>
     <div class="mfield" style="display:flex;gap:8px;align-items:flex-end">
-      <div style="flex:1"><label>Title *</label><input id="cinemaTitleInput" tabindex="1" placeholder="e.g. Breaking Bad" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();saveCinemaModal();}"></div>
+      <div style="flex:1"><label>Title *</label><input id="cinemaTitleInput" tabindex="1" placeholder="e.g. Breaking Bad"></div>
       <div id="cinemaTypeToggle" tabindex="2" style="display:flex;gap:0;flex-shrink:0;background:rgba(0,0,0,.06);border-radius:var(--rxs);padding:2px;outline:none" onkeydown="_cinemaTypeToggleKeydown(event)"></div>
     </div>
     <div class="mimp-row" style="gap:22px">
-      <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cinemaWatchedInput" tabindex="3" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();this.checked=!this.checked;}"><label for="cinemaWatchedInput">✓ Watched</label></div>
-      <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cinemaNewSeasonInput" tabindex="4" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();this.checked=!this.checked;}"><label for="cinemaNewSeasonInput">＋ New season out</label></div>
+      <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cinemaWatchedInput" tabindex="3"><label for="cinemaWatchedInput">Watched</label></div>
+      <input id="cinemaRatingInput" class="cinema-rating-input" type="number" step="0.1" min="1" max="10" placeholder="Rating" title="My rating" tabindex="4" style="width:60px;flex-shrink:0;padding:6px 8px;border-radius:var(--rxs);border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none;background:rgba(255,255,255,.8)">
     </div>
     <div class="mfield" style="display:flex;gap:8px">
       <div style="flex:1"><label>Genre</label><select id="cinemaGenreInput" tabindex="5">

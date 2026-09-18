@@ -2309,7 +2309,13 @@ function _cinemaTypeToggleKeydown(event){
   const k=event.key.toLowerCase();
   if(k==='s'||k==='arrowleft'){event.preventDefault();_cinemaSetModalType('show');}
   else if(k==='m'||k==='arrowright'){event.preventDefault();_cinemaSetModalType('movie');}
-  else if(k==='enter'){event.preventDefault();event.stopPropagation();saveCinemaModal();}
+  else if(k===' '||event.code==='Space'){event.preventDefault();const cur=document.getElementById('cinemaTypeInput').value;_cinemaSetModalType(cur==='show'?'movie':'show');}
+}
+function _cinemaRenderNewSeasonBadge(){
+  const on=document.getElementById('cinemaNewSeasonInput').checked;
+  const badge=document.getElementById('cinemaNewSeasonBadge');if(!badge)return;
+  badge.style.background=on?'rgba(245,158,11,.15)':'rgba(0,0,0,.06)';
+  badge.style.color=on?'#b45309':'var(--muted)';
 }
 function openCinemaModal(editId,defaultStatus,defaultType){
   _cinemaModalEditId=editId||null;
@@ -2322,6 +2328,7 @@ function openCinemaModal(editId,defaultStatus,defaultType){
   document.getElementById('cinemaRatingInput').value=item?(item.rating??''):'';
   document.getElementById('cinemaWatchedInput').checked=item?item.status==='watched':(_cinemaModalDefaultStatus==='watched');
   document.getElementById('cinemaNewSeasonInput').checked=item?!!item.new_season:false;
+  _cinemaRenderNewSeasonBadge();
   const genres=item&&item.genre?item.genre.split(',').map(s=>s.trim()).filter(Boolean):[];
   document.getElementById('cinemaGenreInput').value=genres[0]||'';
   document.getElementById('cinemaGenre2Input').value=genres[1]||'';
