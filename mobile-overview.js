@@ -1518,18 +1518,26 @@ function _mNavDiagUpdate(nav) {
   document.querySelectorAll('.m-build-stamp').forEach(el => { el.textContent = txt; });
 }
 
-// TEMP DEBUG (2026-09-17) — draws #mNavDebugLine across #mNav at the exact measured
-// vertical center of the FIRST icon (Today's), so any other icon/label sitting off that
-// line is an objective, visible mismatch rather than a guess from a screenshot. Remove
-// this function, its call site in _mNavMoveHighlight, the #mNavDebugLine div (mobile.html)
-// and its CSS rule (mobile.css) once alignment is confirmed.
+// TEMP DEBUG (2026-09-17) — draws three lines across #mNav from the FIRST button's
+// (Today's) real measured geometry: icon top, icon bottom, and label vertical center.
+// Any OTHER icon/label that doesn't line up with these is an objective, visible
+// mismatch rather than a guess from a screenshot. Remove this function, its call site
+// in _mNavMoveHighlight, the three #mNavDebugLine* divs (mobile.html), and their CSS
+// rule (mobile.css) once alignment is confirmed.
 function _mNavDebugLine(nav) {
-  const line = document.getElementById('mNavDebugLine');
-  const icon = nav.querySelector('.m-nav-icon');
-  if (!line || !icon) return;
+  const firstBtn = nav.querySelector('.m-nav-btn');
+  const icon = firstBtn?.querySelector('.m-nav-icon');
+  const label = firstBtn?.querySelector('span');
+  const top = document.getElementById('mNavDebugLineIconTop');
+  const bot = document.getElementById('mNavDebugLineIconBottom');
+  const txt = document.getElementById('mNavDebugLineTextCenter');
+  if (!icon || !label || !top || !bot || !txt) return;
   const navRect = nav.getBoundingClientRect();
   const iconRect = icon.getBoundingClientRect();
-  line.style.top = (iconRect.top + iconRect.height / 2 - navRect.top) + 'px';
+  const labelRect = label.getBoundingClientRect();
+  top.style.top = (iconRect.top - navRect.top) + 'px';
+  bot.style.top = (iconRect.bottom - navRect.top) + 'px';
+  txt.style.top = (labelRect.top + labelRect.height / 2 - navRect.top) + 'px';
 }
 
 // Slides #mNavHighlight (the Liquid Glass pill, mobile.css) behind whichever .m-nav-btn

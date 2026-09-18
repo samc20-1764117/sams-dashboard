@@ -147,10 +147,12 @@ body.dark .m-prog.m-prog-complete{color:#86efac}
    drop the safe-area term — they only ever needed to clear #mNav's own top edge. */
 #mNav{position:fixed;left:14px;right:14px;bottom:20px;height:56px;padding:6px;display:flex;border-radius:28px;background:var(--nav-glass-bg);box-shadow:var(--nav-glass-shadow);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);overflow:hidden;z-index:15}
 .m-nav-highlight{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 5);border-radius:22px;background:var(--nav-pill-bg);box-shadow:var(--nav-pill-shadow);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .5s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
-/* TEMP DEBUG (2026-09-17) — remove #mNavDebugLine (this rule + its HTML div + the JS that
-   positions it, _mNavDebugLine() in mobile-overview.js) once icon/label alignment is
-   confirmed. Positioned via JS from the first icon's real measured center, not a guess. */
-#mNavDebugLine{position:absolute;left:0;right:0;height:1px;background:#ff0040;z-index:50;pointer-events:none}
+/* TEMP DEBUG (2026-09-17) — remove all three .m-nav-debug-line divs (this rule + their
+   HTML in mobile.html + the JS that positions them, _mNavDebugLine() in
+   mobile-overview.js) once icon/label alignment is confirmed. Each line is positioned
+   via JS from Today's real measured icon-top / icon-bottom / label-center — not a guess.
+   Red = icon top, blue = icon bottom, green = label vertical center. */
+.m-nav-debug-line{position:absolute;left:0;right:0;height:1px;z-index:50;pointer-events:none}
 .m-nav-btn{flex:1;background:none;border:none;font-family:inherit;color:var(--nav-icon-inactive);cursor:pointer;padding:4px 0;transition:color .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;z-index:1;-webkit-tap-highlight-color:transparent}
 .m-nav-btn span{font-size:10px;font-weight:600;letter-spacing:.02em}
 .m-nav-icon{width:22px;height:22px;transition:color .2s}
