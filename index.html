@@ -658,31 +658,33 @@ if(sessionStorage._mReloaded===BUILD);else{
   <div class="modal task-modal" style="width:340px">
     <div class="mt" style="display:flex;align-items:center;gap:8px">
       <span id="cinemaMTitle" style="flex:1">Add Movie/Show</span>
-      <div id="cinemaTypeToggle" style="display:flex;gap:0;flex-shrink:0;background:rgba(0,0,0,.06);border-radius:var(--rxs);padding:2px"></div>
       <input type="hidden" id="cinemaTypeInput" value="movie">
       <input id="cinemaRatingInput" class="cinema-rating-input" type="number" step="0.1" min="1" max="10" placeholder="Rating" title="My rating" tabindex="-1" style="width:60px;flex-shrink:0;padding:6px 8px;border-radius:var(--rxs);border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none;background:rgba(255,255,255,.8)">
     </div>
-    <div class="mfield"><label>Title *</label><input id="cinemaTitleInput" tabindex="1" placeholder="e.g. Breaking Bad"></div>
+    <div class="mfield" style="display:flex;gap:8px;align-items:flex-end">
+      <div style="flex:1"><label>Title *</label><input id="cinemaTitleInput" tabindex="1" placeholder="e.g. Breaking Bad" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();saveCinemaModal();}"></div>
+      <div id="cinemaTypeToggle" tabindex="2" style="display:flex;gap:0;flex-shrink:0;background:rgba(0,0,0,.06);border-radius:var(--rxs);padding:2px;outline:none" onkeydown="_cinemaTypeToggleKeydown(event)"></div>
+    </div>
     <div class="mimp-row" style="gap:22px">
-      <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cinemaWatchedInput" tabindex="2" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();this.checked=!this.checked;}"><label for="cinemaWatchedInput">✓ Watched</label></div>
-      <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cinemaNewSeasonInput" tabindex="3" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();this.checked=!this.checked;}"><label for="cinemaNewSeasonInput">＋ New season out</label></div>
+      <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cinemaWatchedInput" tabindex="3" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();this.checked=!this.checked;}"><label for="cinemaWatchedInput">✓ Watched</label></div>
+      <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cinemaNewSeasonInput" tabindex="4" onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();this.checked=!this.checked;}"><label for="cinemaNewSeasonInput">＋ New season out</label></div>
     </div>
     <div class="mfield" style="display:flex;gap:8px">
-      <div style="flex:1"><label>Genre</label><select id="cinemaGenreInput" tabindex="4">
+      <div style="flex:1"><label>Genre</label><select id="cinemaGenreInput" tabindex="5">
         <option value="">—</option>
         <option>Action</option><option>Adventure</option><option>Animation</option><option>Biography</option><option>Comedy</option><option>Crime</option><option>Documentary</option><option>Drama</option><option>Family</option><option>Fantasy</option><option>Horror</option><option>Musical</option><option>Mystery</option><option>Romance</option><option>Sci-Fi</option><option>Thriller</option>
       </select></div>
-      <div style="flex:1"><label>Genre (2nd)</label><select id="cinemaGenre2Input" tabindex="5">
+      <div style="flex:1"><label>Genre (2nd)</label><select id="cinemaGenre2Input" tabindex="6">
         <option value="">—</option>
         <option>Action</option><option>Adventure</option><option>Animation</option><option>Biography</option><option>Comedy</option><option>Crime</option><option>Documentary</option><option>Drama</option><option>Family</option><option>Fantasy</option><option>Horror</option><option>Musical</option><option>Mystery</option><option>Romance</option><option>Sci-Fi</option><option>Thriller</option>
       </select></div>
     </div>
-    <div class="mfield"><label>Where to watch</label><select id="cinemaWhereInput" tabindex="6">
+    <div class="mfield"><label>Where to watch</label><select id="cinemaWhereInput" tabindex="7">
       <option value="">—</option>
       <option>Netflix</option><option>Hulu</option><option>Max</option><option>Disney+</option><option>Amazon Prime</option><option>Apple TV+</option><option>Peacock</option><option>Paramount+</option><option>YouTube</option><option>Theater</option><option>Other</option>
     </select></div>
-    <div class="mfield"><label>Notes</label><textarea id="cinemaNotesInput" tabindex="7" placeholder="Add notes…" style="resize:none;min-height:52px;overflow-x:hidden"></textarea></div>
-    <div class="mact"><button type="button" tabindex="8" class="btn btn-dark" onclick="saveCinemaModal()">Save</button></div>
+    <div class="mfield"><label>Notes</label><textarea id="cinemaNotesInput" tabindex="8" placeholder="Add notes…" style="resize:none;min-height:52px;overflow-x:hidden"></textarea></div>
+    <div class="mact"><button type="button" tabindex="9" class="btn btn-dark" onclick="saveCinemaModal()">Save</button></div>
   </div>
 </div>
 

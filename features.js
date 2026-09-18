@@ -2303,6 +2303,12 @@ function _cinemaSetModalType(type){
   document.getElementById('cinemaTypeInput').value=type;
   _cinemaRenderTypeToggle();
 }
+function _cinemaTypeToggleKeydown(event){
+  const k=event.key.toLowerCase();
+  if(k==='s'||k==='arrowleft'){event.preventDefault();_cinemaSetModalType('show');}
+  else if(k==='m'||k==='arrowright'){event.preventDefault();_cinemaSetModalType('movie');}
+  else if(k==='enter'){event.preventDefault();event.stopPropagation();saveCinemaModal();}
+}
 function openCinemaModal(editId,defaultStatus,defaultType){
   _cinemaModalEditId=editId||null;
   _cinemaModalDefaultStatus=defaultStatus||'up_next';
