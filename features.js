@@ -36,7 +36,7 @@ function openQA(ctx,btn,ds='',kcat=''){
     const _shopStores=[...new Set(['Online','HEB',...st.shopping.map(x=>x.store).filter(Boolean)])].filter(x=>x!=='Other');
     const _sStyle='width:100%;padding:5px 7px;border-radius:var(--rs);border:1px solid var(--border);font-family:inherit;font-size:12px;color:var(--text);outline:none';
     extra=`<div class="qa-field"><label>Store</label><select id="qaStore" style="${_sStyle}" onchange="if(this.value==='__custom'){this.style.display='none';const ci=document.getElementById('qaStoreCustom');ci.style.display='';ci.focus();}">${_shopStores.map(s=>`<option value="${escHtml(s)}">${escHtml(s)}</option>`).join('')}<option value="__custom">Custom…</option></select><input id="qaStoreCustom" placeholder="Type store name…" style="${_sStyle};display:none" onkeydown="if(event.key==='Enter')event.stopPropagation()"></div>
-    <div class="qa-field"><label>Link <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="qaShopLink" type="url" placeholder="https://…" style="${_sStyle}"></div>`;
+    <div class="qa-field"><label>Link <span style="opacity:.45;font-weight:400">(optional)</span></label><input id="qaShopLink" type="text" placeholder="https://…" style="${_sStyle}"></div>`;
   } else if(ctx==='rec'){
     title='Add Recurring Task';extra='';
   } else {

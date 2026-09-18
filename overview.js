@@ -2544,7 +2544,8 @@ function _wkGoalKeyNav(e){
   // Check if any goal tasks are selected
   const goalSel=[...selectedTasks].filter(s=>{const t=st.tasks.find(x=>String(x.id)===s);return t&&t.category==='Weekly Goals';});
   if(!goalSel.length)return false;
-  const _typing=document.activeElement?.tagName==='INPUT'||document.activeElement?.tagName==='TEXTAREA'||document.activeElement?.tagName==='SELECT'||document.activeElement?.isContentEditable;
+  // Excludes checkbox inputs deliberately — see the matching comment in _todListKeyNav for why.
+  const _typing=(document.activeElement?.tagName==='INPUT'&&document.activeElement.type!=='checkbox')||document.activeElement?.tagName==='TEXTAREA'||document.activeElement?.tagName==='SELECT'||document.activeElement?.isContentEditable;
   if(_typing)return false;
 
   // Find the container — either WO modal body or overview goals column
@@ -2601,6 +2602,43 @@ function _wkGoalKeyNav(e){
     else{selectedTasks.clear();selectedTasks.add(newId);lastSelectedId=newId;}
     applySelHighlight();
     const el=allChips[newIdx];if(el)el.scrollIntoView({block:'nearest'});
+    return true;
+  }
+
+  // X / Space / Enter: toggle checked/done for selected goal(s), multi-select aware, single
+  // combined undo — same pattern as _wkcColKeyNav's own X/Space/Enter handler. Checking OFF (not
+  // un-checking) advances selection to the next goal in the column's pre-toggle order instead of
+  // re-selecting the same now-done item.
+  if((e.key==='x'||e.key==='X'||e.key===' '||e.key==='Enter')&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
+    e.preventDefault();
+    const willBeDone=new Set(goalSel.filter(sid=>{
+      const chkEl=container.querySelector('[data-tid="'+CSS.escape(sid)+'"] .wchk');
+      return chkEl&&!chkEl.checked;
+    }));
+    const preSnap=_stateSnap();
+    const stackLenBefore=undoStack.length;
+    goalSel.forEach(sid=>{
+      const chkEl=container.querySelector('[data-tid="'+CSS.escape(sid)+'"] .wchk');
+      if(chkEl)chkEl.click();
+    });
+    undoStack.splice(stackLenBefore);
+    pushUndo(()=>{
+      const cur=_stateSnap();
+      _stateRestore(preSnap);
+      _syncRedoDiff(cur,preSnap);
+    },'Toggled '+goalSel.length+' goal'+(goalSel.length>1?'s':''));
+    const allBecameDone=goalSel.length&&goalSel.every(sid=>willBeDone.has(sid));
+    if(allBecameDone){
+      const maxIdx=Math.max(...goalSel.map(sid=>allIds.indexOf(sid)));
+      const nextId=maxIdx>=0&&maxIdx+1<allIds.length?allIds[maxIdx+1]:null;
+      setTimeout(()=>{
+        if(nextId){selectedTasks.clear();selectedTasks.add(nextId);lastSelectedId=nextId;}
+        else{goalSel.forEach(id=>selectedTasks.add(id));}
+        applySelHighlight();
+      },20);
+    }else{
+      setTimeout(()=>{goalSel.forEach(id=>selectedTasks.add(id));applySelHighlight();},20);
+    }
     return true;
   }
 
@@ -4206,7 +4244,11 @@ function _todListKeyNav(e){
   const rowIds=rows.map(r=>r.id.slice(3));
   const todSel=[...selectedTasks].filter(id=>rowIds.includes(id));
   if(!todSel.length)return false;
-  const _typing=document.activeElement?.tagName==='INPUT'||document.activeElement?.tagName==='TEXTAREA'||document.activeElement?.tagName==='SELECT'||document.activeElement?.isContentEditable;
+  // Excludes checkbox inputs deliberately — a row's own checkbox often still holds keyboard focus
+  // right after a mouse click on it, and without this exclusion Space would hit the BROWSER'S OWN
+  // native checkbox-toggle-on-space behavior first (bypassing this handler entirely, silently
+  // skipping the reselect-next logic below) instead of going through our unified toggle path.
+  const _typing=(document.activeElement?.tagName==='INPUT'&&document.activeElement.type!=='checkbox')||document.activeElement?.tagName==='TEXTAREA'||document.activeElement?.tagName==='SELECT'||document.activeElement?.isContentEditable;
   if(_typing)return false;
 
   // Cmd+Up/Down: reorder selected items (manual day order, same splice pattern as shopping)
@@ -4446,7 +4488,8 @@ function _wkcColKeyNav(e){
     return true;
   }
 
-  const _typing=document.activeElement&&(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA'||document.activeElement.tagName==='SELECT'||document.activeElement.isContentEditable);
+  // Excludes checkbox inputs deliberately — see the matching comment in _todListKeyNav above for why.
+  const _typing=document.activeElement&&((document.activeElement.tagName==='INPUT'&&document.activeElement.type!=='checkbox')||document.activeElement.tagName==='TEXTAREA'||document.activeElement.tagName==='SELECT'||document.activeElement.isContentEditable);
 
   // X / Space / Enter: toggle checked/done for every selected item in this column, multi-select
   // aware. Reuses the chip's own checkbox (`.wchk`) via a real `.click()` rather than re-deriving
