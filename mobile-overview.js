@@ -621,7 +621,7 @@ function mTaskRow(t) {
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
-    ${t._dbgTier ? `<span style="font-size:9px;color:#e600ff;flex-shrink:0">${t._dbgTier}</span>` : ''}
+    ${t._dbgTier ? `<span style="font-size:9px;color:#e600ff;flex-shrink:0">${t._dbgTier} ${canEdit ? 'RT' : 'VT'}</span>` : ''}
     ${mvBtn}
   </div>`;
 

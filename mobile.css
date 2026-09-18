@@ -65,12 +65,12 @@ body.dark .m-section{box-shadow:0 2px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255
 /* Long-press-drag reorder (Today list): no text-selection/callout during the long-press
    (same requirement as .m-wk-row/.m-mo-day's own long-press-drag gestures), and a lifted
    look while actively dragging. */
-/* Explicit wildcard on every descendant (not just relying on inheritance from the
-   wrapper) — same defensive pattern .m-tl-block already uses. The row's long-press-drag
-   requires a stationary ~480ms hold to arm, which is exactly the trigger window for
-   iOS's own native text-selection/loupe UI on plain text content; relying on
-   inheritance alone left that interfering with the drag on some rows. */
-.m-row-outer[data-tid],.m-row-outer[data-tid] *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* Applies to EVERY row now (was scoped to [data-tid] only, i.e. real tasks) — virtual/
+   recurring/WR/shop rows were still natively selectable, which is the likely reason
+   selection kept happening even after the [data-tid] fix: real tasks are only a subset
+   of what's in the Today list. Explicit wildcard on every descendant (not just relying
+   on inheritance) — same defensive pattern .m-tl-block already uses. */
+.m-row-outer,.m-row-outer *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .m-row-outer.m-row-dragging{opacity:.6;z-index:5}
 .m-row-outer.m-row-dragging .m-row{box-shadow:0 6px 18px rgba(0,0,0,.18);border-radius:var(--rs)}
 
