@@ -1422,7 +1422,8 @@ function mShowTab(tab) {
   // The add bars are position:fixed, floating above content — #mApp's own padding only
   // ever needs to clear the fixed nav. List clearance for the fixed add bar itself is
   // measured and applied directly to the list in mSyncBarClearance() below.
-  document.getElementById('mApp').style.paddingBottom = '84px';
+  // No bottom reservation here any more — see the comment on #mApp in mobile.css for why
+  // (content now scrolls behind the floating glass nav instead of stopping short of it).
   // No nav button lights up for tb — it's opened from Today's header, not the bottom nav.
   document.querySelectorAll('.m-nav-btn').forEach((b, i) => {
     b.classList.toggle('active', (tab === 'today' && i === 0) || (tab === 'week' && i === 1) || (tab === 'month' && i === 2) || (tab === 'shop' && i === 3) || (tab === 'extras' && i === 4));
@@ -1444,6 +1445,10 @@ function mShowTab(tab) {
   if (progEl) progEl.style.display = isToday ? '' : 'none';
   const tbBtn = document.getElementById('mTodayTBBtn');
   if (tbBtn) tbBtn.style.display = isToday ? '' : 'none';
+  // "+" moved here from the Tasks card's own header (removed, per redesign) to reclaim
+  // vertical space for the list itself.
+  const addBtn = document.getElementById('mTodayAddBtn');
+  if (addBtn) addBtn.style.display = isToday ? '' : 'none';
   // Header's shared "go to today" icon is Week-tab-only now — Month has its own
   // dedicated Today button (mMonthTodayBtn, below), and it made no sense on Shop/More.
   const goTodayBtn = document.getElementById('mGoTodayBtn');

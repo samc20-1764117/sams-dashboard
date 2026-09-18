@@ -1,8 +1,8 @@
 :root{--bg:#f5f4f8;--glass:rgba(255,255,255,.7);--bg-elevated:#ffffff;--border:rgba(0,0,0,.08);--text:#1a1825;--sub:#6b6880;--r:14px;--rs:8px;--shadow:0 2px 12px rgba(0,0,0,.08);--accent:#7c6af7;
-  --nav-glass-bg:rgba(255,255,255,.55);--nav-glass-shadow:0 8px 28px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 1px rgba(0,0,0,.04);
+  --nav-glass-bg:rgba(255,255,255,.42);--nav-glass-shadow:0 8px 28px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 1px rgba(0,0,0,.04);
   --nav-icon-inactive:rgba(26,24,37,.55);--nav-pill-bg:rgba(255,255,255,.85);--nav-pill-shadow:0 4px 14px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.9)}
 html.init-dark{--bg:#16141f;--glass:rgba(30,28,40,.8);--bg-elevated:#242030;--border:rgba(255,255,255,.08);--text:#eeeaf8;--sub:#9a95b0;
-  --nav-glass-bg:rgba(30,28,40,.55);--nav-glass-shadow:0 8px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.06);
+  --nav-glass-bg:rgba(30,28,40,.42);--nav-glass-shadow:0 8px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.06);
   --nav-icon-inactive:rgba(255,255,255,.65);--nav-pill-bg:rgba(255,255,255,.16);--nav-pill-shadow:0 4px 14px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.3)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;font-size:15px}
@@ -13,16 +13,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
    sticky #mHeader would engage relative to that outer scroll and could visually overlap
    a tab's own internally-scrolled content (this was the real cause of "header is in the
    way" on Month — #mMonthScroll was correctly bounded, but #mApp itself wasn't). */
-/* 84px = the floating nav's own footprint (20px bottom offset + 56px bar height, no
-   safe-area term — see #mNav below) plus an 8px breathing-room buffer above it — kept
-   in sync with #mNav/#mNavHighlight below and with mShowTab()/mSyncBarClearance() in
-   mobile-overview.js if any of those numbers change. */
-#mApp{display:none;flex-direction:column;height:100dvh;padding-bottom:84px}
+/* No bottom reservation here any more (was 84px) — for content to actually scroll BEHIND
+   the floating glass nav (blurred through it) instead of stopping dead short of it, #mMain
+   must be allowed to grow into that space. Each tab now owns its OWN bottom clearance
+   instead, at the level that actually needs it: Today/Shop via mSyncBarClearance()
+   (mobile-overview.js) sizing #mTodayList/#mShopList's own padding-bottom from the real
+   add-bar height; Week via #mWeekList's static padding-bottom; Month via
+   _mSyncMonthScrollHeight()'s direct viewport measurement (never depended on this); tb via
+   #mTLInner's padding-bottom. */
+#mApp{display:none;flex-direction:column;height:100dvh}
 #mApp.ready{display:flex}
 
 /* ── Header ───────────────────────────────────────────────────────────────── */
-#mHeader{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 6px;padding-top:calc(8px + env(safe-area-inset-top));position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
-#mHeader h1{font-size:22px;font-weight:800;letter-spacing:-.01em}
+#mHeader{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 4px;padding-top:calc(4px + env(safe-area-inset-top));position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+#mHeader h1{font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
 #mDateLbl{font-size:11px;color:var(--sub);margin-top:1px}
 /* Yellow = not complete yet (or nothing started); green = everything done for the day
    (same green as the desktop progress donut). */
@@ -43,8 +47,6 @@ body.dark .m-prog.m-prog-complete{color:#86efac}
 /* A flat black drop shadow is invisible against a near-black dark background — swap for
    a subtle light inset highlight instead (same pattern desktop's dark-mode cards use). */
 body.dark .m-section{box-shadow:0 2px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.03)}
-.m-section-hd{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);padding:10px 14px 8px}
-.m-section-hd-add{background:none;border:none;color:#999;font-size:20px;line-height:1;padding:0 2px;cursor:pointer;font-weight:400}
 
 /* ── Pull-to-refresh ──────────────────────────────────────────────────────── */
 #mPTR{display:flex;align-items:center;justify-content:center;gap:8px;height:0;overflow:hidden;opacity:0;transition:height .2s,opacity .2s;color:var(--sub);font-size:12px}
@@ -68,7 +70,7 @@ body.dark .m-section{box-shadow:0 2px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255
 .m-row-outer.m-row-dragging .m-row{box-shadow:0 6px 18px rgba(0,0,0,.18);border-radius:var(--rs)}
 
 /* ── Task rows ────────────────────────────────────────────────────────────── */
-.m-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-top:1px solid var(--border);min-height:44px;background:var(--bg-elevated);position:relative;will-change:transform}
+.m-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid var(--border);min-height:40px;background:var(--bg-elevated);position:relative;will-change:transform}
 .m-done{opacity:.25}
 .m-done .m-row-name{color:var(--muted,#999)}
 .m-ov{background:rgba(239,68,68,.06)}
@@ -167,7 +169,9 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
    is unaffected regardless of where they sit.) Because bottom:0 and height no longer
    depend on env(safe-area-inset-bottom), #mApp/#mAddBar/mSyncBarClearance below also
    drop the safe-area term — they only ever needed to clear #mNav's own top edge. */
-#mNav{position:fixed;left:14px;right:14px;bottom:20px;height:56px;padding:6px;display:flex;border-radius:28px;background:var(--nav-glass-bg);box-shadow:var(--nav-glass-shadow);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);overflow:hidden;z-index:15}
+/* More blur + saturation, less opaque tint — reads as true frosted glass (content
+   actually visible-through-blur as it scrolls behind) rather than a semi-solid panel. */
+#mNav{position:fixed;left:14px;right:14px;bottom:20px;height:56px;padding:6px;display:flex;border-radius:28px;background:var(--nav-glass-bg);box-shadow:var(--nav-glass-shadow);backdrop-filter:blur(34px) saturate(220%);-webkit-backdrop-filter:blur(34px) saturate(220%);overflow:hidden;z-index:15}
 .m-nav-highlight{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 5);border-radius:22px;background:var(--nav-pill-bg);box-shadow:var(--nav-pill-shadow);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .5s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
 .m-nav-btn{flex:1;background:none;border:none;font-family:inherit;color:var(--nav-icon-inactive);cursor:pointer;padding:4px 0;transition:color .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;z-index:1;-webkit-tap-highlight-color:transparent}
 .m-nav-btn span{font-size:10px;font-weight:600;letter-spacing:.02em}
@@ -319,7 +323,9 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
 
 /* Timeline scroll */
 #mTLScroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
-#mTLInner{display:flex;position:relative;padding:0 16px 40px 0}
+/* 90px clears the floating nav's full footprint now that #mApp no longer reserves it
+   globally (see #mApp comment above) — was 40px, relying on that shared reservation. */
+#mTLInner{display:flex;position:relative;padding:0 16px 90px 0}
 #mTLLabels{width:44px;flex-shrink:0;position:relative;border-right:1px solid rgba(210,205,228,.3)}
 #mTLCol{flex:1;position:relative;cursor:pointer}
 
