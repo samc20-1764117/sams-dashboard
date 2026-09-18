@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260917c';var BUILD=window._BUILD;
+  window._BUILD='20260918a';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260917c">
+<link rel="stylesheet" href="mobile.css?v=20260918a">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -160,7 +160,7 @@
         <button type="button" class="m-cpick-btn" onclick="mTogglePick('add')">
           <span class="m-cpick-dot" id="mAddPickDot"></span>
           <span id="mAddPickLbl">Home</span>
-          <span class="m-cpick-arr">▾</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
         </button>
         <div class="m-cpick-opts" id="mAddPickOpts"></div>
       </div>
@@ -219,7 +219,7 @@
     <button type="button" class="m-cpick-btn" onclick="mTogglePick('edit')">
       <span class="m-cpick-dot" id="mEditPickDot"></span>
       <span id="mEditPickLbl">Home</span>
-      <span class="m-cpick-arr">▾</span>
+      <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
     </button>
     <div class="m-cpick-opts m-cpick-opts--up" id="mEditPickOpts"></div>
   </div>
@@ -252,7 +252,7 @@
     <button type="button" class="m-cpick-btn" onclick="mTogglePick('block')">
       <span class="m-cpick-dot" id="mBlockPickDot"></span>
       <span id="mBlockPickLbl">Home</span>
-      <span class="m-cpick-arr">▾</span>
+      <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
     </button>
     <div class="m-cpick-opts m-cpick-opts--up" id="mBlockPickOpts"></div>
   </div>
@@ -271,7 +271,7 @@
     <button type="button" class="m-cpick-btn" onclick="mTogglePick('wkadd')">
       <span class="m-cpick-dot" id="mWkAddPickDot"></span>
       <span id="mWkAddPickLbl">Home</span>
-      <span class="m-cpick-arr">▾</span>
+      <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
     </button>
     <div class="m-cpick-opts m-cpick-opts--up" id="mWkAddPickOpts"></div>
   </div>
@@ -308,7 +308,7 @@
       <button type="button" class="m-cpick-btn" onclick="mTogglePick('fulladd')">
         <span class="m-cpick-dot" id="mFullAddPickDot"></span>
         <span id="mFullAddPickLbl">Home</span>
-        <span class="m-cpick-arr">▾</span>
+        <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
       </button>
       <div class="m-cpick-opts m-cpick-opts--up" id="mFullAddPickOpts"></div>
     </div>
@@ -373,7 +373,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260917c"></script>
-<script src="features.js?v=20260917c"></script>
-<script src="mobile-overview.js?v=20260917c"></script>
+<script src="core.js?v=20260918a"></script>
+<script src="features.js?v=20260918a"></script>
+<script src="mobile-overview.js?v=20260918a"></script>
 </body></html>
