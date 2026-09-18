@@ -4260,6 +4260,49 @@ function _todListKeyNav(e){
     return true;
   }
 
+  // X / Space / Enter: toggle checked/done for every selected item (multi-select aware, single
+  // undo) — mirrors the weekly-cal column's own X handler (_wkcColKeyNav) for parity. Reuses each
+  // row's own checkbox via a real `.click()` rather than re-deriving each type's toggle logic.
+  // When checking OFF (not un-checking) moves selection to the next row in the PRE-toggle order —
+  // otherwise the highlight just follows the toggled row down to wherever done items sort to.
+  if((e.key==='x'||e.key==='X'||e.key===' '||e.key==='Enter')&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
+    e.preventDefault();
+    const eligible=todSel.filter(sid=>!/^(vid-ov-|vidstep-|fin-cancel-|bd-|hd-|tv-)/.test(sid));
+    if(!eligible.length)return true;
+    const willBeDone=new Set(eligible.filter(sid=>{
+      const chkEl=document.getElementById('ti-'+sid)?.querySelector('.chk');
+      return chkEl&&!chkEl.checked;
+    }));
+    const preSnap=_stateSnap();
+    const stackLenBefore=undoStack.length;
+    eligible.forEach(sid=>{
+      const chkEl=document.getElementById('ti-'+sid)?.querySelector('.chk');
+      if(chkEl)chkEl.click();
+    });
+    undoStack.splice(stackLenBefore);
+    pushUndo(()=>{
+      const cur=_stateSnap();
+      _stateRestore(preSnap);
+      _syncRedoDiff(cur,preSnap);
+    },'Toggled '+eligible.length+' item'+(eligible.length>1?'s':''));
+    const allBecameDone=eligible.length&&eligible.every(sid=>willBeDone.has(sid));
+    if(allBecameDone){
+      const maxIdx=Math.max(...eligible.map(sid=>rowIds.indexOf(sid)));
+      const nextId=maxIdx>=0&&maxIdx+1<rowIds.length?rowIds[maxIdx+1]:null;
+      setTimeout(()=>{
+        const freshContainer=document.getElementById('todList');
+        const el=nextId?document.getElementById('ti-'+nextId):null;
+        if(nextId&&el){selectedTasks.clear();selectedTasks.add(nextId);lastSelectedId=nextId;}
+        else{eligible.forEach(id=>selectedTasks.add(id));}
+        applySelHighlight();
+        if(el&&freshContainer)_shopScrollTo(freshContainer,el);
+      },20);
+    }else{
+      setTimeout(()=>{eligible.forEach(id=>selectedTasks.add(id));applySelHighlight();},20);
+    }
+    return true;
+  }
+
   // Delete/Backspace: delete all selected (per-type dispatch, single combined undo)
   if(e.key==='Delete'||e.key==='Backspace'){
     e.preventDefault();
@@ -4405,12 +4448,12 @@ function _wkcColKeyNav(e){
 
   const _typing=document.activeElement&&(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA'||document.activeElement.tagName==='SELECT'||document.activeElement.isContentEditable);
 
-  // X: toggle checked/done for every selected item in this column, multi-select aware. Reuses
-  // the chip's own checkbox (`.wchk`) via a real `.click()` rather than re-deriving each type's
-  // toggle logic — guarantees identical behavior to a mouse click (including each tog* function's
-  // own pushUndo/DB-sync) with zero duplicated dispatch code. Re-queried via `document` fresh
-  // inside the loop (not the `col`/chip references captured above) because each toggle's own
-  // renderWkCal() call rebuilds #wkcCols and detaches prior DOM nodes.
+  // X / Space / Enter: toggle checked/done for every selected item in this column, multi-select
+  // aware. Reuses the chip's own checkbox (`.wchk`) via a real `.click()` rather than re-deriving
+  // each type's toggle logic — guarantees identical behavior to a mouse click (including each
+  // tog* function's own pushUndo/DB-sync) with zero duplicated dispatch code. Re-queried via
+  // `document` fresh inside the loop (not the `col`/chip references captured above) because each
+  // toggle's own renderWkCal() call rebuilds #wkcCols and detaches prior DOM nodes.
   // Multi-select still needs to feel like ONE undoable action, so the N individual pushUndo
   // entries each toggle just pushed are popped and replaced with a single combined entry built
   // from a full-state snapshot — same _stateRestore+_syncRedoDiff idiom doRedo() uses for its own
@@ -4418,10 +4461,17 @@ function _wkcColKeyNav(e){
   // actually covers, so types that live outside it (fin-cancel's `_finCancelDone` Set) or that
   // route through a popup-driven completion flow instead of a plain toggle (vid) are skipped here
   // — same scoping precedent as _todListBulkDelete's vidstep/travel/bd/hd exclusions above.
-  if(!_typing&&(e.key==='x'||e.key==='X')&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
+  // Checking OFF (not un-checking) advances selection to the next item in the column's PRE-toggle
+  // order instead of re-selecting the same now-done row(s) — that just followed them wherever
+  // done items sort to (usually the bottom), which read as "selection didn't move".
+  if(!_typing&&(e.key==='x'||e.key==='X'||e.key===' '||e.key==='Enter')&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
     e.preventDefault();
     const eligible=colSel.filter(sid=>!/^(vid-ov-|vidstep-|fin-cancel-|bd-|hd-|tv-)/.test(sid));
     if(!eligible.length)return true;
+    const willBeDone=new Set(eligible.filter(sid=>{
+      const chkEl=document.querySelector('.wkc-col[data-ds="'+CSS.escape(ds)+'"] .chip[data-tid="'+CSS.escape(sid)+'"] .wchk');
+      return chkEl&&!chkEl.checked;
+    }));
     const preSnap=_stateSnap();
     const stackLenBefore=undoStack.length;
     eligible.forEach(sid=>{
@@ -4434,7 +4484,18 @@ function _wkcColKeyNav(e){
       _stateRestore(preSnap);
       _syncRedoDiff(cur,preSnap);
     },'Toggled '+eligible.length+' item'+(eligible.length>1?'s':''));
-    setTimeout(()=>{eligible.forEach(id=>selectedTasks.add(id));applySelHighlight();},20);
+    const allBecameDone=eligible.length&&eligible.every(sid=>willBeDone.has(sid));
+    if(allBecameDone){
+      const maxIdx=Math.max(...eligible.map(sid=>navIds.indexOf(sid)));
+      const nextId=maxIdx>=0&&maxIdx+1<navIds.length?navIds[maxIdx+1]:null;
+      setTimeout(()=>{
+        if(nextId){selectedTasks.clear();selectedTasks.add(nextId);lastSelectedId=nextId;}
+        else{eligible.forEach(id=>selectedTasks.add(id));}
+        applySelHighlight();
+      },20);
+    }else{
+      setTimeout(()=>{eligible.forEach(id=>selectedTasks.add(id));applySelHighlight();},20);
+    }
     return true;
   }
 
