@@ -582,7 +582,6 @@ function mTaskRow(t) {
   else if (!t._virtual) onchange = `toggleTask('${t.id}',this.checked)`;
 
   const safeName = escHtml(t.name || '');
-  const dot = `<span class="m-cat-dot" style="background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;width:10px;height:10px;border-radius:50%;display:inline-block"></span>`;
   // Overdue regular/shopping tasks get a one-tap reschedule to today
   const canMv = ov && (canEdit || t._type === 'shop' || t._type === 'vidstep' || t._type === 'vid' || t._type === 'pup' || t._isWrec || t._isWrRule || (t._virtual && t._recId));
   const mvArgs = canMv ? _mMoveToTodayArgs(t) : null;
@@ -596,13 +595,13 @@ function mTaskRow(t) {
         : `<button class="m-mv-today" onclick="event.stopPropagation();mMoveToToday('${mvArgs[0]}','${mvArgs[1]}'${mvArgs[2] !== undefined ? `,'${mvArgs[2]}'` : ''})">→ Today</button>`)
     : '';
 
-  const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
+  const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}" style="border-left:3px solid ${s.d}">
     ${noCheck
       ? `<span class="m-row-icon">${t._type === 'holiday' ? '' : '📅'}</span>`
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
-    ${mvBtn}${dot}
+    ${mvBtn}
   </div>`;
 
   // data-rid: every row, any type — lets drag-reorder capture the FULL day order (matches
@@ -1299,7 +1298,13 @@ function _mTodDragEnd(cancelled) {
 
   const list = document.getElementById('mTodayList');
   const newOrder = [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid);
-  if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) return; // dropped back where it started — no-op, no toast
+  if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) {
+    // Long-press-and-release without ever actually reordering — same gesture as iOS's
+    // own "hold to get options, hold-and-drag to reorder": show the task menu instead
+    // of silently doing nothing.
+    _mShowTaskMenu(el);
+    return;
+  }
 
   const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
   const m = _dayOrder();
@@ -1308,6 +1313,71 @@ function _mTodDragEnd(cancelled) {
   _dayOrderSet(m);
   mRenderToday();
   pushUndo(() => { const m2 = _dayOrder(); if (prevOrder) m2[ds] = prevOrder; else delete m2[ds]; _dayOrderSet(m2); renderAll(); }, 'Reordered today');
+}
+
+// ── Task long-press menu (Edit/Duplicate/Flag/Delete) ────────────────────────────
+// Mirrors desktop's #ctxMenu (features.js ctxDoEdit/ctxDoDuplicate/ctxDoDelete) for
+// the same 3 core actions, plus a Flag-as-Important toggle (mobile-only addition —
+// quicker than opening the full edit sheet just to flag something). Scoped to real
+// tasks only, same as the drag-reorder/swipe-delete gestures that trigger it.
+let _mTaskMenuId = null;
+function _mShowTaskMenu(el) {
+  const id = el.dataset.tid;
+  const t = st.tasks.find(x => String(x.id) === String(id));
+  if (!t) return;
+  _mTaskMenuId = id;
+  document.getElementById('mTaskMenuTitle').textContent = t.name || '';
+  const flagBtn = document.getElementById('mTaskMenuFlagBtn');
+  flagBtn.textContent = t.important ? '⚑  Remove Important' : '⚑  Flag as Important';
+  document.getElementById('mTaskMenuBackdrop').classList.add('open');
+  document.getElementById('mTaskMenuSheet').classList.add('open');
+}
+function mCloseTaskMenu() {
+  document.getElementById('mTaskMenuBackdrop').classList.remove('open');
+  document.getElementById('mTaskMenuSheet').classList.remove('open');
+}
+function mTaskMenuEdit() {
+  const id = _mTaskMenuId;
+  mCloseTaskMenu();
+  mOpenEdit(id);
+}
+function mTaskMenuDelete() {
+  const id = _mTaskMenuId;
+  mCloseTaskMenu();
+  mDeleteById(id);
+}
+function mTaskMenuToggleImportant() {
+  const id = _mTaskMenuId;
+  mCloseTaskMenu();
+  const t = st.tasks.find(x => String(x.id) === String(id));
+  if (!t) return;
+  const prev = t.important;
+  t.important = !t.important;
+  save();
+  renderAll();
+  sbReq('PATCH', 'tasks', {important: t.important}, `?id=eq.${id}`);
+  pushUndo(() => {
+    const t2 = st.tasks.find(x => String(x.id) === String(id));
+    if (t2) t2.important = prev;
+    save();
+    renderAll();
+    sbReq('PATCH', 'tasks', {important: prev}, `?id=eq.${id}`);
+  }, t.important ? 'Flagged important' : 'Unflagged important');
+}
+async function mTaskMenuDuplicate() {
+  const id = _mTaskMenuId;
+  mCloseTaskMenu();
+  const t = st.tasks.find(x => String(x.id) === String(id));
+  if (!t) return;
+  const tmp = 'l-' + Date.now();
+  const dup = {...t, id: tmp, done: false};
+  st.tasks.push(dup);
+  save();
+  renderAll();
+  pushUndo(() => { st.tasks = st.tasks.filter(x => x.id !== dup.id); save(); renderAll(); sbReq('DELETE', 'tasks', null, `?id=eq.${dup.id}`); }, 'Duplicated task');
+  const {id: _skip, ...body} = dup;
+  const res = await sbReq('POST', 'tasks', body);
+  if (res && res[0]) { const i = st.tasks.findIndex(x => x.id === tmp); if (i >= 0) { st.tasks[i] = res[0]; save(); } }
 }
 
 // ── Pull-to-refresh ───────────────────────────────────────────────────────────
@@ -1487,23 +1557,28 @@ function mShowTab(tab) {
   else if (tab === 'recipes') { _mRenderRecipesBrowse(); }
   else if (tab === 'today') { _mTodayOffset = 0; _mSetDate(); }
 
-  if (isToday || isShop) mSyncBarClearance(isToday ? 'mAddBar' : 'mShopAddBar', isToday ? 'mTodayList' : 'mShopList');
+  if (isToday || isShop) mSyncBarClearance(isToday ? 'mAddBar' : 'mShopAddBar', isToday ? 'mTodayPage' : 'mShopPage');
 }
 
 // Measures the (fixed-position) add bar's real rendered height and applies it as the
-// matching list's padding-bottom, so the last row is never hidden behind it — exact,
-// not guessed, and correct even if the bar's own height ever changes.
-function mSyncBarClearance(barId, listId) {
+// PAGE wrapper's padding-bottom (NOT the list/card itself — that padding used to land
+// on #mTodayList, which sits INSIDE the floating .m-section card, so clearance space
+// was rendering as dead white space stretching the card down the screen even with only
+// one task in it. Applying it to the page wrapper instead reserves blank SCROLL space
+// below the card, so the card keeps sizing to its own content while the page still
+// scrolls far enough to clear the fixed bars). Exact, not guessed, and correct even if
+// the bar's own height ever changes.
+function mSyncBarClearance(barId, pageId) {
   requestAnimationFrame(() => {
     const bar = document.getElementById(barId);
-    const list = document.getElementById(listId);
-    if (!bar || !list) return;
+    const page = document.getElementById(pageId);
+    if (!bar || !page) return;
     const h = bar.offsetHeight;
     // Bar sits at bottom:82px (flat, no safe-area term — #mNav no longer reserves one)
-    // — its own height stacks on top of that, so the list needs both plus a small
+    // — its own height stacks on top of that, so the page needs both plus a small
     // buffer to fully clear it. 82 must match #mAddBar/#mShopAddBar's own bottom offset
     // in mobile.css.
-    if (h > 0) list.style.paddingBottom = `${h + 82 + 24}px`;
+    if (h > 0) page.style.paddingBottom = `${h + 82 + 24}px`;
   });
 }
 

@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260918b';var BUILD=window._BUILD;
+  window._BUILD='20260918c';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260918b">
+<link rel="stylesheet" href="mobile.css?v=20260918c">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -184,6 +184,7 @@
   </div>
 
   <!-- Bottom nav -->
+  <div id="mNavBackdrop"></div>
   <nav id="mNav">
     <div class="m-nav-highlight" id="mNavHighlight"></div>
     <button class="m-nav-btn active" onclick="mShowTab('today')">
@@ -317,6 +318,16 @@
   <button id="mFullAddSave" onclick="mSaveFullAdd()">Add Task</button>
 </div>
 
+<!-- Task long-press menu (Today list) -->
+<div id="mTaskMenuBackdrop" onclick="mCloseTaskMenu()"></div>
+<div id="mTaskMenuSheet">
+  <h3 id="mTaskMenuTitle"></h3>
+  <button type="button" class="m-wr-scope-opt" onclick="mTaskMenuEdit()">✏️&nbsp;&nbsp;Edit</button>
+  <button type="button" class="m-wr-scope-opt" onclick="mTaskMenuDuplicate()">⧉&nbsp;&nbsp;Duplicate</button>
+  <button type="button" class="m-wr-scope-opt" id="mTaskMenuFlagBtn" onclick="mTaskMenuToggleImportant()"></button>
+  <button type="button" class="m-wr-scope-opt" style="color:#dc2626" onclick="mTaskMenuDelete()">✕&nbsp;&nbsp;Delete</button>
+</div>
+
 <!-- Past-week recurring/WR "move to today" scope sheet -->
 <div id="mWrScopeBackdrop" onclick="mCloseWrScopeSheet()"></div>
 <div id="mWrScopeSheet">
@@ -373,7 +384,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260918b"></script>
-<script src="features.js?v=20260918b"></script>
-<script src="mobile-overview.js?v=20260918b"></script>
+<script src="core.js?v=20260918c"></script>
+<script src="features.js?v=20260918c"></script>
+<script src="mobile-overview.js?v=20260918c"></script>
 </body></html>

@@ -75,15 +75,15 @@ body.dark .m-section{box-shadow:0 2px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255
 .m-done .m-row-name{color:var(--muted,#999)}
 .m-ov{background:rgba(239,68,68,.06)}
 
-.m-chk-wrap{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex-shrink:0;cursor:pointer}
+.m-chk-wrap{display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex-shrink:0;cursor:pointer}
 /* Neutral circle, same pattern as desktop's .chk (styles.css) — a plain outlined circle
    that fills neutral grey + checkmark when checked, NOT colored by category (the small
    .m-cat-dot to the right already carries the category color; the checkbox shouldn't
    duplicate it). Drawn via ::after (same technique desktop uses) so the real checkbox
    stays a normal, fully-clickable input underneath. */
-.m-chk-wrap input[type=checkbox]{position:relative;width:22px;height:22px;flex-shrink:0;appearance:none;-webkit-appearance:none;border:none;background:none;padding:0;margin:0;outline:none;box-shadow:none;cursor:pointer}
-.m-chk-wrap input[type=checkbox]::after{content:'';position:absolute;top:0;left:0;width:22px;height:22px;border-radius:50%;background-color:rgba(255,255,255,.9);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Ccircle cx='11' cy='11' r='10' fill='none' stroke='rgba(180,170,210,.45)' stroke-width='1.5'/%3E%3C/svg%3E");background-size:contain;box-sizing:border-box;transition:all .15s}
-.m-chk-wrap input[type=checkbox]:checked::after{background:rgba(200,195,210,.4);box-shadow:inset 0 0 0 1px rgba(200,195,210,.4);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 22 22' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 11.5l3.3 3.3L16.5 7.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:60%;background-position:center;background-repeat:no-repeat}
+.m-chk-wrap input[type=checkbox]{position:relative;width:19px;height:19px;flex-shrink:0;appearance:none;-webkit-appearance:none;border:none;background:none;padding:0;margin:0;outline:none;box-shadow:none;cursor:pointer}
+.m-chk-wrap input[type=checkbox]::after{content:'';position:absolute;top:0;left:0;width:19px;height:19px;border-radius:50%;background-color:rgba(255,255,255,.9);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 19 19'%3E%3Ccircle cx='9.5' cy='9.5' r='8.5' fill='none' stroke='rgba(180,170,210,.45)' stroke-width='1.3'/%3E%3C/svg%3E");background-size:contain;box-sizing:border-box;transition:all .15s}
+.m-chk-wrap input[type=checkbox]:checked::after{background:rgba(200,195,210,.4);box-shadow:inset 0 0 0 1px rgba(200,195,210,.4);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 19 19' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 9.7l2.8 2.8L14 6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:60%;background-position:center;background-repeat:no-repeat}
 body.dark .m-chk-wrap input[type=checkbox]::after{background-color:rgba(255,255,255,.06);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Ccircle cx='11' cy='11' r='10' fill='none' stroke='rgba(255,255,255,.15)' stroke-width='1.5'/%3E%3C/svg%3E")}
 body.dark .m-chk-wrap input[type=checkbox]:checked::after{background-color:rgba(152,152,160,.55);box-shadow:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 22 22' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 11.5l3.3 3.3L16.5 7.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:60%;background-position:center;background-repeat:no-repeat}
 
@@ -171,6 +171,12 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
    drop the safe-area term — they only ever needed to clear #mNav's own top edge. */
 /* More blur + saturation, less opaque tint — reads as true frosted glass (content
    actually visible-through-blur as it scrolls behind) rather than a semi-solid panel. */
+/* Full-bleed glass floor behind the pill (2026-09-18) — edge to edge, spanning from
+   #mNav's own top down to the true screen bottom (76px = 20px bottom offset + 56px bar
+   height, kept in sync with #mNav below), so nothing unblurred peeks through beside or
+   below the pill — the whole bottom strip reads as one continuous glass surface, with
+   the pill just a more sharply-shadowed region floating within it. */
+#mNavBackdrop{position:fixed;left:0;right:0;bottom:0;height:76px;background:var(--nav-glass-bg);backdrop-filter:blur(34px) saturate(220%);-webkit-backdrop-filter:blur(34px) saturate(220%);z-index:14;pointer-events:none}
 #mNav{position:fixed;left:14px;right:14px;bottom:20px;height:56px;padding:6px;display:flex;border-radius:28px;background:var(--nav-glass-bg);box-shadow:var(--nav-glass-shadow);backdrop-filter:blur(34px) saturate(220%);-webkit-backdrop-filter:blur(34px) saturate(220%);overflow:hidden;z-index:15}
 .m-nav-highlight{position:absolute;top:6px;bottom:6px;left:6px;width:calc((100% - 12px) / 5);border-radius:22px;background:var(--nav-pill-bg);box-shadow:var(--nav-pill-shadow);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .5s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
 .m-nav-btn{flex:1;background:none;border:none;font-family:inherit;color:var(--nav-icon-inactive);cursor:pointer;padding:4px 0;transition:color .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative;z-index:1;-webkit-tap-highlight-color:transparent}
@@ -265,6 +271,12 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
 /* Past-week recurring/WR move-to-today scope sheet — same slide-up/backdrop idiom as
    #mEditSheet, but touch-friendly full-width option rows instead of desktop's
    cursor-positioned #wrScopePicker popup. */
+/* Task long-press menu — same slide-up/backdrop idiom as #mWrScopeSheet. */
+#mTaskMenuBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
+#mTaskMenuBackdrop.open{display:block;opacity:1}
+#mTaskMenuSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
+#mTaskMenuSheet.open{transform:translateY(0)}
+#mTaskMenuSheet h3{font-size:15px;font-weight:700;margin-bottom:14px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #mWrScopeBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
 #mWrScopeBackdrop.open{display:block;opacity:1}
 #mWrScopeSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
