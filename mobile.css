@@ -266,10 +266,6 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
 #mEditName:focus{border-color:var(--accent)}
 #mEditDue{width:100%;max-width:100%;-webkit-appearance:none;appearance:none;box-sizing:border-box;padding:11px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;margin-bottom:10px}
 #mEditDue:focus{border-color:var(--accent)}
-.m-imp-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.m-imp-row label{font-size:13px;color:var(--sub);flex:1}
-.m-imp-toggle{height:32px;padding:0 14px;border-radius:20px;border:1px solid var(--border);background:var(--glass);color:var(--sub);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s,color .15s}
-.m-imp-toggle.on{background:rgba(245,158,11,.15);color:#d97706;border-color:rgba(245,158,11,.4)}
 #mEditSheet .m-cpick-opts{z-index:102}
 .m-edit-actions{display:flex;gap:10px}
 .m-edit-actions button{flex:1;padding:12px;border-radius:var(--rs);border:none;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer}

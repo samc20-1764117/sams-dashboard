@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260918f';var BUILD=window._BUILD;
+  window._BUILD='20260918g';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260918f">
+<link rel="stylesheet" href="mobile.css?v=20260918g">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -217,20 +217,19 @@
 <div id="mEditBackdrop" onclick="mCloseEdit()"></div>
 <div id="mEditSheet">
   <h3>Edit Task</h3>
-  <input id="mEditName" type="text" placeholder="Task name" onkeydown="if(event.key==='Enter')mSaveEditTask()">
-  <input id="mEditDue" type="date" style="margin-bottom:10px">
-  <div class="m-cpick" id="mEditPick" style="margin-bottom:12px">
-    <button type="button" class="m-cpick-btn" onclick="mTogglePick('edit')">
-      <span class="m-cpick-dot" id="mEditPickDot"></span>
-      <span id="mEditPickLbl">Home</span>
-      <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
-    </button>
-    <div class="m-cpick-opts m-cpick-opts--up" id="mEditPickOpts"></div>
+  <input id="mEditName" type="text" placeholder="Task name" onkeydown="if(event.key==='Enter')mSaveEditTask()" style="margin-bottom:10px">
+  <div class="m-add-row2" style="margin-bottom:10px">
+    <div class="m-cpick" id="mEditPick">
+      <button type="button" class="m-cpick-btn" onclick="mTogglePick('edit')">
+        <span class="m-cpick-dot" id="mEditPickDot"></span>
+        <span id="mEditPickLbl">Home</span>
+        <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      </button>
+      <div class="m-cpick-opts m-cpick-opts--up" id="mEditPickOpts"></div>
+    </div>
+    <button type="button" id="mEditImpBtn" class="m-flag-btn" onclick="mToggleEditImp()" aria-label="Flag important" title="Flag important">⚑</button>
   </div>
-  <div class="m-imp-row">
-    <label>Important</label>
-    <button type="button" class="m-imp-toggle" id="mEditImpBtn" onclick="mToggleEditImp()">off</button>
-  </div>
+  <input id="mEditDue" type="date" style="margin-bottom:12px">
   <div class="m-edit-actions">
     <button id="mEditDel" onclick="mDeleteEditTask()">Delete</button>
     <button id="mEditSave" onclick="mSaveEditTask()">Save</button>
@@ -326,7 +325,7 @@
 <div id="mTaskMenuSheet">
   <h3 id="mTaskMenuTitle"></h3>
   <button type="button" class="m-wr-scope-opt" onclick="mTaskMenuEdit()">✏️&nbsp;&nbsp;Edit</button>
-  <button type="button" class="m-wr-scope-opt" onclick="mTaskMenuDuplicate()">⧉&nbsp;&nbsp;Duplicate</button>
+  <button type="button" class="m-wr-scope-opt" id="mTaskMenuDupBtn" onclick="mTaskMenuDuplicate()">⧉&nbsp;&nbsp;Duplicate</button>
   <button type="button" class="m-wr-scope-opt" id="mTaskMenuFlagBtn" onclick="mTaskMenuToggleImportant()"></button>
   <button type="button" class="m-wr-scope-opt" style="color:#dc2626" onclick="mTaskMenuDelete()">✕&nbsp;&nbsp;Delete</button>
 </div>
@@ -387,7 +386,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260918f"></script>
-<script src="features.js?v=20260918f"></script>
-<script src="mobile-overview.js?v=20260918f"></script>
+<script src="core.js?v=20260918g"></script>
+<script src="features.js?v=20260918g"></script>
+<script src="mobile-overview.js?v=20260918g"></script>
 </body></html>

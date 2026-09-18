@@ -530,7 +530,11 @@ function mGetTodayTasks() {
     .map(s => {
       const skill = (st.pup_skills || []).find(x => String(x.id) === String(s.skill_id));
       if (!skill) return null;
-      return {id: 'pup-sess-' + s.id, name: (skill.pup ? skill.pup + ': ' : '') + skill.skill, category: 'Recurring', due_date: s.day_date, done: s.done, _pupSessId: s.id, _skillId: s.skill_id, _virtual: true, _type: 'pup'};
+      // name must match desktop exactly (overview.js renderToday's pupSessToday) — the
+      // sort's final tiebreak is alphabetical by name, so a mobile-only "Pup: " prefix
+      // here silently made mobile's order diverge from desktop's even with byte-identical
+      // sort code, since they were comparing different strings.
+      return {id: 'pup-sess-' + s.id, name: skill.skill, category: 'Recurring', due_date: s.day_date, done: s.done, _pupSessId: s.id, _skillId: s.skill_id, _virtual: true, _type: 'pup'};
     }).filter(Boolean);
 
   // Video step tasks — only steps with blocks on this day (matches desktop _vidStepDayMap)
@@ -626,9 +630,13 @@ function mTaskRow(t) {
   </div>`;
 
   // data-rid: every row, any type — lets drag-reorder capture the FULL day order (matches
-  // desktop's .ti[id^="ti-"] full-list capture). data-tid: canEdit rows only — the narrower
-  // scope swipe-to-delete/double-tap-edit/drag-to-reorder actually grab.
-  return `<div class="m-row-outer" data-rid="${t.id}"${canEdit ? ` data-tid="${t.id}"` : ''}>
+  // desktop's .ti[id^="ti-"] full-list capture) and lets hold-drag reorder ANY row.
+  // data-tid: canEdit rows only — the narrower scope swipe-to-delete still uses.
+  // data-rtype/data-shopid: which edit/menu surface (if any) a plain tap should route to
+  // — mInitTodayDblTap/_mShowTaskMenu read these instead of re-deriving type from the id
+  // string, since a virtual task's full object doesn't persist anywhere after render.
+  const rtype = canEdit ? 'task' : (t._type || (t._isWrec ? 'wrec' : t._isWrRule ? 'wrrule' : t._virtual ? 'rec' : 'other'));
+  return `<div class="m-row-outer" data-rid="${t.id}" data-rtype="${rtype}"${canEdit ? ` data-tid="${t.id}"` : ''}${rtype === 'shop' ? ` data-shopid="${t._shopId}"` : ''}>
     ${canEdit ? '<div class="m-del-hint">✕</div>' : ''}
     ${inner}
   </div>`;
@@ -707,7 +715,7 @@ let _mEditId = null;
 function mToggleEditImp() {
   _mEditImportant = !_mEditImportant;
   const btn = document.getElementById('mEditImpBtn');
-  if (btn) { btn.textContent = _mEditImportant ? 'on' : 'off'; btn.classList.toggle('on', _mEditImportant); }
+  if (btn) btn.classList.toggle('flagged', _mEditImportant);
 }
 
 function mOpenEdit(id) {
@@ -719,7 +727,7 @@ function mOpenEdit(id) {
   document.getElementById('mEditDue').value = t.due_date || '';
   mSelectCat('edit', t.category || 'Home');
   const btn = document.getElementById('mEditImpBtn');
-  if (btn) { btn.textContent = _mEditImportant ? 'on' : 'off'; btn.classList.toggle('on', _mEditImportant); }
+  if (btn) btn.classList.toggle('flagged', _mEditImportant);
   document.getElementById('mEditBackdrop').classList.add('open');
   document.getElementById('mEditSheet').classList.add('open');
   setTimeout(() => document.getElementById('mEditName').focus(), 300);
@@ -1195,20 +1203,32 @@ function mInitTodayDblTap() {
     tapStartY = e.touches[0].clientY;
   }, {passive: true});
   list.addEventListener('touchend', e => {
-    const outer = e.target.closest('.m-row-outer[data-tid]');
+    // data-rid (every row) — routing to the right edit surface (or none) happens by
+    // rtype below, same reasoning as the drag scope above.
+    const outer = e.target.closest('.m-row-outer[data-rid]');
     if (!outer) return;
     if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
     const ct = e.changedTouches[0];
     if (Math.abs(ct.clientX - tapStartX) > 10 || Math.abs(ct.clientY - tapStartY) > 10) return;
-    const id = outer.dataset.tid;
+    const id = outer.dataset.rid;
     if (_isDblTap(id)) {
       if (_todTapTimer) { clearTimeout(_todTapTimer); _todTapTimer = null; }
-      mOpenEdit(id);
+      _mRowEdit(outer);
       return;
     }
     clearTimeout(_todTapTimer);
     _todTapTimer = setTimeout(() => { _todTapTimer = null; _mShowTaskMenu(outer); }, 350);
   }, {passive: true});
+}
+
+// Routes double-tap-edit to whichever surface this row's type actually has. Plain tasks
+// and shopping items have real mobile edit sheets; other virtual types (recurring/WR/
+// pup/video/etc.) don't yet, so this silently no-ops for those rather than opening the
+// wrong thing or erroring.
+function _mRowEdit(outer) {
+  const rtype = outer.dataset.rtype;
+  if (rtype === 'task') mOpenEdit(outer.dataset.tid);
+  else if (rtype === 'shop') mOpenShopEdit(outer.dataset.shopid);
 }
 
 // ── Swipe-to-delete ───────────────────────────────────────────────────────────
@@ -1278,7 +1298,10 @@ function mInitTodayDrag() {
   let touchStartX = 0, touchStartY = 0;
 
   list.addEventListener('touchstart', e => {
-    const outer = e.target.closest('.m-row-outer[data-tid]');
+    // data-rid (every row, any type) — not data-tid (real tasks only) — so hold-and-drag
+    // reordering works uniformly across the whole list, matching the manual _dayOrder
+    // capture below which already covers every row.
+    const outer = e.target.closest('.m-row-outer[data-rid]');
     if (!outer) return;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
@@ -1352,14 +1375,26 @@ function _mTodDragEnd(cancelled) {
 // quicker than opening the full edit sheet just to flag something). Scoped to real
 // tasks only, same as the drag-reorder/swipe-delete gestures that trigger it.
 let _mTaskMenuId = null;
+// rtype-aware: plain tasks get the full menu (Edit/Duplicate/Flag/Delete), shopping
+// items get the subset that applies to them (Edit/Delete — no "important"/duplicate
+// concept for a shopping item), everything else (recurring/WR/pup/video/etc.) has no
+// mobile edit surface yet, so the menu doesn't open for those rows at all rather than
+// showing actions that don't work.
+let _mTaskMenuType = null;
 function _mShowTaskMenu(el) {
-  const id = el.dataset.tid;
-  const t = st.tasks.find(x => String(x.id) === String(id));
+  const rtype = el.dataset.rtype;
+  const id = rtype === 'shop' ? el.dataset.shopid : el.dataset.tid;
+  if (rtype !== 'task' && rtype !== 'shop') return;
+  const t = rtype === 'shop' ? st.shopping.find(x => String(x.id) === String(id)) : st.tasks.find(x => String(x.id) === String(id));
   if (!t) return;
   _mTaskMenuId = id;
+  _mTaskMenuType = rtype;
   document.getElementById('mTaskMenuTitle').textContent = t.name || '';
+  const dupBtn = document.getElementById('mTaskMenuDupBtn');
   const flagBtn = document.getElementById('mTaskMenuFlagBtn');
-  flagBtn.textContent = t.important ? '⚑  Remove Important' : '⚑  Flag as Important';
+  dupBtn.style.display = rtype === 'task' ? '' : 'none';
+  flagBtn.style.display = rtype === 'task' ? '' : 'none';
+  if (rtype === 'task') flagBtn.textContent = t.important ? '⚑  Remove Important' : '⚑  Flag as Important';
   document.getElementById('mTaskMenuBackdrop').classList.add('open');
   document.getElementById('mTaskMenuSheet').classList.add('open');
 }
@@ -1368,14 +1403,14 @@ function mCloseTaskMenu() {
   document.getElementById('mTaskMenuSheet').classList.remove('open');
 }
 function mTaskMenuEdit() {
-  const id = _mTaskMenuId;
+  const id = _mTaskMenuId, type = _mTaskMenuType;
   mCloseTaskMenu();
-  mOpenEdit(id);
+  if (type === 'shop') mOpenShopEdit(id); else mOpenEdit(id);
 }
 function mTaskMenuDelete() {
-  const id = _mTaskMenuId;
+  const id = _mTaskMenuId, type = _mTaskMenuType;
   mCloseTaskMenu();
-  mDeleteById(id);
+  if (type === 'shop') mDeleteShopDirect(id); else mDeleteById(id);
 }
 function mTaskMenuToggleImportant() {
   const id = _mTaskMenuId;
