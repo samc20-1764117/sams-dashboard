@@ -422,6 +422,27 @@ function renderTodDonut(done,total){
   }
   if(!isNow100)_donutWas100=false;
 }
+// Today-list "check off B → select C": checking off the currently-selected row leaves
+// its id in `selectedTasks`, and since done items sort to the bottom, the highlight just
+// follows it down there instead of advancing to what was the next item. Snapshot the next
+// row's id on mousedown — BEFORE the checkbox's own onchange handler re-renders and
+// reshuffles the list — then apply it once the dust settles in the change listener below.
+let _todNextAfterCheck=null;
+document.addEventListener('mousedown',e=>{
+  const chk=e.target;
+  if(!(chk instanceof HTMLInputElement)||!chk.classList.contains('chk'))return;
+  _todNextAfterCheck=null;
+  if(chk.checked)return; // only care about the about-to-be-CHECKED-OFF case, not unchecking
+  const row=chk.closest('.ti');const rid=row&&row.id;if(!rid)return;
+  const container=document.getElementById('todList');
+  if(!container||!row.closest('#todList'))return;
+  const sid=rid.slice(3);
+  if(lastSelectedId!==sid&&!selectedTasks.has(sid))return; // wasn't the selected row — leave selection alone
+  const rows=[...container.querySelectorAll('.ti[id^="ti-"]')];
+  const idx=rows.indexOf(row);
+  const next=idx>-1?rows[idx+1]:null;
+  _todNextAfterCheck=next?next.id.slice(3):null;
+});
 // Checkbox pop + strikethrough draw on completion (overview rows with ids).
 // Runs after the inline onchange handler has re-rendered, so it animates the fresh node.
 document.addEventListener('change',e=>{
@@ -436,6 +457,16 @@ document.addEventListener('change',e=>{
     fresh.classList.add('just-done');
     setTimeout(()=>fresh.classList.remove('just-done'),360);
   }
+  if(chk.checked&&_todNextAfterCheck){
+    const nextId=_todNextAfterCheck;_todNextAfterCheck=null;
+    const container=document.getElementById('todList');
+    const nextRow=document.getElementById('ti-'+nextId);
+    if(container&&nextRow){
+      selectedTasks.clear();selectedTasks.add(nextId);lastSelectedId=nextId;_lastSelSurface='todList';
+      applySelHighlight();
+      _shopScrollTo(container,nextRow);
+    }
+  }else if(chk.checked){_todNextAfterCheck=null;}
 });
 function _pupWkMonday(off=0){const{mon}=getWkBounds(off);return d2s(mon);}
 function _pupWkFocusIds(pup,off=0){
