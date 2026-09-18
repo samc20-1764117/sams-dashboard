@@ -390,7 +390,22 @@ function mSortToday(tasks) {
 // holiday > overdue > done, THEN manual day order, else timeblock/important/type/name) —
 // was previously birthday > done > travel > overdue > important > timeblock > type > name,
 // and had no manual-order tie-break at all.
+// TEMP DEBUG (2026-09-18) — tags each task with the hard tier it resolved to + its
+// manual-order index (if any) + its type-priority number, so mTaskRow can render it as
+// tiny visible text. A screenshot then shows the actual computed sort inputs directly,
+// instead of guessing from a description. Remove this call + the _dbgTier rendering in
+// mTaskRow once the real mismatch is found.
+function _mDebugTierLabel(t, ds) {
+  const order = _dayOrder()[ds] || [];
+  const mi = order.indexOf(String(t.id));
+  const tier = (t._type === 'travel' && !t.done) ? 'travel'
+    : (t._type === 'birthday' || t._type === 'holiday') ? 'bday'
+    : (isOv(t.due_date) && !t.done) ? 'OV'
+    : t.done ? 'done' : 'norm';
+  return `${tier}${mi >= 0 ? '#' + mi : ''} p${_mTaskTypePri(t)}`;
+}
 function mSortDayTasks(tasks, ds) {
+  tasks.forEach(t => { t._dbgTier = _mDebugTierLabel(t, ds); });
   const blks = (st.blocks || []).filter(b => b.ds === ds);
   function tbSm(t) {
     let b = null;
@@ -595,12 +610,18 @@ function mTaskRow(t) {
         : `<button class="m-mv-today" onclick="event.stopPropagation();mMoveToToday('${mvArgs[0]}','${mvArgs[1]}'${mvArgs[2] !== undefined ? `,'${mvArgs[2]}'` : ''})">→ Today</button>`)
     : '';
 
-  const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}" style="border-left:3px solid ${s.d}">
+  // Two-tone band (light fill + darker outline), same pairing the old dot indicator used
+  // (s.bg/s.d), instead of one flat vivid line — and inset top/bottom so it reads as a
+  // mark on this row, not a continuous stripe running through the whole list.
+  const band = `<span style="position:absolute;left:6px;top:7px;bottom:7px;width:4px;border-radius:3px;background:${s.bg};border:1px solid ${s.d}"></span>`;
+  const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
+    ${band}
     ${noCheck
       ? `<span class="m-row-icon">${t._type === 'holiday' ? '' : '📅'}</span>`
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
+    ${t._dbgTier ? `<span style="font-size:9px;color:#e600ff;flex-shrink:0">${t._dbgTier}</span>` : ''}
     ${mvBtn}
   </div>`;
 
@@ -1158,6 +1179,12 @@ function _isDblTap(id) {
   return dbl;
 }
 
+// Single tap -> task menu, double tap -> edit, hold-then-drag -> reorder (mInitTodayDrag,
+// above). A single tap can't be told apart from "the first half of a double-tap" until
+// the double-tap window has actually passed without a second tap arriving, so a
+// confirmed single tap is deliberately delayed by that same window before it does
+// anything.
+let _todTapTimer = null;
 function mInitTodayDblTap() {
   const list = document.getElementById('mTodayList');
   if (!list || list._dblTapInited) return;
@@ -1170,9 +1197,17 @@ function mInitTodayDblTap() {
   list.addEventListener('touchend', e => {
     const outer = e.target.closest('.m-row-outer[data-tid]');
     if (!outer) return;
+    if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
     const ct = e.changedTouches[0];
     if (Math.abs(ct.clientX - tapStartX) > 10 || Math.abs(ct.clientY - tapStartY) > 10) return;
-    if (_isDblTap(outer.dataset.tid)) mOpenEdit(outer.dataset.tid);
+    const id = outer.dataset.tid;
+    if (_isDblTap(id)) {
+      if (_todTapTimer) { clearTimeout(_todTapTimer); _todTapTimer = null; }
+      mOpenEdit(id);
+      return;
+    }
+    clearTimeout(_todTapTimer);
+    _todTapTimer = setTimeout(() => { _todTapTimer = null; _mShowTaskMenu(outer); }, 350);
   }, {passive: true});
 }
 
@@ -1298,13 +1333,9 @@ function _mTodDragEnd(cancelled) {
 
   const list = document.getElementById('mTodayList');
   const newOrder = [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid);
-  if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) {
-    // Long-press-and-release without ever actually reordering — same gesture as iOS's
-    // own "hold to get options, hold-and-drag to reorder": show the task menu instead
-    // of silently doing nothing.
-    _mShowTaskMenu(el);
-    return;
-  }
+  // Dropped back exactly where it started — no-op, no toast. The task menu is owned by
+  // a plain single tap (mInitTodayDblTap below), not a stalled drag attempt.
+  if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) return;
 
   const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
   const m = _dayOrder();

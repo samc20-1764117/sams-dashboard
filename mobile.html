@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260918c';var BUILD=window._BUILD;
+  window._BUILD='20260918e';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260918c">
+<link rel="stylesheet" href="mobile.css?v=20260918e">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -152,9 +152,12 @@
 
   </div>
 
-  <!-- Add task bar (today tab only) -->
-  <div id="mAddBar">
-    <input id="mNewTask" type="text" placeholder="Add task for today…" onkeydown="if(event.key==='Enter')mAddTask()">
+  <!-- Add task bar (today tab only) — a <form> (not a bare input+onkeydown) so the iOS
+       keyboard's Return key reliably submits, same fix already proven for the login
+       screen (#mLogin's form). type="button" is required on every non-submit button
+       inside a form, or it defaults to type=submit and double-fires the action. -->
+  <form id="mAddBar" onsubmit="event.preventDefault();mAddTask();return false">
+    <input id="mNewTask" type="text" placeholder="Add task for today…">
     <div class="m-add-row2">
       <div class="m-cpick" id="mAddPick">
         <button type="button" class="m-cpick-btn" onclick="mTogglePick('add')">
@@ -164,14 +167,14 @@
         </button>
         <div class="m-cpick-opts" id="mAddPickOpts"></div>
       </div>
-      <button id="mAddFlagBtn" onclick="mToggleAddFlag()" aria-label="Flag important" title="Flag important">⚑</button>
-      <button id="mAddBtn" onclick="mAddTask()">Add</button>
+      <button type="button" id="mAddFlagBtn" onclick="mToggleAddFlag()" aria-label="Flag important" title="Flag important">⚑</button>
+      <button type="submit" id="mAddBtn">Add</button>
     </div>
-  </div>
+  </form>
 
-  <!-- Shop add bar (shop tab only) -->
-  <div id="mShopAddBar" style="display:none">
-    <input id="mShopNewName" type="text" placeholder="Add item..." onkeydown="if(event.key==='Enter')mAddShopItem()">
+  <!-- Shop add bar (shop tab only) — same form-wrap fix as #mAddBar above. -->
+  <form id="mShopAddBar" style="display:none" onsubmit="event.preventDefault();mAddShopItem();return false">
+    <input id="mShopNewName" type="text" placeholder="Add item...">
     <div class="m-add-row2">
       <select id="mShopNewStore" class="m-shop-store-sel">
         <option value="HEB">HEB</option>
@@ -179,9 +182,9 @@
         <option value="Online">Online</option>
         <option value="Other">Other</option>
       </select>
-      <button id="mShopAddBtn" onclick="mAddShopItem()">Add</button>
+      <button type="submit" id="mShopAddBtn">Add</button>
     </div>
-  </div>
+  </form>
 
   <!-- Bottom nav -->
   <div id="mNavBackdrop"></div>
@@ -384,7 +387,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260918c"></script>
-<script src="features.js?v=20260918c"></script>
-<script src="mobile-overview.js?v=20260918c"></script>
+<script src="core.js?v=20260918e"></script>
+<script src="features.js?v=20260918e"></script>
+<script src="mobile-overview.js?v=20260918e"></script>
 </body></html>
