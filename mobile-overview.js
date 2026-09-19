@@ -624,7 +624,8 @@ function mTaskRow(t) {
   const extraAttrs = [
     rtype === 'shop' ? ` data-shopid="${t._shopId}"` : '',
     (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') && ruleId !== undefined ? ` data-ruleid="${ruleId}" data-wkkey="${t._wkKey || ''}"` : '',
-    rtype === 'vid' && t._vidId !== undefined ? ` data-vidid="${t._vidId}"` : ''
+    rtype === 'vid' && t._vidId !== undefined ? ` data-vidid="${t._vidId}"` : '',
+    rtype === 'vidstep' && t._vidId !== undefined ? ` data-vidid="${t._vidId}" data-vidstep="${t._vidStep}" data-day="${t.due_date}"` : ''
   ].join('');
   return `<div class="m-row-outer" data-rid="${t.id}" data-rtype="${rtype}"${canEdit ? ` data-tid="${t.id}"` : ''}${extraAttrs}>
     ${canEdit ? '<div class="m-del-hint">✕</div>' : ''}
@@ -1430,17 +1431,24 @@ let _mTaskMenuId = null;
 // mobile edit surface yet, so the menu doesn't open for those rows at all rather than
 // showing actions that don't work.
 let _mTaskMenuType = null;
+// _mTaskMenuEl (the actual row) is stored alongside id/type so Edit can just reuse
+// _mRowEdit's existing per-type routing (below) instead of duplicating it here.
+let _mTaskMenuEl = null;
 function _mShowTaskMenu(el) {
   const rtype = el.dataset.rtype;
-  // wrec/wrrule/rec have exactly one applicable action (Edit) — skip the intermediate
-  // menu and go straight there instead of showing a sheet with a single button.
-  if (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') { mOpenRecEdit(el); return; }
-  if (rtype !== 'task' && rtype !== 'shop' && rtype !== 'vid') return;
-  const id = rtype === 'shop' ? el.dataset.shopid : rtype === 'vid' ? el.dataset.vidid : el.dataset.tid;
-  const t = rtype === 'shop' ? st.shopping.find(x => String(x.id) === String(id))
-    : rtype === 'vid' ? (st.videos || []).find(x => String(x.id) === String(id))
-    : st.tasks.find(x => String(x.id) === String(id));
+  if (!['task', 'shop', 'vid', 'vidstep', 'wrec', 'wrrule', 'rec'].includes(rtype)) return;
+  const id = rtype === 'shop' ? el.dataset.shopid
+    : (rtype === 'vid' || rtype === 'vidstep') ? el.dataset.vidid
+    : (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') ? el.dataset.ruleid
+    : el.dataset.tid;
+  let t;
+  if (rtype === 'shop') t = st.shopping.find(x => String(x.id) === String(id));
+  else if (rtype === 'vid' || rtype === 'vidstep') t = (st.videos || []).find(x => String(x.id) === String(id));
+  else if (rtype === 'wrrule') t = st.wrRules.find(x => String(x.id) === String(id));
+  else if (rtype === 'wrec' || rtype === 'rec') t = st.recurring.find(x => String(x.id) === String(id));
+  else t = st.tasks.find(x => String(x.id) === String(id));
   if (!t) return;
+  _mTaskMenuEl = el;
   _mTaskMenuId = id;
   _mTaskMenuType = rtype;
   document.getElementById('mTaskMenuTitle').textContent = t.name || t.topic || t.title || '';
@@ -1448,11 +1456,15 @@ function _mShowTaskMenu(el) {
   const dupBtn = document.getElementById('mTaskMenuDupBtn');
   const flagBtn = document.getElementById('mTaskMenuFlagBtn');
   const delBtn = document.getElementById('mTaskMenuDelBtn');
-  editBtn.style.display = rtype === 'vid' ? 'none' : '';
+  const hasEdit = rtype === 'task' || rtype === 'shop' || rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec';
+  const hasDelete = rtype === 'task' || rtype === 'shop' || rtype === 'vid' || rtype === 'vidstep';
+  const isRemoveOnly = rtype === 'vid' || rtype === 'vidstep';
+  editBtn.style.display = hasEdit ? '' : 'none';
   dupBtn.style.display = rtype === 'task' ? '' : 'none';
   flagBtn.style.display = rtype === 'task' ? '' : 'none';
-  delBtn.textContent = rtype === 'vid' ? '↩︎  Remove from Today' : '✕  Delete';
-  delBtn.style.color = rtype === 'vid' ? '' : '#dc2626';
+  delBtn.style.display = hasDelete ? '' : 'none';
+  delBtn.textContent = isRemoveOnly ? '↩︎  Remove from Today' : '✕  Delete';
+  delBtn.style.color = isRemoveOnly ? '' : '#dc2626';
   if (rtype === 'task') flagBtn.textContent = t.important ? '⚑  Remove Important' : '⚑  Flag as Important';
   document.getElementById('mTaskMenuBackdrop').classList.add('open');
   document.getElementById('mTaskMenuSheet').classList.add('open');
@@ -1462,15 +1474,16 @@ function mCloseTaskMenu() {
   document.getElementById('mTaskMenuSheet').classList.remove('open');
 }
 function mTaskMenuEdit() {
-  const id = _mTaskMenuId, type = _mTaskMenuType;
+  const el = _mTaskMenuEl;
   mCloseTaskMenu();
-  if (type === 'shop') mOpenShopEdit(id); else mOpenEdit(id);
+  if (el) _mRowEdit(el); // reuses the same per-type routing as double-tap
 }
 function mTaskMenuDelete() {
-  const id = _mTaskMenuId, type = _mTaskMenuType;
+  const id = _mTaskMenuId, type = _mTaskMenuType, el = _mTaskMenuEl;
   mCloseTaskMenu();
   if (type === 'shop') mDeleteShopDirect(id);
   else if (type === 'vid') mUnassignVideoToday(id);
+  else if (type === 'vidstep' && el) mUnassignVidStepToday(el.dataset.vidid, el.dataset.vidstep, el.dataset.day);
   else mDeleteById(id);
 }
 
@@ -1497,6 +1510,48 @@ async function mUnassignVideoToday(id) {
     renderAll();
   }, 'Removed from today');
 }
+
+// Same idea as mUnassignVideoToday but for one video STEP on one day — mirrors the
+// 'vidstep' branch of _mMoveToTodayArgs's move-to-today handler (mobile-overview.js)
+// in reverse. A step's day-map entry is {ds: primaryDay, extraDays: [...]}; removing
+// today means: if today was an extraDay, just drop it from that list; if today was the
+// primary ds, promote the first remaining extraDay to primary, or delete the whole
+// entry if there isn't one. Also clears any timeblock for this step on this day.
+async function mUnassignVidStepToday(vidId, step, day) {
+  const m = _mVidStepMap();
+  const key = vidId + '::' + step;
+  const entry = m[key];
+  const blocks = (st.blocks || []).filter(b => String(b._vidStepVid) === String(vidId) && b._vidStepName === step && b.ds === day);
+  const prevBlocks = blocks.map(b => ({...b}));
+  st.blocks = (st.blocks || []).filter(b => !(String(b._vidStepVid) === String(vidId) && b._vidStepName === step && b.ds === day));
+  const prevEntry = entry ? {ds: entry.ds, extraDays: entry.extraDays ? [...entry.extraDays] : undefined} : null;
+  let entryExisted = !!entry;
+  if (entry) {
+    if (entry.ds === day) {
+      if (entry.extraDays && entry.extraDays.length) {
+        entry.ds = entry.extraDays[0];
+        entry.extraDays = entry.extraDays.slice(1);
+        if (!entry.extraDays.length) delete entry.extraDays;
+      } else {
+        delete m[key];
+      }
+    } else if (entry.extraDays && entry.extraDays.includes(day)) {
+      entry.extraDays = entry.extraDays.filter(d => d !== day);
+      if (!entry.extraDays.length) delete entry.extraDays;
+    }
+    _mVidStepMapSet(m);
+  }
+  save();
+  renderAll();
+  prevBlocks.forEach(b => sbDeleteBlock(b.id));
+  pushUndo(() => {
+    if (entryExisted) { const m2 = _mVidStepMap(); m2[key] = prevEntry; _mVidStepMapSet(m2); }
+    prevBlocks.forEach(b => { st.blocks.push(b); sbSaveBlock(b); });
+    save();
+    renderAll();
+  }, 'Removed from today');
+}
+
 function mTaskMenuToggleImportant() {
   const id = _mTaskMenuId;
   mCloseTaskMenu();
