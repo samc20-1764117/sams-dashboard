@@ -6171,7 +6171,7 @@ function renderGuidePage(){
     ${sRow('⌘ ↑/↓ (list)','Reorder selected within the day (Today list, weekly-cal column, or shopping list)')}
     ${sRow('Space','Skip WR rule')}
     ${sRow('Delete / ⌫','Delete selected')}
-    ${sRow('X / Space / Enter','Toggle checked/done for selected task(s) — Today list or weekly-cal column, multi-select aware, single combined undo. Checking off moves selection to the next item.')}
+    ${sRow('X / Space / Enter','Toggle checked/done for selected task(s) — Today list, weekly-cal column, or Weekly Goals, multi-select aware, single combined undo. Checking off moves selection to the next item.')}
     ${sRow('E (weekly cal)','Edit selected task (single selection only)')}
     ${sRow('⌘C / ⌘V','Copy / paste tasks')}
     ${sRow('⌘I','Toggle important')}
