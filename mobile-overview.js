@@ -390,22 +390,7 @@ function mSortToday(tasks) {
 // holiday > overdue > done, THEN manual day order, else timeblock/important/type/name) —
 // was previously birthday > done > travel > overdue > important > timeblock > type > name,
 // and had no manual-order tie-break at all.
-// TEMP DEBUG (2026-09-18) — tags each task with the hard tier it resolved to + its
-// manual-order index (if any) + its type-priority number, so mTaskRow can render it as
-// tiny visible text. A screenshot then shows the actual computed sort inputs directly,
-// instead of guessing from a description. Remove this call + the _dbgTier rendering in
-// mTaskRow once the real mismatch is found.
-function _mDebugTierLabel(t, ds) {
-  const order = _dayOrder()[ds] || [];
-  const mi = order.indexOf(String(t.id));
-  const tier = (t._type === 'travel' && !t.done) ? 'travel'
-    : (t._type === 'birthday' || t._type === 'holiday') ? 'bday'
-    : (isOv(t.due_date) && !t.done) ? 'OV'
-    : t.done ? 'done' : 'norm';
-  return `${tier}${mi >= 0 ? '#' + mi : ''} p${_mTaskTypePri(t)}`;
-}
 function mSortDayTasks(tasks, ds) {
-  tasks.forEach(t => { t._dbgTier = _mDebugTierLabel(t, ds); });
   const blks = (st.blocks || []).filter(b => b.ds === ds);
   function tbSm(t) {
     let b = null;
@@ -625,7 +610,6 @@ function mTaskRow(t) {
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
-    ${t._dbgTier ? `<span style="font-size:9px;color:#e600ff;flex-shrink:0">${t._dbgTier} ${canEdit ? 'RT' : 'VT'}</span>` : ''}
     ${mvBtn}
   </div>`;
 
@@ -636,7 +620,13 @@ function mTaskRow(t) {
   // — mInitTodayDblTap/_mShowTaskMenu read these instead of re-deriving type from the id
   // string, since a virtual task's full object doesn't persist anywhere after render.
   const rtype = canEdit ? 'task' : (t._type || (t._isWrec ? 'wrec' : t._isWrRule ? 'wrrule' : t._virtual ? 'rec' : 'other'));
-  return `<div class="m-row-outer" data-rid="${t.id}" data-rtype="${rtype}"${canEdit ? ` data-tid="${t.id}"` : ''}${rtype === 'shop' ? ` data-shopid="${t._shopId}"` : ''}>
+  const ruleId = t._isWrRule ? t._ruleId : t._recId;
+  const extraAttrs = [
+    rtype === 'shop' ? ` data-shopid="${t._shopId}"` : '',
+    (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') && ruleId !== undefined ? ` data-ruleid="${ruleId}" data-wkkey="${t._wkKey || ''}"` : '',
+    rtype === 'vid' && t._vidId !== undefined ? ` data-vidid="${t._vidId}"` : ''
+  ].join('');
+  return `<div class="m-row-outer" data-rid="${t.id}" data-rtype="${rtype}"${canEdit ? ` data-tid="${t.id}"` : ''}${extraAttrs}>
     ${canEdit ? '<div class="m-del-hint">✕</div>' : ''}
     ${inner}
   </div>`;
@@ -738,6 +728,62 @@ function mCloseEdit() {
   document.getElementById('mEditBackdrop').classList.remove('open');
   document.getElementById('mEditSheet').classList.remove('open');
   document.getElementById('mEditPickOpts')?.classList.remove('open');
+}
+
+// ── Recurring/WR edit sheet (name/notes/important) ────────────────────────────────
+// Both wrec (old-style WR recurring) and rec (non-WR recurring) live in st.recurring;
+// wrrule (new-style WR rules) lives in st.wrRules — both PATCH the same
+// wr_recurring_rules table server-side (confirmed via existing mobile PATCH call sites),
+// so one save path covers all three. Cadence/schedule editing is NOT included here —
+// that's desktop's much larger openRecEditModal (monthly modes, nth-weekday, per-
+// occurrence overrides, etc.); scoping this to what's safe to ship now.
+let _mRecEditId = null, _mRecEditType = null, _mRecEditImportant = false;
+function mOpenRecEdit(outer) {
+  const rtype = outer.dataset.rtype;
+  const ruleId = outer.dataset.ruleid;
+  if (!ruleId) return;
+  const r = (rtype === 'wrrule' ? st.wrRules : st.recurring).find(x => String(x.id) === String(ruleId));
+  if (!r) return;
+  _mRecEditId = ruleId;
+  _mRecEditType = rtype;
+  _mRecEditImportant = !!r.important;
+  document.getElementById('mRecEditName').value = r.name || '';
+  document.getElementById('mRecEditNotes').value = r.notes || '';
+  document.getElementById('mRecEditImpBtn').classList.toggle('flagged', _mRecEditImportant);
+  document.getElementById('mRecEditBackdrop').classList.add('open');
+  document.getElementById('mRecEditSheet').classList.add('open');
+}
+function mCloseRecEdit() {
+  _mRecEditId = null;
+  document.getElementById('mRecEditBackdrop').classList.remove('open');
+  document.getElementById('mRecEditSheet').classList.remove('open');
+}
+function mToggleRecEditImp() {
+  _mRecEditImportant = !_mRecEditImportant;
+  document.getElementById('mRecEditImpBtn').classList.toggle('flagged', _mRecEditImportant);
+}
+function mSaveRecEdit() {
+  const id = _mRecEditId, type = _mRecEditType;
+  if (!id) return;
+  const name = document.getElementById('mRecEditName').value.trim();
+  if (!name) return;
+  const notes = document.getElementById('mRecEditNotes').value;
+  const arr = type === 'wrrule' ? st.wrRules : st.recurring;
+  const r = arr.find(x => String(x.id) === String(id));
+  if (!r) return;
+  const prev = {name: r.name, notes: r.notes, important: r.important};
+  r.name = name; r.notes = notes; r.important = _mRecEditImportant;
+  save();
+  mCloseRecEdit();
+  renderAll();
+  sbReq('PATCH', 'wr_recurring_rules', {name, notes, important: _mRecEditImportant}, `?id=eq.${id}`);
+  pushUndo(() => {
+    const r2 = arr.find(x => String(x.id) === String(id));
+    if (r2) Object.assign(r2, prev);
+    save();
+    renderAll();
+    sbReq('PATCH', 'wr_recurring_rules', prev, `?id=eq.${id}`);
+  }, 'Edited recurring task');
 }
 
 // When a task moves to a new day, carry its undone schedule blocks along (they're
@@ -1229,6 +1275,9 @@ function _mRowEdit(outer) {
   const rtype = outer.dataset.rtype;
   if (rtype === 'task') mOpenEdit(outer.dataset.tid);
   else if (rtype === 'shop') mOpenShopEdit(outer.dataset.shopid);
+  else if (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') mOpenRecEdit(outer);
+  // 'vid' has no edit surface (only Remove from Today, via the quick-actions menu) —
+  // double-tap intentionally no-ops for it.
 }
 
 // ── Swipe-to-delete ───────────────────────────────────────────────────────────
@@ -1383,17 +1432,27 @@ let _mTaskMenuId = null;
 let _mTaskMenuType = null;
 function _mShowTaskMenu(el) {
   const rtype = el.dataset.rtype;
-  const id = rtype === 'shop' ? el.dataset.shopid : el.dataset.tid;
-  if (rtype !== 'task' && rtype !== 'shop') return;
-  const t = rtype === 'shop' ? st.shopping.find(x => String(x.id) === String(id)) : st.tasks.find(x => String(x.id) === String(id));
+  // wrec/wrrule/rec have exactly one applicable action (Edit) — skip the intermediate
+  // menu and go straight there instead of showing a sheet with a single button.
+  if (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') { mOpenRecEdit(el); return; }
+  if (rtype !== 'task' && rtype !== 'shop' && rtype !== 'vid') return;
+  const id = rtype === 'shop' ? el.dataset.shopid : rtype === 'vid' ? el.dataset.vidid : el.dataset.tid;
+  const t = rtype === 'shop' ? st.shopping.find(x => String(x.id) === String(id))
+    : rtype === 'vid' ? (st.videos || []).find(x => String(x.id) === String(id))
+    : st.tasks.find(x => String(x.id) === String(id));
   if (!t) return;
   _mTaskMenuId = id;
   _mTaskMenuType = rtype;
-  document.getElementById('mTaskMenuTitle').textContent = t.name || '';
+  document.getElementById('mTaskMenuTitle').textContent = t.name || t.topic || t.title || '';
+  const editBtn = document.getElementById('mTaskMenuEditBtn');
   const dupBtn = document.getElementById('mTaskMenuDupBtn');
   const flagBtn = document.getElementById('mTaskMenuFlagBtn');
+  const delBtn = document.getElementById('mTaskMenuDelBtn');
+  editBtn.style.display = rtype === 'vid' ? 'none' : '';
   dupBtn.style.display = rtype === 'task' ? '' : 'none';
   flagBtn.style.display = rtype === 'task' ? '' : 'none';
+  delBtn.textContent = rtype === 'vid' ? '↩︎  Remove from Today' : '✕  Delete';
+  delBtn.style.color = rtype === 'vid' ? '' : '#dc2626';
   if (rtype === 'task') flagBtn.textContent = t.important ? '⚑  Remove Important' : '⚑  Flag as Important';
   document.getElementById('mTaskMenuBackdrop').classList.add('open');
   document.getElementById('mTaskMenuSheet').classList.add('open');
@@ -1410,7 +1469,33 @@ function mTaskMenuEdit() {
 function mTaskMenuDelete() {
   const id = _mTaskMenuId, type = _mTaskMenuType;
   mCloseTaskMenu();
-  if (type === 'shop') mDeleteShopDirect(id); else mDeleteById(id);
+  if (type === 'shop') mDeleteShopDirect(id);
+  else if (type === 'vid') mUnassignVideoToday(id);
+  else mDeleteById(id);
+}
+
+// "Delete" for a video task means take it off today's list, not delete the video itself
+// — mirrors _mMoveToTodayArgs's 'vid' branch (mobile-overview.js) in reverse: that writes
+// _mVidDayMap[id]=today, this clears it (plus any timeblock for it on that day).
+async function mUnassignVideoToday(id) {
+  const m = _mVidDayMap();
+  const prev = m[String(id)];
+  if (prev === undefined) return;
+  delete m[String(id)];
+  _mVidDayMapSet(m);
+  const removedBlocks = (st.blocks || []).filter(b => String(b._vidId) === String(id) && b.ds === prev);
+  st.blocks = (st.blocks || []).filter(b => !(String(b._vidId) === String(id) && b.ds === prev));
+  save();
+  renderAll();
+  removedBlocks.forEach(b => sbDeleteBlock(b.id));
+  pushUndo(() => {
+    const m2 = _mVidDayMap();
+    m2[String(id)] = prev;
+    _mVidDayMapSet(m2);
+    removedBlocks.forEach(b => { st.blocks.push(b); sbSaveBlock(b); });
+    save();
+    renderAll();
+  }, 'Removed from today');
 }
 function mTaskMenuToggleImportant() {
   const id = _mTaskMenuId;
