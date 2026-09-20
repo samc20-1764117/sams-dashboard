@@ -343,6 +343,22 @@
   <button type="button" class="m-wr-scope-opt" id="mTaskMenuDelBtn" style="color:#dc2626" onclick="mTaskMenuDelete()">✕&nbsp;&nbsp;Delete</button>
 </div>
 
+<!-- Recurring/WR quick-actions sheet (Today list, current-week rows — distinct from
+     #mWrScopeSheet below, which is only for a genuine PAST-week miss). Order matches
+     desktop's own WR context menu content, flattened to one column and reordered by
+     actual usage frequency: skip this week is the single most common action, all-future
+     shifts next-most, then the narrower this-occurrence-only shifts, Edit last. -->
+<div id="mWrActionsBackdrop" onclick="mCloseWrActions()"></div>
+<div id="mWrActionsSheet">
+  <h3 id="mWrActionsTitle"></h3>
+  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsSkip()">⊘&nbsp;&nbsp;Skip this week</button>
+  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsAllFuture(1)">↻&nbsp;&nbsp;Move all future → next week</button>
+  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsAllFuture(-1)">↻&nbsp;&nbsp;Move all future → prev week</button>
+  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsThisWeek(1)">⊞&nbsp;&nbsp;This one → next week</button>
+  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsThisWeek(-1)">⊞&nbsp;&nbsp;This one → prev week</button>
+  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsEdit()">✏️&nbsp;&nbsp;Edit</button>
+</div>
+
 <!-- Past-week recurring/WR "move to today" scope sheet -->
 <div id="mWrScopeBackdrop" onclick="mCloseWrScopeSheet()"></div>
 <div id="mWrScopeSheet">

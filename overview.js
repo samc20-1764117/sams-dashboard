@@ -1185,13 +1185,13 @@ function tRowVidStepVirt(t,arr){
   const _vs=ov?_OV():gc('videos');
   const _day=t._vidStepDay||'';
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''}" id="ti-${t.id}" draggable="true"
-    ondragstart="dragId='vidstep::${t._vidId}::${t._vidStep}::${_day}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
+    ondragstart="if(event.target.closest('.dlbl.ov')){event.preventDefault();return;}dragId='vidstep::${t._vidId}::${t._vidStep}::${_day}';event.dataTransfer.effectAllowed='move';event.currentTarget.classList.add('dragging');document.body.classList.add('body-dragging');showWkcEdges(true)"
     ondragend="event.currentTarget.classList.remove('dragging');document.body.classList.remove('body-dragging');showWkcEdges(false)"
     onclick="selTask(event,'${t.id}')"
     ondblclick="if(typeof openVidEdit==='function')openVidEdit('${t._vidId}')">
     <label class="chk-wrap" onclick="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="_vidStepToggleDone('${t._vidId}','${t._vidStep}',this.checked,false,'${_day}')"></label>
     <span class="tn">${escHtml(t.name)}</span>
-    ${ov&&t.due_date?`<span class="dlbl ov">${['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()]}</span>`:''}
+    ${ov&&t.due_date?_dlblOvArrow(['S','M','T','W','T','F','S'][new Date(t.due_date.split('T')[0]+'T12:00').getDay()],`_vidStepAssignToDay('${t._vidId}','${t._vidStep}',tod(),'${_day}')`):''}
     ${!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${_vs.bg}" stroke="${_vs.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`:''}
     ${arr?'<span class="tb-arrow">›</span>':''}
     <button class="delbtn" onclick="event.stopPropagation();_vidStepUnassign('${t._vidId}','${t._vidStep}','${_day}')">✕</button>
