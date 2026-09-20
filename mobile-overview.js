@@ -787,6 +787,86 @@ function mSaveRecEdit() {
   }, 'Edited recurring task');
 }
 
+// ── Recurring/WR quick-actions sheet (#mWrActionsSheet) ────────────────────────────
+// Skip this week / Move all future ±1 week / Move this occurrence only ±1 week / Edit —
+// mirrors desktop's WR right-click context menu (showWrRuleCtx, overview.js) content,
+// flattened into one column and reordered by actual usage frequency (skip is the most
+// common action, all-future shifts next-most). All the underlying state changes
+// (_dateOverrides, starting_date, wr_recurring_overrides rows) are identical to desktop's
+// via the _mWrShiftThisWeek/_mWrShiftAllFuture ports above, so a change made here shows
+// up on desktop on its next sync — this is not mobile-only local state.
+let _mWrActionsRtype = null, _mWrActionsRuleId = null, _mWrActionsWkKey = null, _mWrActionsEl = null;
+function _mShowWrActions(el) {
+  const rtype = el.dataset.rtype;
+  const ruleId = el.dataset.ruleid;
+  const wkKey = el.dataset.wkkey;
+  if (!ruleId) return;
+  const r = (rtype === 'wrrule' ? st.wrRules : st.recurring).find(x => String(x.id) === String(ruleId));
+  if (!r) return;
+  _mWrActionsRtype = rtype;
+  _mWrActionsRuleId = ruleId;
+  _mWrActionsWkKey = wkKey;
+  _mWrActionsEl = el;
+  document.getElementById('mWrActionsTitle').textContent = r.name || '';
+  document.getElementById('mWrActionsBackdrop').classList.add('open');
+  document.getElementById('mWrActionsSheet').classList.add('open');
+}
+function mCloseWrActions() {
+  document.getElementById('mWrActionsBackdrop').classList.remove('open');
+  document.getElementById('mWrActionsSheet').classList.remove('open');
+}
+// "Skip this week" — ports skipWRec/skipRecVirtThisWk's (features.js) block-cleanup
+// behavior for the wrec/rec case, but keys the cleanup off dsToWkKey(b.ds)===wkKey (the
+// row's OWN week) instead of desktop's isInWk(b.ds, wkOff) (a "currently viewed week"
+// global mobile has no equivalent of — same substitution _mWriteWrOverride already made
+// for wrrule). wrrule reuses the existing _mWriteWrOverride port directly, which already
+// does this correctly.
+function mWrActionsSkip() {
+  const rtype = _mWrActionsRtype, ruleId = _mWrActionsRuleId, wkKey = _mWrActionsWkKey;
+  mCloseWrActions();
+  if (!wkKey) return;
+  if (rtype === 'wrrule') {
+    _mWriteWrOverride(ruleId, wkKey, {override_type: 'skip'}, {undoLabel: 'Skipped WR task this week'});
+    return;
+  }
+  const r = st.recurring.find(x => String(x.id) === String(ruleId));
+  if (!r) return;
+  if (!r._dateOverrides) r._dateOverrides = {};
+  const prev = r._dateOverrides[wkKey];
+  r._dateOverrides[wkKey] = '__skip__';
+  const linkedBlocks = (st.blocks || []).filter(b => (String(b.recId) === String(ruleId) || String(b.ruleId) === String(ruleId)) && dsToWkKey(b.ds) === wkKey);
+  st.blocks = (st.blocks || []).filter(b => !linkedBlocks.some(lb => lb.id === b.id));
+  save(); renderAll();
+  linkedBlocks.forEach(b => sbDeleteBlock(b.id));
+  sbReq('PATCH', 'wr_recurring_rules', {date_overrides: r._dateOverrides}, recQs(ruleId));
+  pushUndo(() => {
+    if (prev !== undefined) r._dateOverrides[wkKey] = prev; else delete r._dateOverrides[wkKey];
+    linkedBlocks.forEach(b => { st.blocks.push(b); sbSaveBlock(b); });
+    save(); renderAll();
+    sbReq('PATCH', 'wr_recurring_rules', {date_overrides: r._dateOverrides}, recQs(ruleId));
+  }, 'Skipped recurring task this week');
+}
+function mWrActionsAllFuture(delta) {
+  const rtype = _mWrActionsRtype, ruleId = _mWrActionsRuleId, wkKey = _mWrActionsWkKey;
+  mCloseWrActions();
+  if (!wkKey) return;
+  _mWrShiftAllFuture(rtype, ruleId, wkKey, delta * 7);
+}
+function mWrActionsThisWeek(delta) {
+  const rtype = _mWrActionsRtype, ruleId = _mWrActionsRuleId, wkKey = _mWrActionsWkKey;
+  mCloseWrActions();
+  if (!wkKey) return;
+  // delta here is a direction (1 or -1) from the button; _mWrShiftThisWeek (like desktop's
+  // _wrShiftAnchorOne) wants an actual day offset, so scale to a full week same as
+  // mWrActionsAllFuture does.
+  _mWrShiftThisWeek(rtype, ruleId, wkKey, delta * 7);
+}
+function mWrActionsEdit() {
+  const el = _mWrActionsEl;
+  mCloseWrActions();
+  if (el) mOpenRecEdit(el);
+}
+
 // When a task moves to a new day, carry its undone schedule blocks along (they're
 // stale on the old day otherwise — e.g. moved task still showing on yesterday's TB)
 function _mMoveTaskBlocks(taskId, fromDs, toDs) {
@@ -933,6 +1013,141 @@ function _mNthWeekdayOfMonth(d) {
   const nextOcc = new Date(d); nextOcc.setDate(day + 7);
   if (nextOcc.getMonth() !== d.getMonth()) return -1;
   return Math.min(Math.ceil(day / 7), 4);
+}
+
+// Ports of desktop's _wkKeyToOff/_wrClampToWeek (overview.js) — pure date helpers, no
+// desktop-only globals involved.
+function _mWkKeyToOff(wkKey) {
+  const mon = new Date(wkKey + 'T12:00'), now = new Date(), dow = (now.getDay() + 6) % 7;
+  const curMon = new Date(now); curMon.setDate(now.getDate() - dow); curMon.setHours(0, 0, 0, 0);
+  return Math.round((mon - curMon) / (7 * 864e5));
+}
+function _mWrClampToWeek(ds, targetWkKey) {
+  const sun = new Date(targetWkKey + 'T12:00'); sun.setDate(sun.getDate() + 6); const sunDs = d2s(sun);
+  while (ds < targetWkKey) { const d = new Date(ds + 'T12:00'); d.setDate(d.getDate() + 7); ds = d2s(d); }
+  while (ds > sunDs) { const d = new Date(ds + 'T12:00'); d.setDate(d.getDate() - 7); ds = d2s(d); }
+  if (targetWkKey === getWkKey(0) && ds < tod()) ds = tod();
+  return ds;
+}
+
+// Port of desktop's _wrShiftAnchorOne (overview.js, the WR right-click menu's "This time
+// only → Next/Prev") — moves just THIS week's occurrence to the adjacent week, leaving
+// the recurrence's underlying schedule untouched. Desktop reads its target rule/week from
+// module-level _wrCtxRuleId/_wrCtxRecId/_wrCtxWkKey (set by a right-click); mobile has no
+// equivalent "currently open context menu" state, so those are explicit params here
+// instead — same reasoning _mWrMoveToThisWeek/_mRecMoveAllFuture already use. Writes to
+// wr_recurring_rules (+ wr_recurring_overrides for wrrule) exactly like desktop, so a
+// change here is picked up by desktop on its next sync — no separate mobile-only state.
+function _mWrShiftThisWeek(rtype, ruleId, wkKey, delta) {
+  if (rtype === 'rec' || rtype === 'wrec') {
+    const r = st.recurring.find(x => String(x.id) === String(ruleId));
+    if (!r || !wkKey) return;
+    if (!r._dateOverrides) r._dateOverrides = {};
+    const srcMon = new Date(wkKey + 'T12:00'); srcMon.setDate(srcMon.getDate() + (delta > 0 ? 7 : -7));
+    const targetWkKey = d2s(srcMon);
+    const tgtOv = r._dateOverrides[targetWkKey];
+    if (tgtOv && tgtOv !== '__skip__') { showToast('Already scheduled that week', '#6b7280', 2000); return; }
+    const tgtOff = _mWkKeyToOff(targetWkKey);
+    const natDue = getRecurringWeekTasks(tgtOff).some(t => String(t._recId) === String(ruleId));
+    if (natDue) { showToast('Already scheduled that week', '#6b7280', 2000); return; }
+    const prevCurrent = r._dateOverrides[wkKey];
+    const prevTarget = r._dateOverrides[targetWkKey];
+    const _natDow = dayNameToIdx(r.appears_on_date);
+    const _natDate = _natDow >= 0 ? getDateForDow(_natDow, _mWkKeyToOff(wkKey)) : null;
+    const base = prevCurrent && prevCurrent !== '__skip__' ? new Date(prevCurrent + 'T12:00') : _natDate ? new Date(d2s(_natDate) + 'T12:00') : new Date(wkKey + 'T12:00');
+    base.setDate(base.getDate() + delta);
+    const next = _mWrClampToWeek(d2s(base), targetWkKey);
+    r._dateOverrides[wkKey] = '__skip__';
+    r._dateOverrides[targetWkKey] = next;
+    save(); renderAll();
+    sbReq('PATCH', 'wr_recurring_rules', {date_overrides: r._dateOverrides}, recQs(ruleId));
+    pushUndo(() => {
+      if (prevCurrent !== undefined) r._dateOverrides[wkKey] = prevCurrent; else delete r._dateOverrides[wkKey];
+      if (prevTarget !== undefined) r._dateOverrides[targetWkKey] = prevTarget; else delete r._dateOverrides[targetWkKey];
+      save(); renderAll();
+      sbReq('PATCH', 'wr_recurring_rules', {date_overrides: r._dateOverrides}, recQs(ruleId));
+    }, 'Moved recurring task');
+    return;
+  }
+  const rule = st.wrRules.find(r => String(r.id) === String(ruleId));
+  if (!rule) return;
+  if (!rule._dateOverrides) rule._dateOverrides = {};
+  const srcWkKey = wkKey || getWkKey(0);
+  const srcMon = new Date(srcWkKey + 'T12:00'); srcMon.setDate(srcMon.getDate() + (delta > 0 ? 7 : -7));
+  const targetWkKey = d2s(srcMon);
+  const tgtOff = _mWkKeyToOff(targetWkKey);
+  const naturallyDue = isWRRuleDueThisWeek(rule, tgtOff);
+  const tgtOv = rule._dateOverrides[targetWkKey];
+  const movedInOv = st.wrOverrides.some(o => o.override_type === 'move' && o.moved_to_wk_key === targetWkKey && String(o.rule_id) === String(ruleId));
+  if ((naturallyDue || movedInOv) && (!tgtOv || tgtOv === '__skip__')) { showToast('Already scheduled that week', '#6b7280', 2000); return; }
+  if (tgtOv && tgtOv !== '__skip__') { showToast('Already scheduled that week', '#6b7280', 2000); return; }
+  const prevSrc = rule._dateOverrides[srcWkKey];
+  const prevTgt = rule._dateOverrides[targetWkKey];
+  const curDs = prevSrc && prevSrc !== '__skip__' ? prevSrc : null;
+  delete rule._dateOverrides[srcWkKey];
+  if (curDs) { const base = new Date(curDs + 'T12:00'); base.setDate(base.getDate() + delta); rule._dateOverrides[targetWkKey] = _mWrClampToWeek(d2s(base), targetWkKey); }
+  else delete rule._dateOverrides[targetWkKey];
+  sbReq('PATCH', 'wr_recurring_rules', {date_overrides: rule._dateOverrides}, `?id=eq.${ruleId}`);
+  const _moveFull = {rule_id: ruleId, wk_key: srcWkKey, override_type: 'move', moved_to_wk_key: targetWkKey, done: null, custom_name: null, custom_notes: null};
+  const _existingOv = st.wrOverrides.find(o => String(o.rule_id) === String(ruleId) && o.wk_key === srcWkKey);
+  const _prevOv = _existingOv ? {..._existingOv} : null;
+  let _ovRealId = null;
+  if (_existingOv) {
+    Object.assign(_existingOv, _moveFull);
+    sbReqSilent('PATCH', 'wr_recurring_overrides', _moveFull, `?id=eq.${_existingOv.id}`);
+  } else {
+    const _tmpId = 'wrov-tmp-' + Date.now();
+    st.wrOverrides.push({..._moveFull, id: _tmpId});
+    sbReqSilent('POST', 'wr_recurring_overrides', _moveFull, '').then(res => { if (res && res[0]) { _ovRealId = String(res[0].id); const idx = st.wrOverrides.findIndex(o => String(o.id) === _tmpId); if (idx > -1) st.wrOverrides[idx] = res[0]; } });
+  }
+  save(); renderAll();
+  pushUndo(() => {
+    if (prevSrc !== undefined) rule._dateOverrides[srcWkKey] = prevSrc; else delete rule._dateOverrides[srcWkKey];
+    if (prevTgt !== undefined) rule._dateOverrides[targetWkKey] = prevTgt; else delete rule._dateOverrides[targetWkKey];
+    sbReq('PATCH', 'wr_recurring_rules', {date_overrides: rule._dateOverrides}, `?id=eq.${ruleId}`);
+    if (_prevOv) { const ov = st.wrOverrides.find(o => String(o.rule_id) === String(ruleId) && o.wk_key === srcWkKey); if (ov) Object.assign(ov, _prevOv); sbReqSilent('PATCH', 'wr_recurring_overrides', _prevOv, `?id=eq.${ov ? ov.id : _prevOv.id}`); }
+    else { const id = _ovRealId || st.wrOverrides.find(o => String(o.rule_id) === String(ruleId) && o.wk_key === srcWkKey)?.id; st.wrOverrides = st.wrOverrides.filter(o => String(o.rule_id) !== String(ruleId) || o.wk_key !== srcWkKey); if (id) sbReqSilent('DELETE', 'wr_recurring_overrides', null, `?id=eq.${id}`); }
+    save(); renderAll();
+  }, 'Moved WR task to ' + (delta > 0 ? 'next' : 'prev') + ' week');
+}
+
+// Port of desktop's _wrCtxShiftScheduleOne (overview.js, the WR right-click menu's "All
+// future → Next/Prev") — shifts the recurrence's own anchor (starting_date) by a week,
+// moving every future occurrence, not just this one. Desktop's _wrClearPastOrphanPins
+// (the "clean up phantom past occurrences after a shift" step) is a documented permanent
+// no-op as of the current desktop code (overview.js) — this port reflects that; if that
+// function is ever un-stubbed on desktop, port the real behavior here too.
+function _mWrShiftAllFuture(rtype, ruleId, wkKey, delta) {
+  const isRec = rtype === 'rec' || rtype === 'wrec';
+  const rule = isRec ? st.recurring.find(r => String(r.id) === String(ruleId)) : st.wrRules.find(r => String(r.id) === String(ruleId));
+  if (!rule) return;
+  const prevStart = rule.starting_date;
+  const _addedSnap = !isRec ? _mWrSnapshotSchedule(rule) : false;
+  const base = rule.starting_date ? new Date(rule.starting_date + 'T12:00') : new Date(wkKey + 'T12:00');
+  base.setDate(base.getDate() + delta);
+  rule.starting_date = d2s(base);
+  if (!rule._dateOverrides) rule._dateOverrides = {};
+  const _prevDov = rule._dateOverrides[wkKey];
+  if (_prevDov !== undefined) delete rule._dateOverrides[wkKey];
+  let _removedOvs = [];
+  if (!isRec) {
+    _removedOvs = (st.wrOverrides || []).filter(o => String(o.rule_id) === String(ruleId) && o.override_type === 'move' && (o.wk_key === wkKey || o.moved_to_wk_key === wkKey)).map(o => ({...o}));
+    if (_removedOvs.length) {
+      st.wrOverrides = st.wrOverrides.filter(o => !(String(o.rule_id) === String(ruleId) && o.override_type === 'move' && (o.wk_key === wkKey || o.moved_to_wk_key === wkKey)));
+      _removedOvs.forEach(o => { if (o.id && !String(o.id).startsWith('wrov-tmp-')) sbReqSilent('DELETE', 'wr_recurring_overrides', null, `?id=eq.${o.id}`); });
+    }
+  }
+  sbReq('PATCH', 'wr_recurring_rules', {starting_date: rule.starting_date, date_overrides: rule._dateOverrides}, isRec ? recQs(ruleId) : `?id=eq.${ruleId}`);
+  save(); renderAll();
+  showToast('Schedule moved ' + (delta > 0 ? '1 week later' : '1 week earlier'), '#10b981', 1600);
+  pushUndo(() => {
+    rule.starting_date = prevStart;
+    if (_addedSnap) rule._dateOverrides.__priorScheds__.pop();
+    if (_prevDov !== undefined) rule._dateOverrides[wkKey] = _prevDov;
+    _removedOvs.forEach(o => { st.wrOverrides.push(o); sbReqSilent('POST', 'wr_recurring_overrides', {rule_id: o.rule_id, wk_key: o.wk_key, override_type: o.override_type, moved_to_wk_key: o.moved_to_wk_key || null, done: o.done || null, custom_name: o.custom_name || null, custom_notes: o.custom_notes || null}, ''); });
+    sbReq('PATCH', 'wr_recurring_rules', {starting_date: prevStart, date_overrides: rule._dateOverrides}, isRec ? recQs(ruleId) : `?id=eq.${ruleId}`);
+    save(); renderAll();
+  }, 'Shifted schedule');
 }
 
 // Port of desktop's writeWrOverride (overview.js) — identical logic, renders via renderAll().
@@ -1436,16 +1651,16 @@ let _mTaskMenuType = null;
 let _mTaskMenuEl = null;
 function _mShowTaskMenu(el) {
   const rtype = el.dataset.rtype;
-  if (!['task', 'shop', 'vid', 'vidstep', 'wrec', 'wrrule', 'rec'].includes(rtype)) return;
+  // Recurring/WR rows get their own dedicated actions sheet (Skip/Move this-week/Move
+  // all-future/Edit) — different action set entirely from the generic task menu below.
+  if (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') { _mShowWrActions(el); return; }
+  if (!['task', 'shop', 'vid', 'vidstep'].includes(rtype)) return;
   const id = rtype === 'shop' ? el.dataset.shopid
     : (rtype === 'vid' || rtype === 'vidstep') ? el.dataset.vidid
-    : (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') ? el.dataset.ruleid
     : el.dataset.tid;
   let t;
   if (rtype === 'shop') t = st.shopping.find(x => String(x.id) === String(id));
   else if (rtype === 'vid' || rtype === 'vidstep') t = (st.videos || []).find(x => String(x.id) === String(id));
-  else if (rtype === 'wrrule') t = st.wrRules.find(x => String(x.id) === String(id));
-  else if (rtype === 'wrec' || rtype === 'rec') t = st.recurring.find(x => String(x.id) === String(id));
   else t = st.tasks.find(x => String(x.id) === String(id));
   if (!t) return;
   _mTaskMenuEl = el;
@@ -1456,7 +1671,7 @@ function _mShowTaskMenu(el) {
   const dupBtn = document.getElementById('mTaskMenuDupBtn');
   const flagBtn = document.getElementById('mTaskMenuFlagBtn');
   const delBtn = document.getElementById('mTaskMenuDelBtn');
-  const hasEdit = rtype === 'task' || rtype === 'shop' || rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec';
+  const hasEdit = rtype === 'task' || rtype === 'shop';
   const hasDelete = rtype === 'task' || rtype === 'shop' || rtype === 'vid' || rtype === 'vidstep';
   const isRemoveOnly = rtype === 'vid' || rtype === 'vidstep';
   editBtn.style.display = hasEdit ? '' : 'none';
