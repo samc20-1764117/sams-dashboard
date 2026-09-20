@@ -144,6 +144,16 @@ let _mFullAddCat  = 'Home';  // full add sheet (today)
 
 ---
 
+## Dark Mode
+Toggle lives on the **More tab** (`#mExtrasPage`, a `.m-extras-btn` row — NOT in a settings popup like desktop), calls `mToggleDark()` which wraps the shared `toggleDark()` (features.js). Reuses `cfg.dark` (same persisted flag as desktop) and desktop's `body.dark` class — mobile does NOT have its own separate dark-mode flag.
+- **`mToggleDark()` is the final word on mobile's `--bg`, not `toggleDark()` alone** — `toggleDark()`'s background handling (`applyTheme()`) is built for desktop's decorative gradient themes and always re-sets `--bg` to a `THEMES[...]` value regardless of what mobile wants, so `mToggleDark()` force-sets the correct flat mobile value (`#16141f` dark / `#f5f4f8` light) right after calling it, every time.
+- Forces a reflow on `#mHeader` and `#mNav` after the toggle — a sticky-positioned element on iOS Safari can keep its previous composited background on-screen when only a CSS custom property changes with no accompanying layout trigger; `void el.offsetHeight` fixes it immediately rather than waiting for the next repaint.
+- `mInit()` applies `cfg.dark` the same way (flat `--bg`, not `toggleDark()`'s desktop-oriented path) right after `load()`, mirroring desktop's own `init()` ordering.
+- All mobile CSS uses the same `:root` / `html.init-dark` two-block variable pattern as desktop (`rules/dark-mode.md`) — new mobile-only elements (e.g. the Liquid Glass nav's `--nav-*` vars) follow that same pattern, just scoped to mobile.css.
+- **Build stamp** (`.m-build-stamp`, on the login screen + More tab): self-populates from `window._BUILD` (set inline in mobile.html's `<head>`) on every `mInit()` — a permanent diagnostic, not removed after use. Lets a "did my change actually load" question be answered by looking at the screen instead of guessing at PWA cache state.
+
+---
+
 ## Tab System
 
 ### State
@@ -157,8 +167,8 @@ Persisted to `localStorage._mLastTab`; init restores it (refresh keeps current t
 ### `mShowTab(tab)`
 - Shows/hides one of `#mTodayPage`, `#mTBPage`, `#mWeekPage`, `#mMonthPage`, `#mShopPage`, `#mExtrasPage`, `#mRecipesPage`
 - Shows `#mAddBar` on today only, `#mShopAddBar` on shop only — both `position:fixed` (see Today/Shop sections; NOT normal flex flow — that regressed to a page-load position jump once)
-- `#mApp` padding-bottom is always just `calc(52px + env(safe-area-inset-bottom))` (nav clearance) — the fixed add bars reserve their own clearance via `bottom:calc(52px+safe)` and don't need it duplicated
-- `mSyncBarClearance(barId, listId)`: measures the *actual* rendered height of the currently-visible add bar and sets that as the matching list's `padding-bottom`, rather than a guessed px value — called for today/shop after render
+- **`#mApp` reserves NO bottom padding** (2026-09-18+, was `calc(52px+safe)`) — content now scrolls BEHIND the floating glass nav (see Bottom nav below) instead of stopping short of it, so each tab owns its own bottom clearance instead: Today/Shop via `mSyncBarClearance` (below), Week via `#mWeekList`'s static padding, Month via `_mSyncMonthScrollHeight`'s direct viewport math, Timeblock via `#mTLInner`'s static padding. If the nav's own footprint (`bottom`/`height` on `#mNav`) ever changes, every one of those has a hardcoded number that must move with it.
+- `mSyncBarClearance(barId, pageId)`: measures the *actual* rendered height of the currently-visible add bar and applies it as the PAGE wrapper's (`#mTodayPage`/`#mShopPage`, not the list/card inside it) `padding-bottom` — applying it to the card itself used to stretch a mostly-empty card down the whole screen. Called for today/shop after render.
 - Updates `#mHeaderTitle`. `#mProgress` only shown on today. `#mTodayTBBtn` only shown on today. `#mGoTodayBtn` shown on every tab EXCEPT today (see Header below)
 - `#mDateLbl` (date subtitle) is **always visible**, same header height on every tab (`visibility`, not `display`, so hiding it never changes layout) — Today/Timeblock show the swiped-day date; every other tab always shows today's real date
 - `main.style.padding`: `12px 16px` on today/shop/recipes, `0` on tb/week/month/extras (pages that manage their own internal layout/scroll)
@@ -173,6 +183,10 @@ Persisted to `localStorage._mLastTab`; init restores it (refresh keeps current t
   #mMonthTodayNav (month only)        ← centered Today/‹/› group, see Month section
   #mTodayTBBtn (today only)           ← clock-face icon → opens Timeblock (mShowTab('tb'))
   #mProgress (today only)             ← done/total badge, yellow until 100% then green (.m-prog-complete)
+  #mTodayAddBtn (today only)          ← "+" opens the full-add sheet (mOpenFullAdd()) — moved here
+                                         2026-09-18 from a header row INSIDE the Tasks card (that
+                                         row/the "TASKS" label were removed entirely to reclaim
+                                         vertical space for the list)
   #mShopHeaderBtns (shop only)        ← 🍽 Meals icon + red "HEB" List badge
   #mMonthAddBtn (month only)          ← "+" opens full-add sheet for the selected day (mMonthAddTask)
   #mGoTodayBtn (week only)            ← jumps to Today tab; gone from Shop/More/Month (Month has its
@@ -184,17 +198,13 @@ Persisted to `localStorage._mLastTab`; init restores it (refresh keeps current t
 ```
 `mShowTab(tab)` toggles `#mHeaderTitleWrap` vs `#mMonthHeaderControls`/`#mMonthTodayNav`/`#mMonthAddBtn` based on `tab==='month'`, and `#mGoTodayBtn` based on `tab==='week'` — single source of truth for all of the above, see Month section for the controls themselves.
 
-### Bottom nav
-```html
-<nav id="mNav">
-  <button class="m-nav-btn" onclick="mShowTab('today')">Today</button>
-  <button class="m-nav-btn" onclick="mShowTab('week')">Week</button>
-  <button class="m-nav-btn" onclick="mShowTab('month')">Month</button>
-  <button class="m-nav-btn" onclick="mShowTab('shop')">Shop</button>
-  <button class="m-nav-btn" onclick="mShowTab('extras')">More</button>
-</nav>
-```
-Fixed at bottom, `height: calc(52px + env(safe-area-inset-bottom))`, icons vertically centered (`justify-content:center` on `.m-nav-btn`).
+### Bottom nav — Liquid Glass (redesigned 2026-09)
+Floating inset pill, NOT the old edge-to-edge bar: `#mNav{left:14px;right:14px;bottom:20px;height:56px;border-radius:28px}`, real `backdrop-filter:blur(34px) saturate(220%)`, light/dark tint via `--nav-glass-bg`/`--nav-glass-shadow`/`--nav-icon-inactive`/`--nav-pill-bg`/`--nav-pill-shadow` CSS vars (`:root` vs `html.init-dark`, same pattern as every other themed var). `overflow:hidden` on `#mNav` clips the highlight pill's spring-overshoot to the bar's own rounded edge (else it visibly pokes past on the leftmost/rightmost tabs).
+- **`#mNavBackdrop`**: a SEPARATE full-bleed blur layer (`left:0;right:0;bottom:0;height:76px`, behind `#mNav`, `pointer-events:none`) spanning from the pill's top edge down to the true screen bottom — makes the whole bottom strip read as one continuous glass surface (content blurred-through beside/below the pill too), not just the pill itself floating in empty space. `76px` = `#mNav`'s `bottom:20px` + `height:56px`; keep in sync if either changes.
+- **`#mNav` itself sits flush at `bottom:20px` with plain fixed numbers — no `env(safe-area-inset-bottom)` term.** Went through several iterations (safe-area-relative, then safe-area-inflated-height) before landing here: inflating the box height by the safe-area amount to keep tap targets clear of the gesture zone stretched it into a tall rectangle with icons stranded near the top — not pill-shaped. A real Instagram screenshot (2026-09-14) confirmed its floating pill does the same — bleeds close to the true edge rather than reserving the full safe-area as dead space.
+- **`.m-nav-highlight` (the sliding pill)**: `#mNavMoveHighlight` (mobile-overview.js) computes its `translateX` from the active button's real `getBoundingClientRect()`, with `transitionDuration` SCALED to the actual distance traveled (`260ms` to `550ms`, `260 + dist*0.55`) — a fixed duration made a full end-to-end jump (Today↔More) play at 4x the speed of a one-tab hop, which made its spring-overshoot look proportionally much bigger only on the long jumps. Small icon "pop" (`.m-nav-btn.pop`, keyframe `mNavPop`) fires on the newly-active tab after the slide.
+- Active-icon distinction is a bolder stroke (`stroke-width:2.5` vs `2`), not a filled variant — the icon set (Feather-style) is outline-only by design, no matching filled icons to swap to.
+- Icons: Today=sun (not a clock — that belongs to Timeblock), Week/Month=calendar pair (must share the exact same rect `y`/height — Month previously sat 1px off from Week's true center, a copy-paste bug), Shop=bag, More=2×2 grid. All five spans `y:2`→`22` on the `viewBox="0 0 24 24"` — verified via a temporary 3-line debug overlay (icon-top/icon-bottom/label-center, removed once confirmed) after "they look inconsistent" reports; keep any future icon edit within that same box.
 
 ---
 
@@ -202,18 +212,41 @@ Fixed at bottom, `height: calc(52px + env(safe-area-inset-bottom))`, icons verti
 
 ### Key functions
 - `mGetTodayTasks()` — mirrors desktop `renderToday()` logic exactly. Returns sorted array of all task types for today (regular, recurring virtual, WR recurring, WR rules, shopping, pup sessions, travel/birthday extras). Overdue tasks included.
-- `mSortToday(tasks)` — done→bottom, overdue→top, type priority order
+- `mSortDayTasks(tasks, ds)` — exact port of desktop's CURRENT `sortTasksForDay` tier stack (hard tiers: travel > birthday/holiday > overdue > done, THEN manual `_dayOrder` override, else timeblock-position > important > type-priority > name). `mSortToday(tasks)` just calls this with today's `ds`. Was previously running desktop's OLD pre-2026-08-21 stack (birthday>done>travel>overdue>important>...) with no manual-order tie-break at all — fixed 2026-08-26.
+  - **Pup-session task name must be JUST the skill name** (`skill.skill`), not `"{pup}: {skill}"` — desktop's own `renderToday()` uses the bare skill name, and the sort's final tiebreak is alphabetical-by-name, so a mobile-only prefix silently made mobile's order diverge from desktop's even with byte-identical sort code (found 2026-09-19, was the actual root cause of a "mobile sort doesn't match desktop" report — the algorithm was never the bug).
 - `mRenderToday()` — renders `#mTodayList` + updates `#mProgress` (text + `.m-prog-complete` class: yellow while `done<total`, green when `done===total && total>0`, matching desktop's donut green)
-- `mTaskRow(t)` — generates row HTML with: checkbox, name, color dot, edit pencil (regular tasks only), swipe wrapper with `data-tid`. Color priority: overdue (`OV`) > important (`IMP`, `t.important && !t.done`) > category (`gc(catKey)`) — no "not on timeblock" arrow indicator (removed, was `.m-row-arrow`/`▸`, considered visual noise)
+- `mTaskRow(t)` — generates row HTML: checkbox, name, "move to today" button (overdue only). Color priority: overdue (`OV`) > important (`IMP`, `t.important && !t.done`) > category (`gc(catKey)`) — no "not on timeblock" arrow indicator (removed, was `.m-row-arrow`/`▸`, considered visual noise).
+  - **Left color band** (2026-09-18, replaced the old right-side `.m-cat-dot` circle per explicit request): a 4px inset rounded bar (`position:absolute;left:6px;top:7px;bottom:7px`), two-tone — light fill (`s.bg`) + darker 1px outline (`s.d`) — same color PAIR the old dot used, not a single flat vivid line (that read as too harsh against every row). Inset top/bottom (not full row height) so it reads as a mark on this one row, not a continuous stripe running through the list.
+  - **Checkbox**: neutral circle (`.m-chk-wrap input[type=checkbox]`, 19px, drawn via `::after` same technique as desktop's `.chk`) that fills neutral grey + white checkmark when checked — explicitly NOT colored by category (the left band already carries that). Desktop-pattern-matched on request ("the checkbox looks awful, use the circle we already have on desktop, don't make them colored").
+  - **Row card**: solid `--bg-elevated` background + soft ambient shadow (`.m-section`, "floating card" 2026 convention) instead of glass-blur-on-tinted-bg; `body.dark .m-section` swaps to a light inset highlight since a flat black shadow is invisible on a near-black background.
 
-### Task row types
-- Regular task: checkbox → `toggleTask()`, pencil → `mOpenEdit(id)`
+### Task row types & attributes
+Every row carries `data-rid` (its own id, ANY type — used by drag-reorder and the tap-menu router) and `data-rtype` (`'task'`/`'shop'`/`'vid'`/`'vidstep'`/`'wrec'`/`'wrrule'`/`'rec'`/`'other'`). Type-specific extra attributes: `data-shopid` (shop), `data-ruleid`+`data-wkkey` (wrec/wrrule/rec — `ruleId` is `t._ruleId` for wrrule, `t._recId` for wrec/rec), `data-vidid` (vid), `data-vidid`+`data-vidstep`+`data-day` (vidstep). `data-tid` is ONLY set on real tasks (`canEdit`) — the narrower scope swipe-to-delete still uses.
+- Regular task: checkbox → `toggleTask()`
 - WR rule: checkbox → `togWrRule(ruleId, checked, wkKey)`
 - WR recurring: checkbox → `togRec(recId, checked, wkKey)`
 - Non-WR recurring virtual: checkbox → `togRecVirt(recId, checked, wkKey)`
 - Shopping: checkbox → `togShop(shopId, checked)`
 - Pup session: checkbox → `togPupSessionDone(sessId, checked)`
 - Travel/birthday: no checkbox (📅 icon), no swipe
+
+### Row gestures (redesigned 2026-09-18/19)
+- **Single tap** (`mInitTodayDblTap`, delayed by the 350ms double-tap window so a genuine single tap can be told apart from "first half of a double-tap") → `_mShowTaskMenu(el)`, routes by `data-rtype`:
+  - `task`/`shop`/`vid`/`vidstep` → `#mTaskMenuSheet` (Edit/Duplicate/Flag-Important/Delete, buttons individually hidden per type — vid/vidstep only get a "Remove from Today" delete-equivalent, no Edit/Duplicate/Flag)
+  - `wrec`/`wrrule`/`rec` → `#mWrActionsSheet` (Skip/Move-all-future/Move-this-week/Edit — see own subsection below), routed via `_mShowWrActions`
+  - anything else → no-op (no menu surface built yet)
+- **Double tap** → `_mRowEdit(el)`: `task`→`mOpenEdit`, `shop`→`mOpenShopEdit`, `wrec`/`wrrule`/`rec`→`mOpenRecEdit`, `vid`/`vidstep`→ no-op (no edit surface, only Remove-from-Today via the menu)
+- **Hold (480ms) + drag** (`mInitTodayDrag`) → reorder, scoped to `data-rid` (EVERY row type, not just real tasks) — writes `_dayOrder`, the same localStorage key + tier logic desktop's own drag-reorder reads (`_manualTieBreak`/`_dayOrder` in `rules/tasks-ui.md`). **This is per-device, not synced** — `_dayOrder` has never been a Supabase-backed field on desktop either; a mobile reorder won't appear on desktop and vice versa unless that's built as a real feature later.
+- `.m-row-outer` (and every descendant, wildcard) has `user-select:none`/`-webkit-touch-callout:none` on ALL rows (not just `[data-tid]`) — the 480ms hold is exactly iOS's own text-selection trigger window, and virtual rows (recurring/shop/etc, not just real tasks) need the same guard or native selection still wins on those.
+
+### Quick-actions sheets
+- **`#mTaskMenuSheet`** (task/shop/vid/vidstep) — Edit / Duplicate / Flag-important toggle / Delete, per-type button visibility toggled in `_mShowTaskMenu`. Delete becomes "↩︎ Remove from Today" (not destructive-red) for vid/vidstep — unassigns from today's day-map (`mUnassignVideoToday`/`mUnassignVidStepToday`) rather than deleting the underlying video.
+- **`#mRecEditSheet`** (wrec/wrrule/rec, via `mOpenRecEdit`) — Name/Notes/Important-flag only, PATCHes `wr_recurring_rules`. Deliberately does NOT include cadence/schedule editing (monthly modes, nth-weekday, etc.) — that's desktop's much larger `openRecEditModal`; scoped down to what's safe to ship without risking corrupting a recurring rule's schedule.
+- **`#mWrActionsSheet`** (wrec/wrrule/rec, via `_mShowWrActions`) — mirrors desktop's WR right-click context menu (`showWrRuleCtx`, overview.js) content, flattened to one column and reordered by actual usage frequency (**Skip this week** first, **Move all future → next week** second, then Move-all-future→prev / This-one→next / This-one→prev / Edit). Every action is a faithful port of desktop's real logic — NOT reimplemented mobile-only behavior — so it writes the same `wr_recurring_rules`/`wr_recurring_overrides` rows desktop does and a change DOES show up on desktop's next sync:
+  - `_mWrShiftThisWeek(rtype, ruleId, wkKey, delta)` ports `_wrShiftAnchorOne` (overview.js) — moves just this week's occurrence to the adjacent week, includes the same "already scheduled that week" conflict guard (`showToast`).
+  - `_mWrShiftAllFuture(rtype, ruleId, wkKey, delta)` ports `_wrCtxShiftScheduleOne` (overview.js) — shifts the recurrence's own anchor (`starting_date`) by a week, moving every future occurrence. Desktop's `_wrClearPastOrphanPins` step is a documented permanent no-op as of the current desktop code, so this port skips it too — if that's ever un-stubbed on desktop, port the real behavior here.
+  - `mWrActionsSkip()` — wrrule reuses the existing `_mWriteWrOverride(ruleId, wkKey, {override_type:'skip'})` port; wrec/rec gets its own inline block-cleanup (`dsToWkKey(b.ds)===wkKey`, NOT desktop's `isInWk(b.ds, wkOff)` — `wkOff` is a desktop-only "currently viewed week" global that doesn't exist on mobile, same substitution `_mWriteWrOverride` already made).
+  - New pure-helper ports: `_mWkKeyToOff(wkKey)`, `_mWrClampToWeek(ds, targetWkKey)` — both exact copies of their overview.js originals, no desktop-only deps.
 
 ### Move-to-Today (`.m-mv-today` button, overdue rows only) — styled red (`#ef4444`/`#fff0f0`, matches desktop's `OV` color)
 `_mMoveToTodayArgs(t)` picks `[id, type, extra]` per task type. For `rec`/`wrec`/`wrrule`, `mTaskRow`'s button routes through `_mOvRowMoveClick(kind, id, wkKey)` instead of calling `mMoveToToday` directly (see below); every other type (`task`, `shop`, `pup`, `vid`, `vidstep`) still calls `mMoveToToday(id, type, extra)` directly, unchanged. Covers ALL overdue-capable types (parity with desktop's bulk `rolloverOverdue()`, just scoped to one row): `task`, `shop`, `pup` (`pup_skill_sessions.day_date`), `vid` (`_mVidDayMap`/`_mVidDayMapSet`), `vidstep` (`extra` = `step::day`; moves any block on that day + the daymap primary/extraDay entry via `_mVidStepMap`/`_mVidStepMapSet`), `rec`/`wrec` (`st.recurring`, `extra`=wkKey, PATCH `wr_recurring_rules`), `wrrule` (`st.wrRules`, `extra`=wkKey). Every branch is undoable via `pushUndo`. **`_mVidDayMapSet`/`_mVidStepMap`/`_mVidStepMapSet` are mobile's own localStorage-direct implementations** — the desktop equivalents (`_vidDayMapSet`, `_vidStepDayMap`, `_vidStepDayMapSet`) live in `overview.js`, which mobile never loads.
@@ -235,11 +268,13 @@ A recurring/WR miss from the CURRENT week is just a same-week nudge — `_mOvRow
 - Threshold: 65px. On release: `syncAll(true)` + `mRenderToday()`
 
 ### Add task bar (`#mAddBar`)
-- Fixed above nav: `bottom: calc(52px + env(safe-area-inset-bottom))`
+- Floating inset card (`left:16px;right:16px;bottom:82px`, rounded corners, ambient shadow) — NOT edge-to-edge with just a top hairline (that was the pre-2026-09-18 look). `bottom:82px` must track `#mNav`'s own footprint if that ever changes (see Bottom nav section).
+- **A real `<form>`** (`onsubmit="event.preventDefault();mAddTask();return false"`), NOT a bare `<input>` with `onkeydown="if(event.key==='Enter')..."` — the keydown-only version worked inconsistently with the iOS keyboard's Return key (user had to tap Add separately). Every non-submit button inside needs explicit `type="button"` or it defaults to `type=submit` and double-fires. `#mShopAddBar` got the identical fix at the same time (same underlying bug).
 - Two rows: text input + [category picker | flag btn | Add button]
 - `_mAddImportant` state; `mToggleAddFlag()` toggles + styles `#mAddFlagBtn`
 - `mAddTask()` → optimistic local add (includes `important`) → `sbReq POST tasks` → replace temp id with real
 - Flag resets to off after each add
+- Category dropdown arrow (`.m-cpick-arr`, all 5 pickers) is a thin SVG chevron, not the unicode `▾` glyph — matches the app's other stroke-based icons.
 
 ### Full add sheet (`#mFullAddSheet`)
 - Opened by "+" button in Today section header (also reused by Month's header "+" via `mMonthAddTask()`, and by the Month drag-to-create-travel gesture — see Month section)
@@ -253,10 +288,13 @@ A recurring/WR miss from the CURRENT week is just a same-week nudge — `_mOvRow
 
 ### Edit task sheet (`#mEditSheet`)
 - `mOpenEdit(id)` / `mCloseEdit()` / `mSaveEditTask()` / `mDeleteEditTask()`
-- Fields: name, due_date (`#mEditDue`), category picker, important toggle (`_mEditImportant`, `#mEditImpBtn`)
+- **Field order** (set 2026-09-19 per explicit request): Name → [category picker | flag icon button] on one row → Due date → Delete/Save. `#mEditImpBtn` is a `.m-flag-btn` ⚑ icon (same treatment as the add bar's `#mAddFlagBtn`), NOT the old separate on/off text toggle (`.m-imp-toggle`/`.m-imp-row`, removed — dead CSS deleted).
 - Bottom slide-up sheet with backdrop
 - `mSaveEditTask()` → `sbReq PATCH tasks` (name, category, due_date, important)
 - `mDeleteEditTask()` → `sbReq DELETE tasks`
+
+### Recurring/WR edit sheet (`#mRecEditSheet`)
+See "Quick-actions sheets" above — Name/Notes/Important only, opened via `mOpenRecEdit(outer)` (reads `data-ruleid`/`data-rtype` off the row element). `mSaveRecEdit()` PATCHes `wr_recurring_rules` on `st.recurring` (wrec/rec) or `st.wrRules` (wrrule) depending on type.
 
 ---
 
@@ -512,7 +550,7 @@ Real sub-page (not a sheet/popup — a popup was tried first and its backdrop co
 - `mobile-sw.js` — network-first service worker. Always fetches from network; deletes all caches on activate. Solves iOS standalone PWA aggressive caching. Registration (bottom of mobile.html) now calls `reg.update()` on load AND on `visibilitychange` (re-checks for a new worker on every foreground).
 - **Self-update mechanism** (inline `<head>` version-checker): fetches `mobile-version.json` (no-store) and, on mismatch, does `location.replace(pathname+'?b='+ver)` — a NEW url iOS has never cached. Do NOT use `location.reload()`: iOS serves a reload straight from the standalone PWA app-shell cache, so it never actually updates (can loop). Guard: if `?b` already equals the server version, stop (no loop).
 - `_headers` sets `no-cache` on all mobile files so Cloudflare Pages doesn't cache stale versions
-- Script tags use `?v=YYYYMMDD` cache-busting params. **Every deploy bump ALL of:** `_BUILD` const in mobile.html + `mobile-version.json` + asset `?v=` queries + `mobile-sw.js` VERSION. This lets a stuck installed PWA self-heal on next foreground — **no reinstall needed** (fully close + reopen on wifi, may take 2 opens).
+- Script tags use `?v=YYYYMMDDx` cache-busting params (`x` = a/b/c... letter suffix for multiple deploys on the same day — common during an iterative session). **Every deploy bump ALL of, to the exact same string:** `_BUILD` const in mobile.html + `mobile-version.json` + every asset `?v=` query (css/core.js/features.js/mobile-overview.js) + `mobile-sw.js` VERSION. This lets a stuck installed PWA self-heal on next foreground — **no reinstall needed** (fully close + reopen on wifi, may take 2 opens). The build stamp (Dark Mode section above) is the fast way to confirm which build a device is actually running before debugging further.
 - **Vendored assets** (see core.md): `supabase.min.js` and `fonts/dmsans.css` load same-origin — never from a CDN (blocked on this user's devices; caused `supabase is not defined` login failures + broken fonts).
 
 ## Deployment
