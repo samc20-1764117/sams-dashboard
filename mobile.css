@@ -1,4 +1,4 @@
-:root{--bg:#f5f4f8;--glass:rgba(255,255,255,.7);--bg-elevated:#ffffff;--border:rgba(0,0,0,.08);--text:#1a1825;--sub:#6b6880;--r:14px;--rs:8px;--shadow:0 2px 12px rgba(0,0,0,.08);--accent:#7c6af7;
+:root{--bg:#f2f2f7;--glass:rgba(255,255,255,.7);--bg-elevated:#ffffff;--border:rgba(0,0,0,.08);--text:#1a1825;--sub:#6b6880;--r:14px;--rs:8px;--shadow:0 2px 12px rgba(0,0,0,.08);--accent:#7c6af7;
   --nav-glass-bg:rgba(255,255,255,.42);--nav-glass-shadow:0 8px 28px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 1px rgba(0,0,0,.04);
   --nav-icon-inactive:rgba(26,24,37,.55);--nav-pill-bg:rgba(255,255,255,.85);--nav-pill-shadow:0 4px 14px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.9)}
 html.init-dark{--bg:#16141f;--glass:rgba(30,28,40,.8);--bg-elevated:#242030;--border:rgba(255,255,255,.08);--text:#eeeaf8;--sub:#9a95b0;
@@ -530,13 +530,17 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
 #mLogin{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100dvh;padding:14vh 24px calc(24px + env(safe-area-inset-bottom));gap:16px;overflow-y:auto}
 #mLogin .card{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);padding:28px 24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
 #mLogin h2{font-size:17px;font-weight:700;text-align:center}
-#mLogin input{padding:10px 12px;border-radius:var(--rs);border:1px solid var(--border);background:rgba(255,255,255,.6);font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%}
+#mLogin input{padding:10px 12px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%}
 #mLogin button{padding:11px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer}
 #mLoginErr{color:#e05;font-size:13px;text-align:center;display:none}
 
 /* Overdue → Today pill (today list) */
 .m-mv-today{flex-shrink:0;border:1px solid #ef4444;color:#ef4444;background:#fff0f0;border-radius:12px;font-size:11px;font-weight:600;padding:4px 9px;margin-left:4px;font-family:inherit;white-space:nowrap}
 .m-mv-today:active{background:#ef4444;color:#fff}
+.m-ov-banner{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:14px;padding:12px 16px;margin-bottom:10px;background:#ef4444;color:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(239,68,68,.28)}
+.m-ov-banner:active{background:#dc2626}
+body.dark .m-ov-banner{background:rgba(239,68,68,.22);color:#fca5a5;box-shadow:none;border:1px solid rgba(239,68,68,.35)}
+body.dark .m-ov-banner:active{background:rgba(239,68,68,.32)}
 /* Light-mode's near-white pill bg would glow against a near-black dark bg. */
 body.dark .m-mv-today{color:#fca5a5;background:rgba(239,68,68,.15)}
 body.dark .m-mv-today:active{background:#ef4444;color:#fff}

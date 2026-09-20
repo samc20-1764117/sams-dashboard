@@ -118,8 +118,13 @@ async function doLogin(){
 }
 async function checkAuth(){
   _initSbClient();
-  const{data:{session}}=await _sbClient.auth.getSession();
-  if(session){_authToken=session.access_token;_userId=session.user?.id||null;return true;}
+  if(!_sbClient){showLoginOverlay();return false;}
+  // getSession() alone can come back empty on a cold PWA launch (e.g. the in-memory
+  // lock hasn't finished reading storage yet) even though a valid refresh_token is on
+  // disk — same race _sbRefreshAuth() already guards against. Try an explicit
+  // refreshSession() before giving up and forcing a re-login.
+  try{const{data:{session}}=await _sbClient.auth.getSession();if(session){_authToken=session.access_token;_userId=session.user?.id||null;return true;}}catch(e){}
+  try{const{data}=await _sbClient.auth.refreshSession();if(data?.session){_authToken=data.session.access_token;_userId=data.session.user?.id||null;return true;}}catch(e){}
   showLoginOverlay();
   return false;
 }

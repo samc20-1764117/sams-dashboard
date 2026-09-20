@@ -634,6 +634,12 @@ function mTaskRow(t) {
 }
 
 // ── Render today ──────────────────────────────────────────────────────────────
+// Same "is this row overdue and movable" test mTaskRow uses per-row (canMv) — kept in
+// sync manually since mTaskRow works off already-built row HTML, not a reusable predicate.
+function _mIsOvMovable(t) {
+  if (t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday') return false;
+  return isOv(t.due_date) && !t.done;
+}
 function mRenderToday() {
   const sorted = mGetTodayTasks();
   const doneCount = sorted.filter(t => t.done).length;
@@ -645,8 +651,43 @@ function mRenderToday() {
   const el = document.getElementById('mTodayList');
   if (!el) return;
   el.innerHTML = sorted.length ? sorted.map(mTaskRow).join('') : '<div class="m-empty">All done ✓</div>';
+  const banner = document.getElementById('mOvBanner');
+  if (banner) {
+    // Only makes sense while actually viewing today — swiping to a future/past day (Today
+    // tab's own day-swipe) has its own row-level "→ Today" buttons instead, same scoping
+    // desktop's ovBanner uses (dayOff!==0 hides it there too).
+    const ovCount = _mTodayOffset === 0 ? sorted.filter(_mIsOvMovable).length : 0;
+    if (ovCount > 0) {
+      banner.textContent = `${ovCount} Overdue — Move All to Today`;
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
   _mUpdateTodayHeader();
   _mInitTodaySwipe();
+}
+// Bulk version of each row's own "→ Today" button. Recurring/WR items miss from a genuine
+// PAST week (not this week) are a real schedule decision (see _mOvRowMoveClick) — those are
+// left for their own row's button rather than silently guessed at here; same-week items and
+// every other overdue type move immediately, mirroring desktop's rolloverOverdue() split
+// between a silent bulk sweep and items that need a real prompt.
+function mMoveAllOverdueToToday() {
+  if (_mTodayOffset !== 0) return;
+  const curWk = getWkKey(0);
+  const items = mGetTodayTasks().filter(_mIsOvMovable);
+  if (!items.length) return;
+  let moved = 0, deferred = 0;
+  items.forEach(t => {
+    const [id, kind, extra] = _mMoveToTodayArgs(t);
+    const isRecurring = kind === 'wrrule' || kind === 'wrec' || kind === 'rec';
+    if (isRecurring && extra && extra !== curWk) { deferred++; return; }
+    mMoveToToday(id, kind, extra);
+    moved++;
+  });
+  if (moved && deferred) showToast(`Moved ${moved} to today — ${deferred} need review below`, '#7c6af7', 2200);
+  else if (moved) showToast(`Moved ${moved} to today`, '#7c6af7', 1600);
+  else if (deferred) showToast(`${deferred} recurring item${deferred > 1 ? 's' : ''} need review — use their own → Today button`, '#f59e0b', 2400);
 }
 
 // ── Add task ──────────────────────────────────────────────────────────────────
@@ -4160,7 +4201,7 @@ function mMonthTapDay(ds) {
 function mToggleDark() {
   toggleDark();
   const isDark = document.body.classList.contains('dark');
-  document.documentElement.style.setProperty('--bg', isDark ? '#16141f' : '#f5f4f8');
+  document.documentElement.style.setProperty('--bg', isDark ? '#16141f' : '#f2f2f7');
   document.body.style.background = '';
   const hdr = document.getElementById('mHeader');
   if (hdr) void hdr.offsetHeight;
