@@ -48,7 +48,7 @@ body.dark .m-prog-ring-fg{stroke:#fbbf24}
 body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
 /* Matches .m-shop-hdr-icon exactly (30px circle, same border/color) instead of a bare
    reduced-opacity glyph — every circular header control now reads as one consistent set. */
-.m-reload-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:none;font-size:16px;color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
+.m-reload-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:none;font-size:17px;font-weight:600;color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
 .m-reload-btn:active{background:var(--glass)}
 
 /* ── Main scroll area ─────────────────────────────────────────────────────── */
@@ -235,7 +235,7 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
 /* ── Shop tab ────────────────────────────────────────────────────────────── */
 #mShopList{padding:0 16px 12px}
 #mShopHeaderBtns{display:flex;align-items:center;gap:10px}
-.m-shop-hdr-icon{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--sub);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.m-shop-hdr-icon{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--sub);font-size:17px;font-weight:600;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .m-shop-hdr-icon:active{background:var(--glass)}
 .m-shop-hdr-heb{width:auto;height:24px;padding:0 8px;border-radius:6px;border:none;background:#e4002b;color:#fff;font-size:11px;font-weight:800;letter-spacing:.03em;cursor:pointer;flex-shrink:0}
 .m-shop-hdr-heb:active{background:#c40025}
@@ -313,18 +313,29 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
 /* Past-week recurring/WR move-to-today scope sheet — same slide-up/backdrop idiom as
    #mEditSheet, but touch-friendly full-width option rows instead of desktop's
    cursor-positioned #wrScopePicker popup. */
-/* Task long-press menu — same slide-up/backdrop idiom as #mWrScopeSheet. */
-/* Recurring/WR quick-actions sheet — same slide-up/backdrop idiom as #mTaskMenuSheet. */
+/* Recurring/WR quick-actions sheet — kept as a full text-labeled slide-up sheet (more
+   options than the plain-task menu, worth spelling out); same idiom as #mWrScopeSheet. */
 #mWrActionsBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
 #mWrActionsBackdrop.open{display:block;opacity:1}
 #mWrActionsSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
 #mWrActionsSheet.open{transform:translateY(0)}
 #mWrActionsSheet h3{font-size:15px;font-weight:700;margin-bottom:14px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#mTaskMenuBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
-#mTaskMenuBackdrop.open{display:block;opacity:1}
-#mTaskMenuSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
-#mTaskMenuSheet.open{transform:translateY(0)}
-#mTaskMenuSheet h3{font-size:15px;font-weight:700;margin-bottom:14px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Plain-task quick-actions menu — anchored NEXT TO the tapped row (position set by
+   _mPositionTaskMenu, mobile-overview.js) as a compact icon-only row, not a full-width
+   bottom sheet with text labels — recurring/WR rows keep the text-labeled #mWrActionsSheet
+   above (more options, worth spelling out). Backdrop is a transparent tap-to-dismiss
+   catcher, not a dimmer — this is a lightweight contextual popup, not a modal. */
+#mTaskMenuBackdrop{position:fixed;inset:0;background:transparent;z-index:100;display:none}
+#mTaskMenuBackdrop.open{display:block}
+#mTaskMenuSheet{position:fixed;display:flex;background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.16),0 2px 10px rgba(0,0,0,.08);z-index:101;opacity:0;transform:scale(.92);transition:opacity .15s ease,transform .15s ease;pointer-events:none}
+#mTaskMenuSheet.open{opacity:1;transform:scale(1);pointer-events:auto}
+.m-tmenu-btn{width:44px;height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:none;border:none;border-right:1px solid var(--border);color:var(--text);cursor:pointer}
+.m-tmenu-btn:last-child{border-right:none}
+.m-tmenu-btn svg{width:19px;height:19px}
+.m-tmenu-btn:active{background:var(--glass)}
+.m-tmenu-flag.flagged{color:#d97706}
+.m-tmenu-del{color:#ef4444}
+body.dark .m-tmenu-del{color:#fca5a5}
 #mWrScopeBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
 #mWrScopeBackdrop.open{display:block;opacity:1}
 #mWrScopeSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}

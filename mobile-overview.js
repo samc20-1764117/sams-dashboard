@@ -639,16 +639,25 @@ function _mIsOvMovable(t) {
   if (t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday') return false;
   return isOv(t.due_date) && !t.done;
 }
-// Ring circumference for r=15.5 (matches the SVG in mobile.html) — stroke-dashoffset
+// Ring circumference for r=13 (matches the SVG in mobile.html) — stroke-dashoffset
 // counts DOWN from this as tasks complete, so an untouched ring starts fully empty.
-const M_PROG_RING_C = 2 * Math.PI * 15.5;
+// r=13 in a 30x30 viewBox (1 SVG unit = 1px) puts the ring's outer edge close to the
+// true 30px boundary, matching the visual footprint of the other 30px bordered icon
+// circles instead of reading smaller (the previous 36-unit viewBox scaled the r=15.5
+// ring down to ~26px, visibly shy of the other circles' full 30px).
+const M_PROG_RING_C = 2 * Math.PI * 13;
 function mRenderToday() {
   const sorted = mGetTodayTasks();
   const doneCount = sorted.filter(t => t.done).length;
   const progEl = document.getElementById('mProgress');
   if (progEl && _mCurTab === 'today') {
-    const complete = sorted.length > 0 && doneCount === sorted.length;
-    const pct = sorted.length ? doneCount / sorted.length : 0;
+    // 0/0 counts as complete (green) too — yellow should mean "something's left to do
+    // today," not just "the list happens to be non-empty." Was gated on sorted.length>0,
+    // which left a 0-task day stuck yellow for no reason.
+    const complete = doneCount === sorted.length;
+    // Ring reads fully filled (not empty) on a 0-task day — matches the "all clear" green
+    // state visually instead of an empty green outline, which would look unfinished.
+    const pct = sorted.length ? doneCount / sorted.length : 1;
     const fg = document.getElementById('mProgressFg');
     if (fg) fg.style.strokeDashoffset = M_PROG_RING_C * (1 - pct);
     const txt = document.getElementById('mProgressTxt');
@@ -1673,23 +1682,40 @@ function _mShowTaskMenu(el) {
   _mTaskMenuEl = el;
   _mTaskMenuId = id;
   _mTaskMenuType = rtype;
-  document.getElementById('mTaskMenuTitle').textContent = t.name || t.topic || t.title || '';
   const editBtn = document.getElementById('mTaskMenuEditBtn');
   const dupBtn = document.getElementById('mTaskMenuDupBtn');
   const flagBtn = document.getElementById('mTaskMenuFlagBtn');
   const delBtn = document.getElementById('mTaskMenuDelBtn');
   const hasEdit = rtype === 'task' || rtype === 'shop';
   const hasDelete = rtype === 'task' || rtype === 'shop' || rtype === 'vid' || rtype === 'vidstep';
-  const isRemoveOnly = rtype === 'vid' || rtype === 'vidstep';
   editBtn.style.display = hasEdit ? '' : 'none';
   dupBtn.style.display = rtype === 'task' ? '' : 'none';
   flagBtn.style.display = rtype === 'task' ? '' : 'none';
   delBtn.style.display = hasDelete ? '' : 'none';
-  delBtn.textContent = isRemoveOnly ? '↩︎  Remove from Today' : '✕  Delete';
-  delBtn.style.color = isRemoveOnly ? '' : '#dc2626';
-  if (rtype === 'task') flagBtn.textContent = t.important ? '⚑  Remove Important' : '⚑  Flag as Important';
+  // vid/vidstep's delete icon is functionally "remove from today" (see mTaskMenuDelete),
+  // but shown as a plain delete icon like every other type — title/aria-label carry the
+  // real meaning for anyone who needs it, the icon itself stays visually consistent.
+  const delLabel = (rtype === 'vid' || rtype === 'vidstep') ? 'Remove from Today' : 'Delete';
+  delBtn.title = delLabel;
+  delBtn.setAttribute('aria-label', delLabel);
+  if (rtype === 'task') flagBtn.classList.toggle('flagged', !!t.important);
+  const sheet = document.getElementById('mTaskMenuSheet');
   document.getElementById('mTaskMenuBackdrop').classList.add('open');
-  document.getElementById('mTaskMenuSheet').classList.add('open');
+  _mPositionTaskMenu(el, sheet);
+  sheet.classList.add('open');
+}
+// Anchors the popup next to the row that was tapped instead of a generic full-width
+// bottom sheet — below the row if there's room, flipped above it otherwise; clamped
+// horizontally so it never runs off either edge of the screen.
+function _mPositionTaskMenu(row, sheet) {
+  const r = row.getBoundingClientRect();
+  const sw = sheet.offsetWidth, sh = sheet.offsetHeight;
+  let top = r.bottom + 6;
+  if (top + sh > window.innerHeight - 12) top = Math.max(12, r.top - sh - 6);
+  let left = r.left + r.width / 2 - sw / 2;
+  left = Math.max(12, Math.min(left, window.innerWidth - sw - 12));
+  sheet.style.top = top + 'px';
+  sheet.style.left = left + 'px';
 }
 function mCloseTaskMenu() {
   document.getElementById('mTaskMenuBackdrop').classList.remove('open');
@@ -1876,15 +1902,20 @@ function _mUpdateTodayHeader() {
 }
 
 function _mInitTodaySwipe() {
-  const page = document.getElementById('mTodayPage');
-  if (!page || page._swipeInited) return;
-  page._swipeInited = true;
+  // Bound to #mMain (gated to the today tab), not #mTodayPage — #mTodayPage is a normal
+  // flex child that only sizes to its own content height (banner + list), so on a day
+  // with few tasks it can end well short of the full screen; swipes starting in the empty
+  // space below it never reached this listener at all, which is the likely reason day-
+  // navigation seemed to randomly stop working. #mMain always spans the full viewport
+  // (same reasoning mInitPTR, right below, already uses for the exact same element).
+  const main = document.getElementById('mMain');
+  if (!main || main._todaySwipeInited) return;
+  main._todaySwipeInited = true;
   // Tracks the live finger position via touchmove (not just the touchstart/touchend
   // endpoints) so a gesture that iOS decides to cancel — e.g. because #mMain's own
   // vertical scroll grabbed it, plausible on a swipe that isn't perfectly horizontal —
   // still has a last-known position to evaluate, via touchcancel below, instead of
-  // silently dropping the day-change. Previously touchcancel wasn't handled at all, which
-  // is the likely cause of swipes intermittently "not working" past the first one or two.
+  // silently dropping the day-change.
   let startX = 0, startY = 0, lastX = 0, lastY = 0, swiping = false;
   const finish = () => {
     if (!swiping) return;
@@ -1897,18 +1928,19 @@ function _mInitTodaySwipe() {
       _mUpdateTodayHeader();
     }
   };
-  page.addEventListener('touchstart', e => {
+  main.addEventListener('touchstart', e => {
+    if (_mCurTab !== 'today') return;
     startX = lastX = e.touches[0].clientX;
     startY = lastY = e.touches[0].clientY;
     swiping = true;
   }, {passive: true});
-  page.addEventListener('touchmove', e => {
+  main.addEventListener('touchmove', e => {
     if (!swiping) return;
     lastX = e.touches[0].clientX;
     lastY = e.touches[0].clientY;
   }, {passive: true});
-  page.addEventListener('touchend', finish, {passive: true});
-  page.addEventListener('touchcancel', finish, {passive: true});
+  main.addEventListener('touchend', finish, {passive: true});
+  main.addEventListener('touchcancel', finish, {passive: true});
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
