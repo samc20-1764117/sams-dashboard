@@ -154,6 +154,14 @@ body.dark .m-empty-icon{background:rgba(34,197,94,.16);color:#4ade80}
 .m-cpick-opt{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;background:var(--bg)}
 .m-cpick-opt:last-child{border-bottom:none}
 .m-cpick-opt:active{filter:brightness(.95)}
+/* Suppresses the blinking text caret in whichever field currently has focus while a
+   picker dropdown is open — the field stays FOCUSED (keyboard stays up, per the
+   preventDefault fix above), only the caret's own rendering goes invisible. iOS Safari's
+   native caret can render above other content regardless of z-index in some cases, which
+   otherwise showed it blinking through/behind an open dropdown. #mAddBar.picker-open is
+   toggled by _mSyncPickerOpenClass (mobile-overview.js) whenever any of the quick-add
+   popup's own dropdowns (category/store/day) open or close. */
+#mAddBar.picker-open input{caret-color:transparent}
 
 /* ── Add task / add item bars (Today + Shop share identical UI) ─────────────
    Elevated (white/light-surface) card background + shadow makes them read as distinct
@@ -200,7 +208,10 @@ body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.
    #mNewTask itself (16px, matching padding), not the browser's tiny native default. */
 .m-add-field{margin-bottom:8px}
 .m-add-field-lbl{display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:4px}
-.m-add-field-inp{width:100%;max-width:100%;-webkit-appearance:none;appearance:none;box-sizing:border-box;padding:12px 14px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none}
+/* Explicit height (not just width) — an empty type="date" can render shorter than one
+   already holding a value on iOS Safari, which broke Start/End's equal-size match even
+   with both at width:100%. Fixed height guarantees both always match regardless of content. */
+.m-add-field-inp{width:100%;max-width:100%;height:46px;-webkit-appearance:none;appearance:none;box-sizing:border-box;padding:12px 14px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none}
 .m-add-field-inp:focus{border-color:var(--accent)}
 /* Start/end date side by side instead of stacked full-width — reads as one range, not two
    unrelated fields, and takes less vertical space in an already-growing popup. */

@@ -304,6 +304,14 @@ function _mBuildOpts(elId, which, cats = M_CATS) {
   }).join('');
 }
 
+// Toggles #mAddBar.picker-open whenever any of the quick-add popup's own dropdowns
+// (category/store/day) is open — see the caret-color:transparent rule on #mAddBar.picker-
+// open input in mobile.css for why. Harmless to call from every picker context (edit/block/
+// wkadd/fulladd aren't inside #mAddBar, so this has no visible effect for those).
+function _mSyncPickerOpenClass() {
+  const anyOpen = ['mAddPickOpts', 'mAddStoreOpts', 'mAddDayOpts'].some(id => document.getElementById(id)?.classList.contains('open'));
+  document.getElementById('mAddBar')?.classList.toggle('picker-open', anyOpen);
+}
 function mTogglePick(which) {
   const ids = {add: 'mAddPickOpts', edit: 'mEditPickOpts', block: 'mBlockPickOpts', wkadd: 'mWkAddPickOpts', fulladd: 'mFullAddPickOpts'};
   const myId = ids[which];
@@ -311,6 +319,7 @@ function mTogglePick(which) {
   document.getElementById('mAddStoreOpts')?.classList.remove('open');
   document.getElementById('mAddDayOpts')?.classList.remove('open');
   document.getElementById(myId)?.classList.toggle('open');
+  _mSyncPickerOpenClass();
 }
 
 function mSelectCat(which, cat) {
@@ -334,6 +343,7 @@ function mSelectCat(which, cat) {
   document.getElementById(optId)?.classList.remove('open');
   if (which === 'fulladd') _mFullAddSyncTravelFields(cat);
   if (which === 'add') _mAddSyncTypeFields(cat);
+  _mSyncPickerOpenClass();
 }
 // Swaps the quick-add popup's extra fields in/out as the type picker changes — mirrors
 // _mFullAddSyncTravelFields above, but also covers Shopping (destination/dates for Travel,
@@ -372,12 +382,14 @@ function mToggleStorePick() {
   document.getElementById('mAddPickOpts')?.classList.remove('open');
   document.getElementById('mAddDayOpts')?.classList.remove('open');
   document.getElementById('mAddStoreOpts')?.classList.toggle('open');
+  _mSyncPickerOpenClass();
 }
 function mSelectStore(store) {
   _mAddStore = store;
   const lbl = document.getElementById('mAddStoreLbl');
   if (lbl) lbl.textContent = store;
   document.getElementById('mAddStoreOpts')?.classList.remove('open');
+  _mSyncPickerOpenClass();
   const isOther = store === 'Other';
   const f = document.getElementById('mAddStoreCustomField');
   if (f) f.style.display = isOther ? '' : 'none';
@@ -400,12 +412,14 @@ function mToggleDayPick() {
   document.getElementById('mAddPickOpts')?.classList.remove('open');
   document.getElementById('mAddStoreOpts')?.classList.remove('open');
   document.getElementById('mAddDayOpts')?.classList.toggle('open');
+  _mSyncPickerOpenClass();
 }
 function mSelectDay(day) {
   _mAddDay = day;
   const lbl = document.getElementById('mAddDayLbl');
   if (lbl) lbl.textContent = day;
   document.getElementById('mAddDayOpts')?.classList.remove('open');
+  _mSyncPickerOpenClass();
 }
 
 function mInitPickers() {
@@ -424,6 +438,7 @@ function mInitPickers() {
       ['mAddPickOpts','mEditPickOpts','mBlockPickOpts','mWkAddPickOpts','mFullAddPickOpts','mAddStoreOpts','mAddDayOpts','mShopAddStoreOpts','mShopEditStoreOpts'].forEach(id => {
         document.getElementById(id)?.classList.remove('open');
       });
+      _mSyncPickerOpenClass();
     }
     if (!e.target.closest('#mMonthHeaderControls')) {
       document.getElementById('mMonthMonthDrop')?.classList.remove('open');
