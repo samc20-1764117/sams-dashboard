@@ -152,6 +152,14 @@ body.dark .m-empty-icon{background:rgba(34,197,94,.16);color:#4ade80}
 .m-cpick-opts.open{display:block}
 .m-cpick-opts--up{bottom:calc(100% + 5px)}
 .m-cpick-opt{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:14px;background:var(--bg)}
+/* Quick-add's own pickers (category/store/day/day-of-month/cadence) can run long — the
+   day-of-month list alone is 28 rows — and .m-cpick-opts has no height cap by default, so
+   a long list could extend off the top of the screen with no way to reach the rest of it.
+   Capped + scrollable, with a tighter row height so more options are visible before
+   scrolling is even needed. Scoped to #mAddBar only — other pickers elsewhere (Edit/Block/
+   Week-add/Full-add) have short, fixed option counts and are untouched. */
+#mAddBar .m-cpick-opts{max-height:230px;overflow-y:auto}
+#mAddBar .m-cpick-opt{padding:8px 14px}
 .m-cpick-opt:last-child{border-bottom:none}
 .m-cpick-opt:active{filter:brightness(.95)}
 /* Suppresses the blinking text caret in whichever field currently has focus while a
