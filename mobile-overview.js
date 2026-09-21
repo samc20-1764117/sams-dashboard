@@ -318,8 +318,7 @@ function mTogglePick(which) {
   const ids = {add: 'mAddPickOpts', edit: 'mEditPickOpts', block: 'mBlockPickOpts', wkadd: 'mWkAddPickOpts', fulladd: 'mFullAddPickOpts'};
   const myId = ids[which];
   Object.entries(ids).forEach(([k, id]) => { if (k !== which) document.getElementById(id)?.classList.remove('open'); });
-  document.getElementById('mAddStoreOpts')?.classList.remove('open');
-  document.getElementById('mAddDayOpts')?.classList.remove('open');
+  _mCloseAddPickers(myId);
   document.getElementById(myId)?.classList.toggle('open');
   _mSyncPickerOpenClass();
 }
@@ -357,6 +356,7 @@ function _mAddSyncTypeFields(cat) {
   const isShop = cat === 'Shopping';
   const isWr = cat === 'Weekly Reset Task';
   const isRec = cat === 'Recurring Task';
+  const isMonthly = _mAddCadence === 'monthly';
   const _sh = (id, show) => { const el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; };
   _sh('mAddDestField', isTv);
   _sh('mAddDateRow', isTv);
@@ -367,22 +367,33 @@ function _mAddSyncTypeFields(cat) {
   // is currently on "Other" — mSelectStore (below) owns that second half.
   _sh('mAddStoreCustomField', isShop && _mAddStore === 'Other');
   _sh('mAddLinkField', isShop);
-  _sh('mAddDayField', isRec);
+  // Weekly Reset + Recurring fields — mirrors desktop's wrRuleAddModal exactly:
+  // - Pup related: Weekly Reset only.
+  // - Cadence: both.
+  // - Due-on-day/Due-on-date-of-month: Recurring ONLY, never Weekly Reset, regardless of
+  //   cadence (desktop's wrAddAppearDay/DateField are gated on isSch, not on cadence).
+  // - Starting date: Recurring always; Weekly Reset only when cadence isn't weekly (a
+  //   weekly WR item has no anchor at all — see updateWrRuleCadenceUI, overview.js).
+  _sh('mAddPupField', isWr);
+  _sh('mAddCadenceField', isWr || isRec);
+  _sh('mAddDayField', isRec && !isMonthly);
+  _sh('mAddDomField', isRec && isMonthly);
+  _sh('mAddRecStartField', isRec || (isWr && _mAddCadence !== 'weekly'));
   // Shopping/Weekly-Reset/Recurring have no "important" concept in this data model — hide
   // the flag rather than show a control that would silently do nothing.
   _sh('mAddFlagBtn', !isShop && !isWr && !isRec);
   const nameInp = document.getElementById('mNewTask');
-  if (nameInp) nameInp.placeholder = isShop ? 'Item name…' : isTv ? 'Trip name…' : (isWr || isRec) ? 'Task name…' : 'Add task for today…';
+  nameInp && (nameInp.placeholder = isShop ? 'Item name…' : isTv ? 'Trip name…' : (isWr || isRec) ? 'Task name…' : 'Add task for today…');
   const btn = document.getElementById('mAddBtn');
-  if (btn) btn.textContent = isTv ? 'Add Trip' : isShop ? 'Add Item' : (isWr || isRec) ? 'Add Recurring Task' : 'Add';
-  if (isTv) { const s = document.getElementById('mAddStart'); if (s && !s.value) s.value = d2s(getDayDate(0)); }
+  if (btn) btn.textContent = isTv ? 'Add Trip' : isShop ? 'Add Item' : isWr ? 'Add Weekly Reset' : isRec ? 'Add Recurring' : 'Add';
+  if (isTv && !_mAddDates.tvStart) { _mAddDates.tvStart = tod(); const l = document.getElementById('mAddStartLbl'); if (l) l.textContent = _mFmtAddDate(_mAddDates.tvStart); }
+  if ((isWr || isRec) && !_mAddDates.recStart) { _mAddDates.recStart = tod(); const l = document.getElementById('mAddRecStartLbl'); if (l) l.textContent = _mFmtAddDate(_mAddDates.recStart); }
 }
 // "Other" reveals a free-text store name field (mirrors desktop's qaStore/__custom
 // pattern, features.js) — any other store selection hides it again.
 let _mAddStore = 'HEB';
 function mToggleStorePick() {
-  document.getElementById('mAddPickOpts')?.classList.remove('open');
-  document.getElementById('mAddDayOpts')?.classList.remove('open');
+  _mCloseAddPickers();
   document.getElementById('mAddStoreOpts')?.classList.toggle('open');
   _mSyncPickerOpenClass();
 }
@@ -401,6 +412,16 @@ function mSelectStore(store) {
   if (isOther) document.getElementById('mAddStoreCustom')?.focus();
 }
 // Recurring Task's "due on" day-of-week picker — defaults to today's weekday.
+// All quick-add popup dropdown ids, in one place — closing/mutual-exclusion logic for any
+// one of them just calls _mCloseAddPickers(keepId), instead of every toggle function
+// repeating its own hand-maintained "close all the others" list (which is how store/day
+// drifted before this refactor — new pickers kept getting added without updating the
+// others' close-lists).
+const M_ADD_PICKER_IDS = ['mAddPickOpts', 'mAddStoreOpts', 'mAddDayOpts', 'mAddDomOpts', 'mAddCadenceOpts', 'mAddTvStartOpts', 'mAddTvEndOpts', 'mAddRecStartOpts'];
+function _mCloseAddPickers(exceptId) {
+  M_ADD_PICKER_IDS.forEach(id => { if (id !== exceptId) document.getElementById(id)?.classList.remove('open'); });
+}
+
 const M_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 let _mAddDay = M_DAYS[new Date().getDay()];
 function _mBuildDayOpts() {
@@ -411,8 +432,7 @@ function _mBuildDayOpts() {
   if (lbl) lbl.textContent = _mAddDay;
 }
 function mToggleDayPick() {
-  document.getElementById('mAddPickOpts')?.classList.remove('open');
-  document.getElementById('mAddStoreOpts')?.classList.remove('open');
+  _mCloseAddPickers();
   document.getElementById('mAddDayOpts')?.classList.toggle('open');
   _mSyncPickerOpenClass();
 }
@@ -424,6 +444,141 @@ function mSelectDay(day) {
   _mSyncPickerOpenClass();
 }
 
+// Day-of-month picker (1st-28th) — Recurring Task's "Due on" when cadence is Monthly.
+// Capped at 28 (not 31) matching desktop's own recRepeatDate/wrAddAppearDate options —
+// every month has a 28th, so a rule set to "the 30th" would silently skip February.
+let _mAddDom = '1';
+function _mOrdinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+function _mBuildDomOpts() {
+  const el = document.getElementById('mAddDomOpts');
+  if (!el) return;
+  el.innerHTML = Array.from({length: 28}, (_, i) => i + 1).map(d => `<div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectDom('${d}')"><span>${_mOrdinal(d)}</span></div>`).join('');
+  const lbl = document.getElementById('mAddDomLbl');
+  if (lbl) lbl.textContent = _mOrdinal(Number(_mAddDom));
+}
+function mToggleDomPick() {
+  _mCloseAddPickers();
+  document.getElementById('mAddDomOpts')?.classList.toggle('open');
+  _mSyncPickerOpenClass();
+}
+function mSelectDom(dom) {
+  _mAddDom = dom;
+  const lbl = document.getElementById('mAddDomLbl');
+  if (lbl) lbl.textContent = _mOrdinal(Number(dom));
+  document.getElementById('mAddDomOpts')?.classList.remove('open');
+  _mSyncPickerOpenClass();
+}
+
+// Cadence picker — shared by Weekly Reset Task and Recurring Task (mirrors desktop's
+// wrAddCadence select, wrRuleAddModal/overview.js). Changing it re-syncs which of
+// Due-on-day/Due-on-date/Starting-date show, via _mAddSyncTypeFields.
+const M_CADENCES = [
+  {v: 'weekly', l: 'Every week'}, {v: 'biweekly', l: 'Every 2 weeks'}, {v: 'monthly', l: 'Monthly'},
+  {v: 'quarterly', l: 'Quarterly'}, {v: 'biannual', l: 'Biannual'}, {v: 'annual', l: 'Annual'},
+];
+let _mAddCadence = 'weekly';
+function _mBuildCadenceOpts() {
+  const el = document.getElementById('mAddCadenceOpts');
+  if (!el) return;
+  el.innerHTML = M_CADENCES.map(c => `<div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectCadence('${c.v}')"><span>${c.l}</span></div>`).join('');
+}
+function mToggleCadencePick() {
+  _mCloseAddPickers();
+  document.getElementById('mAddCadenceOpts')?.classList.toggle('open');
+  _mSyncPickerOpenClass();
+}
+function mSelectCadence(v) {
+  _mAddCadence = v;
+  const lbl = document.getElementById('mAddCadenceLbl');
+  const found = M_CADENCES.find(c => c.v === v);
+  if (lbl && found) lbl.textContent = found.l;
+  document.getElementById('mAddCadenceOpts')?.classList.remove('open');
+  _mSyncPickerOpenClass();
+  _mAddSyncTypeFields(_mAddCat); // Due-on-day vs Due-on-date vs Starting-date visibility all depend on cadence too
+}
+
+// ── Custom calendar popover (Start/End/Starting date) ─────────────────────────
+// Replaces native <input type="date"> for every date field in the quick-add popup — a
+// native date input forces the keyboard down for its own wheel picker (same reason Store
+// became a custom picker), which fights the "keyboard should stay up" requirement. One
+// shared implementation, keyed by which field is open ('tvStart'/'tvEnd'/'recStart').
+const M_ADD_DATE_FIELDS = {
+  tvStart: {opts: 'mAddTvStartOpts', lbl: 'mAddStartLbl'},
+  tvEnd: {opts: 'mAddTvEndOpts', lbl: 'mAddEndLbl'},
+  recStart: {opts: 'mAddRecStartOpts', lbl: 'mAddRecStartLbl'},
+};
+let _mAddDates = {tvStart: null, tvEnd: null, recStart: null}; // 'YYYY-MM-DD' or null
+let _mAddDateWhich = null;
+let _mAddDateViewY = 0, _mAddDateViewM = 0;
+function _mFmtAddDate(ds) {
+  return new Date(ds + 'T12:00').toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+}
+function mToggleDatePick(which) {
+  const f = M_ADD_DATE_FIELDS[which];
+  if (!f) return;
+  const wasOpen = document.getElementById(f.opts)?.classList.contains('open');
+  _mCloseAddPickers();
+  if (!wasOpen) {
+    _mAddDateWhich = which;
+    const cur = _mAddDates[which];
+    const base = cur ? new Date(cur + 'T12:00') : new Date();
+    _mAddDateViewY = base.getFullYear();
+    _mAddDateViewM = base.getMonth();
+    _mRenderAddDateCal();
+    document.getElementById(f.opts)?.classList.add('open');
+  }
+  _mSyncPickerOpenClass();
+}
+function _mAddDateNav(dir) {
+  _mAddDateViewM += dir;
+  if (_mAddDateViewM < 0) { _mAddDateViewM = 11; _mAddDateViewY--; }
+  if (_mAddDateViewM > 11) { _mAddDateViewM = 0; _mAddDateViewY++; }
+  _mRenderAddDateCal();
+}
+function _mRenderAddDateCal() {
+  const which = _mAddDateWhich;
+  const f = M_ADD_DATE_FIELDS[which];
+  const el = document.getElementById(f?.opts);
+  if (!el) return;
+  const y = _mAddDateViewY, m = _mAddDateViewM;
+  const first = new Date(y, m, 1);
+  const startOffset = (first.getDay() + 6) % 7; // Monday-start, matches the rest of the app
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const selected = _mAddDates[which];
+  const todayDs = tod();
+  const monthLbl = first.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+  let cells = '';
+  for (let i = 0; i < startOffset; i++) cells += `<span class="m-add-cal-day m-add-cal-empty"></span>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const cls = ['m-add-cal-day'];
+    if (ds === selected) cls.push('selected');
+    if (ds === todayDs) cls.push('today');
+    cells += `<button type="button" class="${cls.join(' ')}" onmousedown="event.preventDefault()" onclick="mSelectAddDate('${ds}')">${d}</button>`;
+  }
+  el.innerHTML = `
+    <div class="m-add-cal-hdr">
+      <button type="button" class="m-add-cal-nav" onmousedown="event.preventDefault()" onclick="_mAddDateNav(-1)">&lsaquo;</button>
+      <span>${monthLbl}</span>
+      <button type="button" class="m-add-cal-nav" onmousedown="event.preventDefault()" onclick="_mAddDateNav(1)">&rsaquo;</button>
+    </div>
+    <div class="m-add-cal-dow"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+    <div class="m-add-cal-grid">${cells}</div>`;
+}
+function mSelectAddDate(ds) {
+  const which = _mAddDateWhich;
+  const f = M_ADD_DATE_FIELDS[which];
+  if (!f) return;
+  _mAddDates[which] = ds;
+  const lbl = document.getElementById(f.lbl);
+  if (lbl) lbl.textContent = _mFmtAddDate(ds);
+  document.getElementById(f.opts)?.classList.remove('open');
+  _mSyncPickerOpenClass();
+}
+
 function mInitPickers() {
   _mBuildOpts('mAddPickOpts',     'add',     M_CATS_ADD);
   _mBuildOpts('mEditPickOpts',    'edit');
@@ -431,15 +586,18 @@ function mInitPickers() {
   _mBuildOpts('mWkAddPickOpts',   'wkadd');
   _mBuildOpts('mFullAddPickOpts', 'fulladd', M_CATS_TRAVEL);
   _mBuildDayOpts();
+  _mBuildDomOpts();
+  _mBuildCadenceOpts();
   mSelectCat('add',     'Home');
   mSelectCat('block',   'Home');
   mSelectCat('wkadd',   'Home');
   mSelectCat('fulladd', 'Home');
   document.addEventListener('click', e => {
     if (!e.target.closest('.m-cpick')) {
-      ['mAddPickOpts','mEditPickOpts','mBlockPickOpts','mWkAddPickOpts','mFullAddPickOpts','mAddStoreOpts','mAddDayOpts','mShopAddStoreOpts','mShopEditStoreOpts'].forEach(id => {
+      ['mEditPickOpts','mBlockPickOpts','mWkAddPickOpts','mFullAddPickOpts','mShopAddStoreOpts','mShopEditStoreOpts'].forEach(id => {
         document.getElementById(id)?.classList.remove('open');
       });
+      _mCloseAddPickers();
       _mSyncPickerOpenClass();
     }
     if (!e.target.closest('#mMonthHeaderControls')) {
@@ -931,12 +1089,14 @@ async function mAddTask() {
   const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
   if (cat === 'Travel') {
     const dest = document.getElementById('mAddDest')?.value.trim() || null;
-    const start = document.getElementById('mAddStart')?.value || ds;
-    const end = document.getElementById('mAddEnd')?.value || null;
+    const start = _mAddDates.tvStart || ds;
+    const end = _mAddDates.tvEnd || null;
     await _mAddTravel(n, dest, start, end, null);
     inp.value = '';
     const destEl = document.getElementById('mAddDest'); if (destEl) destEl.value = '';
-    const endEl = document.getElementById('mAddEnd'); if (endEl) endEl.value = '';
+    _mAddDates.tvStart = null; _mAddDates.tvEnd = null;
+    const sl = document.getElementById('mAddStartLbl'); if (sl) sl.textContent = 'Today';
+    const el = document.getElementById('mAddEndLbl'); if (el) el.textContent = 'Select…';
     mCloseQuickAdd();
     return;
   }
@@ -962,8 +1122,19 @@ async function mAddTask() {
     return;
   }
   if (cat === 'Weekly Reset Task' || cat === 'Recurring Task') {
-    await _mAddRecurring(n, cat === 'Weekly Reset Task', _mAddDay);
+    const isWeeklyReset = cat === 'Weekly Reset Task';
+    const pupRelated = isWeeklyReset && !!document.getElementById('mAddPupCk')?.checked;
+    await _mAddRecurring(n, isWeeklyReset, {
+      cadence: _mAddCadence,
+      dayOfWeek: _mAddDay,
+      dayOfMonth: _mAddDom,
+      startingDate: _mAddDates.recStart,
+      pupRelated,
+    });
     inp.value = '';
+    const pupCk = document.getElementById('mAddPupCk'); if (pupCk) pupCk.checked = false;
+    _mAddDates.recStart = null;
+    const l = document.getElementById('mAddRecStartLbl'); if (l) l.textContent = 'Today';
     mCloseQuickAdd();
     return;
   }
@@ -1013,9 +1184,18 @@ async function _mAddTravel(name, destination, start, end, mode) {
 // distinguishes the two mobile "types": true → a WR rule (st.wrRules, resets automatically
 // every week, no due-day of its own); false → a plain recurring task (st.recurring, due on
 // a specific weekday every week, appears_on_date carries which one).
-async function _mAddRecurring(name, isWeeklyReset, dayOfWeek) {
+// opts: {cadence, dayOfWeek, dayOfMonth, startingDate, pupRelated}. Field shape/visibility
+// per type mirrors desktop's saveWrRuleAdd + _wrReadCadenceFields (overview.js) exactly:
+// - WR (is_weekly_reset:true): NEVER gets appears_on_date (WR items have no due-day of
+//   their own). starting_date is null for weekly cadence, the picked date otherwise.
+// - Recurring (is_weekly_reset:false): always gets starting_date (the picked date, default
+//   today) and appears_on_date — day-of-month string for monthly cadence, day-of-week name
+//   otherwise.
+async function _mAddRecurring(name, isWeeklyReset, opts) {
+  const cadence = opts.cadence || 'weekly';
   if (isWeeklyReset) {
-    const payload = {name, is_weekly_reset: true, is_enabled: true, sort_order: (st.wrRules || []).length, cadence: 'weekly', starting_date: null, pup_related: false, notes: null};
+    const startingDate = cadence !== 'weekly' ? (opts.startingDate || null) : null;
+    const payload = {name, is_weekly_reset: true, is_enabled: true, sort_order: (st.wrRules || []).length, cadence, starting_date: startingDate, pup_related: !!opts.pupRelated, notes: null};
     const tmpId = 'wrrule-tmp-' + Date.now();
     const local = {...payload, id: tmpId};
     st.wrRules = st.wrRules || [];
@@ -1030,8 +1210,9 @@ async function _mAddRecurring(name, isWeeklyReset, dayOfWeek) {
       save(); renderAll();
     }
   } else {
-    const startDate = tod();
-    const payload = {name, is_weekly_reset: false, appears_on_date: dayOfWeek, cadence: 'weekly', starting_date: startDate};
+    const startDate = opts.startingDate || tod();
+    const appearsOn = cadence === 'monthly' ? (opts.dayOfMonth || '1') : (opts.dayOfWeek || 'Friday');
+    const payload = {name, is_weekly_reset: false, appears_on_date: appearsOn, cadence, starting_date: startDate};
     const tmpId = 'rec-tmp-' + Date.now();
     const local = {...payload, id: tmpId, _doneByWk: {}, _done: false, _dateOverrides: {}};
     st.recurring.push(local);
