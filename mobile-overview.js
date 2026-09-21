@@ -260,6 +260,10 @@ async function togPupSessionDone(sessId, done) {
 // ── Category picker ───────────────────────────────────────────────────────────
 const M_CATS = ['Home', 'My work', 'Work', 'Social', 'Long term'];
 const M_CATS_TRAVEL = [...M_CATS, 'Travel'];
+// Today's quick-add picker (mSelectCat('add', ...)) specifically — no "Long term" (not a
+// meaningful choice when adding a brand-new task for today), plus "Shopping" as a real
+// addable type (previously only creatable from the Shop tab's own add bar).
+const M_CATS_ADD = ['Home', 'My work', 'Work', 'Social', 'Travel', 'Shopping'];
 let _mAddCat       = 'Home';
 let _mEditCat      = 'Home';
 let _mBlockCat     = 'Home';
@@ -315,10 +319,33 @@ function mSelectCat(which, cat) {
   if (lblEl) lblEl.textContent = cat;
   document.getElementById(optId)?.classList.remove('open');
   if (which === 'fulladd') _mFullAddSyncTravelFields(cat);
+  if (which === 'add') _mAddSyncTypeFields(cat);
+}
+// Swaps the quick-add popup's extra fields in/out as the type picker changes — mirrors
+// _mFullAddSyncTravelFields above, but also covers Shopping (destination/dates for Travel,
+// a store picker for Shopping, neither for a plain category). The bar is bottom-anchored
+// (mOpenQuickAdd/_mQuickAddReposition), so showing/hiding these fields naturally grows or
+// shrinks it upward from that fixed bottom point — no separate reflow step needed.
+function _mAddSyncTypeFields(cat) {
+  const isTv = cat === 'Travel';
+  const isShop = cat === 'Shopping';
+  const _sh = (id, show) => { const el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; };
+  _sh('mAddDestField', isTv);
+  _sh('mAddStartField', isTv);
+  _sh('mAddEndField', isTv);
+  _sh('mAddStoreField', isShop);
+  // Shopping items have no "important" concept in this data model — hide the flag rather
+  // than show a control that would silently do nothing.
+  _sh('mAddFlagBtn', !isShop);
+  const nameInp = document.getElementById('mNewTask');
+  if (nameInp) nameInp.placeholder = isShop ? 'Item name…' : isTv ? 'Trip name…' : 'Add task for today…';
+  const btn = document.getElementById('mAddBtn');
+  if (btn) btn.textContent = isTv ? 'Add Trip' : isShop ? 'Add Item' : 'Add';
+  if (isTv) { const s = document.getElementById('mAddStart'); if (s && !s.value) s.value = d2s(getDayDate(0)); }
 }
 
 function mInitPickers() {
-  _mBuildOpts('mAddPickOpts',     'add',     M_CATS_TRAVEL);
+  _mBuildOpts('mAddPickOpts',     'add',     M_CATS_ADD);
   _mBuildOpts('mEditPickOpts',    'edit');
   _mBuildOpts('mBlockPickOpts',   'block');
   _mBuildOpts('mWkAddPickOpts',   'wkadd');
@@ -709,14 +736,27 @@ function mMoveAllOverdueToToday() {
 // ── Add task ──────────────────────────────────────────────────────────────────
 // Quick-add popup open/close — #mAddBar itself is unchanged (same form/fields/IDs as
 // when it was permanently docked), just gated behind a tap on #mTodayAddBtn now.
-function mOpenQuickAdd() {
+// Keeps #mAddBar's bottom edge pinned just above the on-screen keyboard, live, as it
+// animates open/closed — window.visualViewport (iOS Safari 13+) reports the SHRUNK
+// viewport height while the keyboard is up; window.innerHeight does not change, so the
+// gap between the two is (approximately) the keyboard's own height. Only acts while the
+// bar is actually open (cheap early-out on every resize/scroll tick otherwise).
+function _mQuickAddReposition() {
   const bar = document.getElementById('mAddBar');
-  const header = document.getElementById('mHeader');
-  // Positioned just under the real (live-measured, not guessed) header height rather than
-  // a hardcoded offset — safe-area insets vary by device, and this stays correct if the
-  // header's own height ever changes.
-  if (bar && header) bar.style.top = (header.getBoundingClientRect().bottom + 10) + 'px';
-  bar?.classList.add('open');
+  if (!bar || !bar.classList.contains('open')) return;
+  const vv = window.visualViewport;
+  const kbHeight = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+  bar.style.bottom = (kbHeight + 10) + 'px';
+}
+function _mInitQuickAddKeyboardTracking() {
+  if (!window.visualViewport || window.visualViewport._quickAddTracked) return;
+  window.visualViewport._quickAddTracked = true;
+  window.visualViewport.addEventListener('resize', _mQuickAddReposition);
+  window.visualViewport.addEventListener('scroll', _mQuickAddReposition);
+}
+function mOpenQuickAdd() {
+  _mInitQuickAddKeyboardTracking();
+  document.getElementById('mAddBar')?.classList.add('open');
   document.getElementById('mQuickAddBackdrop')?.classList.add('open');
   // Focus synchronously, in the same tick as the tap that opened this — iOS Safari only
   // reliably raises the keyboard for a programmatic .focus() when it happens inside the
@@ -724,6 +764,10 @@ function mOpenQuickAdd() {
   // window and the input can end up focused with no keyboard, which reads as "still have
   // to tap it myself."
   document.getElementById('mNewTask')?.focus();
+  // The keyboard animates in over the next few hundred ms — visualViewport 'resize' fires
+  // repeatedly during that animation, so this call is just the starting position; live
+  // tracking takes over from there.
+  _mQuickAddReposition();
 }
 function mCloseQuickAdd() {
   document.getElementById('mAddBar')?.classList.remove('open');
@@ -749,9 +793,31 @@ async function mAddTask() {
   const cat = _mAddCat;
   const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
   if (cat === 'Travel') {
-    await _mAddTravel(n, null, ds, null, null);
+    const dest = document.getElementById('mAddDest')?.value.trim() || null;
+    const start = document.getElementById('mAddStart')?.value || ds;
+    const end = document.getElementById('mAddEnd')?.value || null;
+    await _mAddTravel(n, dest, start, end, null);
+    inp.value = '';
+    const destEl = document.getElementById('mAddDest'); if (destEl) destEl.value = '';
+    const endEl = document.getElementById('mAddEnd'); if (endEl) endEl.value = '';
+    mCloseQuickAdd();
+    return;
+  }
+  if (cat === 'Shopping') {
+    const store = document.getElementById('mAddStore')?.value || 'Other';
+    const s = {id: 'l-' + Date.now(), name: n, store, done: false, due_date: ds};
+    st.shopping.push(s);
+    save();
     inp.value = '';
     mCloseQuickAdd();
+    mRenderToday();
+    const sv = await sbReq('POST', 'shopping_list', {name: n, store, done: false, due_date: ds});
+    if (sv && sv[0]) {
+      const i = st.shopping.findIndex(x => x.id === s.id);
+      if (i > -1) st.shopping[i] = sv[0];
+      save();
+      mRenderToday(); // same data-shopid staleness fix as the plain-task id swap below
+    }
     return;
   }
   const important = _mAddImportant;
