@@ -7534,6 +7534,7 @@ function tRow(t,o={}){
   const _hasNotes=!_isPostTab&&t.notes&&t.notes.trim();
   const _noteAttr=_hasNotes?` data-note="${escHtml(t.notes.trim())}"`:'';
   return`<div class="ti ${t.done?'done':''} ${ov?'ov-row':''} ${imp&&!ov?'imp-row':''}" style="${!ov&&!imp&&!o.noColor?`background:${s.bg}`:''}" id="ti-${t.id}"${_noteAttr} ${o.drag?`draggable="true" ondragstart="dStart(event,'${t.id}')" ondragend="dEnd(event)"`:''} onclick="selTask(event,'${t.id}')" ondblclick="${_dblHandler}" oncontextmenu="showCtx(event,'${t.id}')">
+    ${o.catDot?`<span class="ti-band" style="background:${s.bg};border:1px solid ${s.d}"></span>`:''}
     <label class="chk-wrap" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()"><input type="checkbox" class="chk" ${t.done?'checked':''} onchange="toggleTask('${t.id}',this.checked,'${o.drag?'wk':''}')"></label>
     <span class="tn">${tmIcon(t)}${escHtml(t.name)}</span>
     ${o.cat?(o.catDot&&!ov?`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>${_hasNotes?`<span class="cat-dot-note" style="background:linear-gradient(90deg,transparent,${s.d},transparent);box-shadow:0 0 2px ${s.d}"></span>`:''}`:(!o.catDot?`<span class="cpill" style="background:${s.bg};color:${s.t};border-color:${s.b}">${escHtml(t.category||'?')}</span>`:'')):''}

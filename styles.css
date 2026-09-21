@@ -1909,24 +1909,43 @@ body.dark #_donutFrac{fill:#34d399}
    THEME: Modern (Apple-style) — opt-in swatch (THEMES.modern in
    features.js), toggled as body.theme-modern in applyTheme().
    Ported from mobile's Apple Reminders/Mail-style redesign
-   (mobile.css, Sep 2026): flat task lists, glass status chips,
-   heavier frosted-glass chrome, thin SVG icons. Scoped narrowly
-   (via :has()/specific classes) so it only touches what it's meant
-   to and layers correctly on top of body.dark. Desktop's Overview
-   progress indicator is already a donut ring — nothing to port there.
+   (mobile.css, Sep 2026): flat Today list (only), left-edge color
+   band replacing the round category dot, glass status chips,
+   heavier frosted-glass chrome, thin SVG icons. Scoped narrowly so
+   it only touches what it's meant to and layers correctly on top of
+   body.dark. Desktop's Overview progress indicator is already a
+   donut ring — nothing to port there. Revised 2026-09-22 per
+   feedback: dropped row-divider hairlines, narrowed the flattened
+   container from every task-list .card down to just .card-hero
+   (the Today panel), lightened THEMES.modern's background, and
+   swapped the dot indicator for a left border on Today rows.
    ══════════════════════════════════════════════════════════ */
 
-/* Flat task lists: card chrome removed wherever a .card wraps .ti rows,
-   hairline separators between rows instead (Reminders/Mail convention). */
-body.theme-modern .card:has(.ti){background:transparent!important;backdrop-filter:none;-webkit-backdrop-filter:none;border:none!important;box-shadow:none!important}
-body.theme-modern .card:has(.ti) .ti{border-top:1px solid rgba(0,0,0,.08);border-radius:0;margin-left:0;margin-right:0}
-body.theme-modern .card:has(.ti) .ti:first-child{border-top:none}
-body.theme-modern.dark .card:has(.ti) .ti{border-top-color:rgba(255,255,255,.08)}
+/* Hidden by default in every theme — only body.theme-modern reveals/positions it below. */
+.ti-band{display:none}
+
+/* Flat Today list: ONLY the Today/Time-Block panel (.card-hero, index.html — the
+   dashboard's most important panel) loses its card chrome, so it sits directly on the
+   page background and stands out by being the one un-boxed thing on the page. Every
+   other task list (Weekly Reset, Shopping, etc.) keeps its normal glass .card container
+   — was previously any .card:has(.ti), narrowed to .card-hero per 2026-09-21 feedback.
+   No row-divider hairlines (removed per feedback — flat rows read as one continuous
+   block instead of a bordered list). */
+body.theme-modern .card-hero{background:transparent!important;backdrop-filter:none;-webkit-backdrop-filter:none;border:none!important;box-shadow:none!important}
+body.theme-modern .card-hero .ti{border-radius:0;margin-left:0;margin-right:0}
+
+/* Left-edge color band replacing the round .cat-dot indicator on Today-list rows only
+   (mobile's two-tone band idiom — light fill + darker outline — ported per 2026-09-21
+   feedback). .ti-band is emitted by tRow() (overview.js) whenever the dot indicator
+   would be (o.catDot), but stays display:none outside this theme so other themes are
+   unaffected; here it replaces the dot instead of sitting alongside it. */
+body.theme-modern #todList .cat-dot,body.theme-modern #todList .cat-dot-note{display:none}
+body.theme-modern #todList .ti-band{display:block;position:absolute;left:4px;top:6px;bottom:6px;width:3px;border-radius:3px}
 
 /* Glass status chips: overdue tint reads as translucent glass, not a flat fill. */
-body.theme-modern .ti.ov-row{background:rgba(239,68,68,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top-color:rgba(239,68,68,.2)}
+body.theme-modern .ti.ov-row{background:rgba(239,68,68,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 body.theme-modern .ti.ov-row .tn{color:#b91c1c}
-body.theme-modern.dark .ti.ov-row{background:rgba(239,68,68,.14);border-top-color:rgba(239,68,68,.3)}
+body.theme-modern.dark .ti.ov-row{background:rgba(239,68,68,.14)}
 body.theme-modern.dark .ti.ov-row .tn{color:#fca5a5}
 body.theme-modern .ov-banner{background:rgba(239,68,68,.08);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom-color:rgba(239,68,68,.2)}
 body.theme-modern .ov-banner-btn{background:rgba(239,68,68,.16);color:#b91c1c}
