@@ -223,15 +223,15 @@ if(sessionStorage._mReloaded===BUILD);else{
       </div>
       <div class="tlist" id="recList" style="flex:1;columns:2;column-gap:2px;column-fill:auto;overflow-y:auto;padding:4px 0 0" onwheel="onWrRecWheel(event)"></div>
       <div style="display:none" id="recListPup"></div>
-      <!-- Was position:absolute;bottom:0;right:0, floating OVER #recList's content with no
-           space reserved for it — caused the list's last row(s) to render underneath it
-           (read as a stray "selection" glow) and needed an artificial 30px padding-bottom
-           hack on #recList to avoid the overlap, which left a dead gap once the list didn't
-           have enough rows to reach it (2026-09-23 feedback: "way too much empty space").
-           Now a normal flex-column sibling (.card is flex-direction:column) — #recList's
-           flex:1 automatically shrinks to leave exactly this row's real height, no overlap,
-           no wasted space, and the padding-bottom hack above is gone. -->
-      <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:4px 8px 6px">
+      <!-- Floating overlay again (was position:absolute originally; briefly made a normal
+           flex sibling on 2026-09-23 to fix an overlap/empty-space bug, then reverted per
+           feedback: "the plus icon is supposed to be floating"). The ORIGINAL overlap bug —
+           the list's last row rendering flatly underneath this and reading as a stray
+           "selection" glow — is fixed differently now: wr-float-pill (styles.css) gives
+           this its own frosted-glass pill background + shadow, so it reads unambiguously as
+           a floating control sitting ON TOP of content, not an accidental highlight. No
+           padding-bottom reserved on #recList — the list uses its full height again. -->
+      <div class="wr-float-pill" style="display:flex;justify-content:flex-end;align-items:center;gap:6px;padding:3px 6px;position:absolute;bottom:6px;right:6px">
         <button id="wrSkippedBtn" style="display:none;white-space:nowrap;padding:2px 7px;font-size:10px;border-radius:9px;background:rgba(255,255,255,.6);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s" onmouseenter="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseleave="this.style.color='var(--muted)';this.style.borderColor='var(--border)'" onclick="openWrSkipped(event)"></button>
         <button class="btn-plus" onclick="openWrRuleAddModal()">+</button>
       </div>
@@ -1276,8 +1276,8 @@ init();
 <div id="unMenu" class="tlist" style="display:none;position:fixed;z-index:9997;width:300px;max-height:360px;overflow-y:auto;background:var(--gb);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:4px 0"></div>
 <div id="unMenuBack" onclick="closeUnMenu()" style="display:none;position:fixed;inset:0;z-index:9996"></div>
 <div class="settings-popup" id="settingsPopup">
-  <div class="settings-popup-item" style="justify-content:space-between;align-items:center;height:20px;cursor:default">
-    <span onclick="toggleDark()" style="display:flex;align-items:center;gap:8px;height:100%;cursor:pointer">
+  <div class="settings-popup-item settings-popup-item-split" style="justify-content:space-between;align-items:center;height:20px;cursor:default">
+    <span onclick="toggleDark()" class="settings-popup-subitem">
       <span id="darkToggleIcon">🌙</span><span id="darkToggleLabel">Night Mode</span>
     </span>
     <span style="display:flex;align-items:center;gap:6px;height:100%">

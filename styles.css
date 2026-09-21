@@ -195,6 +195,15 @@ body.dark .settings-popup{background:rgba(20,20,24,.96);border-color:rgba(255,25
 .settings-popup-item:hover{background:rgba(0,0,0,.06);}
 body.dark .settings-popup-item:hover{background:rgba(255,255,255,.08);}
 body.dark .settings-popup-item{color:var(--text);}
+/* The Night Mode + Pics row holds TWO separate controls in one .settings-popup-item, so
+   the item's own whole-row hover highlight (above) was lighting up across both — including
+   the unrelated Pics toggle — whenever hovering anywhere in the row (2026-09-23 feedback).
+   .settings-popup-item-split cancels that row-wide highlight; .settings-popup-subitem gives
+   just the Night Mode control its own small, correctly-scoped hover target instead. */
+.settings-popup-item-split:hover{background:none!important}
+.settings-popup-subitem{display:flex;align-items:center;gap:8px;height:100%;cursor:pointer;padding:2px 6px;margin:-2px -6px;border-radius:6px;transition:background .12s}
+.settings-popup-subitem:hover{background:rgba(0,0,0,.06)}
+body.dark .settings-popup-subitem:hover{background:rgba(255,255,255,.08)}
 .settings-popup-divider{height:1px;background:rgba(0,0,0,.08);margin:4px 0;}
 body.dark .settings-popup-divider{background:rgba(255,255,255,.08);}
 .settings-popup-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:2px 8px;opacity:.7;}
@@ -379,6 +388,11 @@ button:focus,button:focus-visible,.btn:focus,.btn:focus-visible{outline:none}
 .btn-ghost:hover{background:rgba(0,0,0,.04);color:var(--text)}
 .btn-xs{padding:2px 6px;font-size:10px}
 .btn-plus{width:18px;height:18px;padding:0;justify-content:center;font-size:12px;border-radius:50%;background:rgba(255,255,255,.6);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s;flex-shrink:0;display:inline-flex;align-items:center;line-height:1}
+/* Weekly Reset's floating +/Skip control (index.html) — a real frosted-glass pill with its
+   own shadow so it unambiguously reads as a floating control sitting on top of the list,
+   never as a stray highlighted row underneath it (global, all themes). */
+.wr-float-pill{border-radius:14px;background:rgba(255,255,255,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 2px 8px rgba(0,0,0,.12);border:1px solid rgba(255,255,255,.5)}
+body.dark .wr-float-pill{background:rgba(30,30,38,.7);border-color:rgba(255,255,255,.08);box-shadow:0 2px 8px rgba(0,0,0,.35)}
 .btn-plus:hover{background:#fff;color:var(--accent);border-color:var(--accent)}
 
 /* Cards */
@@ -461,8 +475,13 @@ body.dark .note-tip{background:rgba(30,30,40,.88);color:#fff;border-color:transp
    since it's a status marker rather than a per-theme decoration. Absolutely positioned
    (like .ti-band) so its position in the DOM doesn't matter; .ti already has
    position:relative (base rule) so no extra positioning context is needed. */
-.wr-unassigned{position:absolute;left:3px;top:6px;bottom:6px;width:3px;border-radius:3px;background:rgba(0,0,0,.11);border:1px solid rgba(0,0,0,.19);pointer-events:none}
-body.dark .wr-unassigned{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.22)}
+/* No border — a 1px border on a 3px-wide absolutely-positioned bar rendered visibly
+   thicker in #recList's LEFT CSS-multicol column than the right one (subpixel rounding:
+   the two columns' `.ti` elements don't always land on the same fractional device-pixel
+   offset, so a hairline border anti-aliases differently between them). A single flat fill
+   with no border sidesteps the inconsistency entirely — also lighter per feedback. */
+.wr-unassigned{position:absolute;left:3px;top:6px;bottom:6px;width:3px;border-radius:3px;background:rgba(0,0,0,.16);pointer-events:none}
+body.dark .wr-unassigned{background:rgba(255,255,255,.16)}
 #todList .cat-dot{right:7px}
 #todList .tn{padding-right:12px}
 /* Small glowing bar under the cat-dot when a task has notes — a separate element, not styling

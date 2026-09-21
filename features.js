@@ -7845,6 +7845,42 @@ function ctxDoDelete(){
 }
 
 // ══════════════════════════════════════════════════════════
+// DEBUG: alignment guides — call showAlignGuides() in the browser console to draw actual
+// measurement lines proving (or disproving) that the page header and the content below it
+// share the same centered zone. Call hideAlignGuides() to remove them. Not part of the UI —
+// a verification tool added 2026-09-23 because numbers alone weren't convincing/trustworthy
+// enough after a previous "I measured it and it's centered" claim didn't match what was
+// actually seen on screen.
+function showAlignGuides(){
+  hideAlignGuides();
+  const mk=(x,color,label)=>{
+    const line=document.createElement('div');
+    line.className='_alignGuide';
+    line.style.cssText=`position:fixed;top:0;bottom:0;left:${x}px;width:0;border-left:1px dashed ${color};z-index:99999;pointer-events:none`;
+    const tag=document.createElement('div');
+    tag.className='_alignGuide';
+    tag.textContent=label+' '+Math.round(x)+'px';
+    tag.style.cssText=`position:fixed;top:${40+Math.random()*140}px;left:${x+3}px;font:10px monospace;color:${color};background:rgba(255,255,255,.9);padding:1px 4px;border-radius:3px;z-index:99999;white-space:nowrap;pointer-events:none`;
+    document.body.appendChild(line);document.body.appendChild(tag);
+  };
+  const sidebar=document.querySelector('.sidebar');
+  const cols=document.querySelector('.overview-cols');
+  const topbar=document.querySelector('.ov-topbar');
+  const vw=window.innerWidth;
+  mk(0,'#999','viewport L');
+  mk(vw,'#999','viewport R');
+  if(sidebar)mk(sidebar.getBoundingClientRect().right,'#f59e0b','sidebar edge');
+  if(cols){const r=cols.getBoundingClientRect();mk(r.left,'#22c55e','content L');mk(r.right,'#22c55e','content R');}
+  if(topbar){const r=topbar.getBoundingClientRect();mk(r.left,'#3b82f6','header L');mk(r.right,'#3b82f6','header R');}
+  if(cols&&topbar){
+    const cr=cols.getBoundingClientRect(),tr=topbar.getBoundingClientRect();
+    console.log('[alignGuides] content L/R:',Math.round(cr.left),Math.round(cr.right),' header L/R:',Math.round(tr.left),Math.round(tr.right),
+      cr.left===tr.left&&cr.right===tr.right?'✅ MATCH':'❌ MISMATCH — header and content are NOT sharing the same centered zone');
+  }
+}
+function hideAlignGuides(){document.querySelectorAll('._alignGuide').forEach(el=>el.remove());}
+
+// ══════════════════════════════════════════════════════════
 // THEMES
 // ══════════════════════════════════════════════════════════
 const THEMES={
