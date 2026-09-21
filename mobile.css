@@ -16,11 +16,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* No bottom reservation here any more (was 84px) — for content to actually scroll BEHIND
    the floating glass nav (blurred through it) instead of stopping dead short of it, #mMain
    must be allowed to grow into that space. Each tab now owns its OWN bottom clearance
-   instead, at the level that actually needs it: Today/Shop via mSyncBarClearance()
-   (mobile-overview.js) sizing #mTodayList/#mShopList's own padding-bottom from the real
-   add-bar height; Week via #mWeekList's static padding-bottom; Month via
-   _mSyncMonthScrollHeight()'s direct viewport measurement (never depended on this); tb via
-   #mTLInner's padding-bottom. */
+   instead, at the level that actually needs it: Today/Shop reserve none at all — their add
+   bars are on-demand floating popups (opacity/pointer-events via .open), not docked content,
+   so there's nothing to clear space for; Week via #mWeekList's static padding-bottom; Month
+   via _mSyncMonthScrollHeight()'s direct viewport measurement (never depended on this); tb
+   via #mTLInner's padding-bottom. */
 #mApp{display:none;flex-direction:column;height:100dvh}
 #mApp.ready{display:flex}
 
@@ -156,16 +156,13 @@ body.dark .m-empty-icon{background:rgba(34,197,94,.16);color:#4ade80}
 .m-cpick-opt:active{filter:brightness(.95)}
 
 /* ── Add task / add item bars (Today + Shop share identical UI) ─────────────
-   In normal flex flow (not fixed) so #mMain automatically sizes around their real
-   height — no guessed padding needed to keep the list clear of them. margin-bottom
-   reserves space above the fixed bottom nav. Elevated (white/light-surface) card
-   background + shadow makes them read as distinct from the list behind them,
-   without leaning on an accent-colored border. */
+   Elevated (white/light-surface) card background + shadow makes them read as distinct
+   from the list behind them, without leaning on an accent-colored border. */
 /* position:fixed — pinned to the viewport immediately on paint, independent of flex
    layout settling. A normal-flow version briefly rendered mid-page on cold load before
-   #mMain's height resolved, then jumped to the bottom once it did. The corresponding
-   list's padding-bottom is measured and set in JS (mSyncBarClearance) rather than
-   guessed here, so it always exactly matches this bar's real height. */
+   #mMain's height resolved, then jumped to the bottom once it did. Both bars are on-demand
+   popups (opacity/pointer-events via .open, mToggleQuickAdd/mToggleShopAdd below) rather
+   than docked content, so the list never reserves space for them. */
 /* 82px = the floating nav's top edge (20px bottom offset + 56px height, no safe-area
    term) plus a 6px gap so the add bar floats clear of the pill below it, matching the
    reference's separated-floating-elements look. */
@@ -175,28 +172,28 @@ body.dark .m-empty-icon{background:rgba(34,197,94,.16);color:#4ade80}
    the bottom of the screen. */
 #mAddBar,#mShopAddBar{position:fixed;left:16px;right:16px;bottom:82px;display:flex;flex-direction:column;gap:7px;padding:14px;background:var(--bg-elevated);border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);z-index:20}
 body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04)}
-/* Today's add bar is now an on-demand popup (opened via #mTodayAddBtn's "+", mToggleQuickAdd
-   in mobile-overview.js) instead of permanently docked on screen — same exact card look as
-   before, just hidden until requested, reclaiming the space it used to always occupy. Shop's
-   own add bar (#mShopAddBar) is untouched by this and stays always-visible.
-   `bottom` is tracked LIVE against window.visualViewport (_mQuickAddReposition,
-   mobile-overview.js) so the popup sits right above the keyboard as it animates open/closed
-   — typing stays visible right next to what you're typing, instead of the popup living
-   somewhere disconnected from the keyboard. Growing the form (e.g. travel's date-range
-   fields appearing) naturally pushes it further up too, since it's anchored by its BOTTOM
-   edge, not its top — no extra reflow logic needed for that. 82px default matches the old
-   docked position, used only for the brief moment before the keyboard finishes animating in. */
+/* Both add bars are on-demand popups (opened via #mTodayAddBtn/#mShopHdrAddBtn's "+" in the
+   header, mToggleQuickAdd/mToggleShopAdd in mobile-overview.js) instead of permanently
+   docked on screen — same exact card look as before, just hidden until requested, reclaiming
+   the space they used to always occupy.
+   `bottom` is tracked LIVE against window.visualViewport (_mQuickAddReposition/
+   _mShopAddReposition, mobile-overview.js) so the popup sits right above the keyboard as it
+   animates open/closed — typing stays visible right next to what you're typing, instead of
+   the popup living somewhere disconnected from the keyboard. Growing the form (e.g. travel's
+   date-range fields appearing) naturally pushes it further up too, since it's anchored by its
+   BOTTOM edge, not its top — no extra reflow logic needed for that. 82px default matches the
+   old docked position, used only for the brief moment before the keyboard finishes animating in. */
 /* Slight spring overshoot on the drop-down entrance (cubic-bezier with a >1 midpoint)
    instead of a plain ease — matches the bottom nav's own highlight-pill spring feel, so
    the tab's two pieces of motion read as one consistent language. */
-#mAddBar{bottom:82px;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .18s ease,transform .32s cubic-bezier(.34,1.56,.64,1),bottom .12s ease}
-#mAddBar.open{opacity:1;pointer-events:auto;transform:translateY(0)}
-/* Liquid-glass blur behind the popup — adding a task becomes the focal point without
+#mAddBar,#mShopAddBar{bottom:82px;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .18s ease,transform .32s cubic-bezier(.34,1.56,.64,1),bottom .12s ease}
+#mAddBar.open,#mShopAddBar.open{opacity:1;pointer-events:auto;transform:translateY(0)}
+/* Liquid-glass blur behind the popup — adding a task/item becomes the focal point without
    fully obscuring the rest of the screen. Kept deliberately light (was blur(14px)/28%
    tint, read as too heavy) — opacity (not display) so it actually fades in. */
-#mQuickAddBackdrop{position:fixed;inset:0;z-index:19;opacity:0;pointer-events:none;background:rgba(20,18,28,.06);backdrop-filter:blur(2px) saturate(120%);-webkit-backdrop-filter:blur(2px) saturate(120%);transition:opacity .22s ease}
-#mQuickAddBackdrop.open{opacity:1;pointer-events:auto}
-body.dark #mQuickAddBackdrop{background:rgba(0,0,0,.14)}
+#mQuickAddBackdrop,#mShopAddBackdrop{position:fixed;inset:0;z-index:19;opacity:0;pointer-events:none;background:rgba(20,18,28,.06);backdrop-filter:blur(2px) saturate(120%);-webkit-backdrop-filter:blur(2px) saturate(120%);transition:opacity .22s ease}
+#mQuickAddBackdrop.open,#mShopAddBackdrop.open{opacity:1;pointer-events:auto}
+body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.14)}
 #mNewTask,#mShopNewName{width:100%;padding:12px 14px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;box-sizing:border-box}
 #mNewTask:focus,#mShopNewName:focus{border-color:var(--accent)}
 /* Quick-add's type-specific fields (destination/dates/store/link) — same size/weight as
@@ -220,7 +217,7 @@ body.dark #mQuickAddBackdrop{background:rgba(0,0,0,.14)}
    to whichever tab is active — ported from the approved prototype
    (~/Desktop/mobile-tab-mockups/liquid-glass-tabs.html). The 56px height here
    is coupled to #mApp's padding-bottom and #mAddBar/#mShopAddBar's bottom
-   offset above, and to mShowTab()/mSyncBarClearance() in mobile-overview.js
+   offset above, and to mShowTab() in mobile-overview.js
    — change all of them together. */
 /* overflow:hidden clips the highlight pill's spring-overshoot to the bar's own rounded
    edge on the Today/More (leftmost/rightmost) tabs — without it the bounce briefly slides
@@ -239,7 +236,7 @@ body.dark #mQuickAddBackdrop{background:rgba(0,0,0,.14)}
    actual edge-swipe-to-home gesture recognizer works off physical screen-edge contact
    during a swipe, not "any tap below the safe-area line" — a normal tap on these icons
    is unaffected regardless of where they sit.) Because bottom:0 and height no longer
-   depend on env(safe-area-inset-bottom), #mApp/#mAddBar/mSyncBarClearance below also
+   depend on env(safe-area-inset-bottom), #mApp/#mAddBar/#mShopAddBar below also
    drop the safe-area term — they only ever needed to clear #mNav's own top edge. */
 /* More blur + saturation, less opaque tint — reads as true frosted glass (content
    actually visible-through-blur as it scrolls behind) rather than a semi-solid panel. */
@@ -271,15 +268,14 @@ body.dark #mQuickAddBackdrop{background:rgba(0,0,0,.14)}
 .m-shop-hdr-icon:active{background:var(--glass)}
 .m-shop-hdr-heb{width:auto;height:24px;padding:0 8px;border-radius:6px;border:none;background:#e4002b;color:#fff;font-size:11px;font-weight:800;letter-spacing:.03em;cursor:pointer;flex-shrink:0}
 .m-shop-hdr-heb:active{background:#c40025}
-.m-shop-store-hd{font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--muted);padding:5px 0 3px}
-.m-shop-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--rs);background:var(--glass);margin-bottom:3px;position:relative}
-.m-shop-item .chk{width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)}
-.m-shop-item .m-shop-name{flex:1;min-width:0;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.m-shop-item .m-shop-store-lbl{font-size:11px;color:var(--muted);flex-shrink:0}
-.m-shop-item .m-shop-due-lbl{font-size:10px;color:var(--accent);flex-shrink:0}
-.m-shop-item .m-shop-del{background:none;border:none;font-size:14px;color:var(--muted);cursor:pointer;padding:2px 4px;flex-shrink:0}
-.m-shop-item.m-shop-dragging{opacity:.4}
-.m-shop-drag-ph{height:42px;margin-bottom:6px;border-radius:var(--rs);background:rgba(109,95,230,.1);border:2px dashed rgba(109,95,230,.4);box-sizing:border-box}
+.m-shop-store-hd{font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--muted);padding:10px 0 3px}
+/* Shop rows now reuse Today's .m-row-outer/.m-row list convention (flat --bg-elevated +
+   hairline border-top, .m-chk-wrap circle checkbox, left color band) instead of the old
+   glass-blur pill cards — see mShopRow() in mobile-overview.js. .m-shop-due-lbl is the one
+   Shop-only addition (Today's rows have no per-row due-date badge). */
+.m-shop-due-lbl{font-size:11px;color:var(--accent);flex-shrink:0;font-weight:600}
+.m-row-outer.m-shop-dragging{opacity:.4}
+.m-shop-drag-ph{height:46px;margin-bottom:3px;border-radius:var(--rs);background:rgba(109,95,230,.1);border:2px dashed rgba(109,95,230,.4);box-sizing:border-box}
 .m-shop-store-sel{padding:8px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:14px;font-family:inherit;color:var(--text);outline:none;flex:1}
 
 /* ── Meals / Full List sheets ───────────────────────────────────────────── */

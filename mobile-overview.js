@@ -798,6 +798,38 @@ function mCloseQuickAdd() {
 function mToggleQuickAdd() {
   document.getElementById('mAddBar')?.classList.contains('open') ? mCloseQuickAdd() : mOpenQuickAdd();
 }
+
+// Shop's add-item popup — exact port of the Today quick-add open/close/reposition trio
+// above, scoped to #mShopAddBar/#mShopAddBackdrop/#mShopNewName instead.
+function _mShopAddReposition() {
+  const bar = document.getElementById('mShopAddBar');
+  if (!bar || !bar.classList.contains('open')) return;
+  const vv = window.visualViewport;
+  const kbHeight = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+  bar.style.bottom = (kbHeight + 10) + 'px';
+}
+function _mInitShopAddKeyboardTracking() {
+  if (!window.visualViewport || window.visualViewport._shopAddTracked) return;
+  window.visualViewport._shopAddTracked = true;
+  window.visualViewport.addEventListener('resize', _mShopAddReposition);
+  window.visualViewport.addEventListener('scroll', _mShopAddReposition);
+}
+function mOpenShopAdd() {
+  _mInitShopAddKeyboardTracking();
+  document.getElementById('mShopAddBar')?.classList.add('open');
+  document.getElementById('mShopAddBackdrop')?.classList.add('open');
+  document.getElementById('mShopNewName')?.focus();
+  _mShopAddReposition();
+}
+function mCloseShopAdd() {
+  document.getElementById('mShopAddBar')?.classList.remove('open');
+  document.getElementById('mShopAddBackdrop')?.classList.remove('open');
+  document.getElementById('mShopNewName')?.blur();
+}
+function mToggleShopAdd() {
+  document.getElementById('mShopAddBar')?.classList.contains('open') ? mCloseShopAdd() : mOpenShopAdd();
+}
+
 function mToggleAddFlag() {
   _mAddImportant = !_mAddImportant;
   const btn = document.getElementById('mAddFlagBtn');
@@ -2107,16 +2139,15 @@ function mShowTab(tab) {
   const isToday = tab === 'today';
   const isShop = tab === 'shop';
   const isSimplePage = isToday || isShop || tab === 'recipes';
-  // #mAddBar's display is no longer tab-toggled — it's an on-demand popup now (opacity/
-  // pointer-events via .open, mToggleQuickAdd), positioned fixed regardless of tab, so it
-  // must always be explicitly closed on any tab switch or it could linger open behind
-  // whatever tab is now showing.
+  // Neither add bar is tab-toggled via display any more — both are on-demand popups
+  // (opacity/pointer-events via .open, mToggleQuickAdd/mToggleShopAdd), positioned fixed
+  // regardless of tab, so each must be explicitly closed on any tab switch or it could
+  // linger open behind whatever tab is now showing.
   mCloseQuickAdd();
-  const shopBar = document.getElementById('mShopAddBar');
-  if (shopBar) shopBar.style.display = isShop ? '' : 'none';
+  mCloseShopAdd();
   // The add bars are position:fixed, floating above content — #mApp's own padding only
-  // ever needs to clear the fixed nav. List clearance for the fixed add bar itself is
-  // measured and applied directly to the list in mSyncBarClearance() below.
+  // ever needs to clear the fixed nav. Neither bar reserves list clearance any more (both
+  // are floating popups, not docked content).
   // No bottom reservation here any more — see the comment on #mApp in mobile.css for why
   // (content now scrolls behind the floating glass nav instead of stopping short of it).
   // No nav button lights up for tb — it's opened from Today's header, not the bottom nav.
@@ -2180,34 +2211,11 @@ function mShowTab(tab) {
   else if (tab === 'recipes') { _mRenderRecipesBrowse(); }
   else if (tab === 'today') { _mTodayOffset = 0; _mSetDate(); }
 
-  // Today no longer reserves list padding for #mAddBar — it's an on-demand popup now, not
-  // a permanently docked bar, so there's nothing to clear space for; explicitly clear any
-  // padding a previous build may have left behind. Shop's bar is still always-visible and
-  // still needs its own measured clearance.
+  // Neither Today nor Shop reserves list padding for its add bar any more — both are
+  // on-demand popups now, not permanently docked bars, so there's nothing to clear space
+  // for; explicitly clear any padding a previous build may have left behind.
   if (isToday) { const tp = document.getElementById('mTodayPage'); if (tp) tp.style.paddingBottom = ''; }
-  if (isShop) mSyncBarClearance('mShopAddBar', 'mShopPage');
-}
-
-// Measures the (fixed-position) add bar's real rendered height and applies it as the
-// PAGE wrapper's padding-bottom (NOT the list/card itself — that padding used to land
-// on #mTodayList, which sits INSIDE the floating .m-section card, so clearance space
-// was rendering as dead white space stretching the card down the screen even with only
-// one task in it. Applying it to the page wrapper instead reserves blank SCROLL space
-// below the card, so the card keeps sizing to its own content while the page still
-// scrolls far enough to clear the fixed bars). Exact, not guessed, and correct even if
-// the bar's own height ever changes.
-function mSyncBarClearance(barId, pageId) {
-  requestAnimationFrame(() => {
-    const bar = document.getElementById(barId);
-    const page = document.getElementById(pageId);
-    if (!bar || !page) return;
-    const h = bar.offsetHeight;
-    // Bar sits at bottom:82px (flat, no safe-area term — #mNav no longer reserves one)
-    // — its own height stacks on top of that, so the page needs both plus a small
-    // buffer to fully clear it. 82 must match #mAddBar/#mShopAddBar's own bottom offset
-    // in mobile.css.
-    if (h > 0) page.style.paddingBottom = `${h + 82 + 24}px`;
-  });
+  if (isShop) { const sp = document.getElementById('mShopPage'); if (sp) sp.style.paddingBottom = ''; }
 }
 
 // Diagnostic (2026-09-14): reports exact measured numbers on the build stamp — a photo
@@ -3447,6 +3455,30 @@ function _mSetDate() {
 }
 
 // ── Shop tab ──────────────────────────────────────────────────────────────────
+// Row markup ported from mTaskRow's Today-list convention (.m-row-outer/.m-row, left
+// color band, .m-chk-wrap circle checkbox) so Shop reads as the same list system as
+// Today instead of its own older glass-pill style. Color band uses gc('shopping') (the
+// same color Today/Week already use for shop-type rows), swapping to the overdue color
+// when the item's own due_date has passed — mirrors mTaskRow's ov/color precedence.
+function mShopRow(s, store) {
+  const overdue = !!(s.due_date && isOv(s.due_date));
+  const col = overdue ? (_isDk() ? OV_DARK : OV) : gc('shopping');
+  const band = `<span style="position:absolute;left:6px;top:8px;bottom:8px;width:3px;border-radius:3px;background:${col.bg};border:1px solid ${col.d}"></span>`;
+  let dueTxt = '';
+  if (s.due_date) {
+    const d = new Date(s.due_date + 'T00:00:00');
+    dueTxt = d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
+  }
+  return `<div class="m-row-outer" data-rid="${s.id}" data-rtype="shop" data-shopid="${s.id}" data-store="${escHtml(store)}">
+    <div class="m-row${overdue ? ' m-ov' : ''}">
+      ${band}
+      <label class="m-chk-wrap"><input type="checkbox" onchange="togShop('${s.id}',this.checked)"></label>
+      <span class="m-row-name">${escHtml(s.name || '')}</span>
+      ${dueTxt ? `<span class="m-shop-due-lbl">${dueTxt}</span>` : ''}
+    </div>
+  </div>`;
+}
+
 function mRenderShop() {
   const list = document.getElementById('mShopList');
   if (!list) return;
@@ -3462,60 +3494,63 @@ function mRenderShop() {
   // Sort items within each store by shop_order
   Object.values(groups).forEach(arr => arr.sort((a, b) => (a.shop_order ?? 9999) - (b.shop_order ?? 9999)));
 
-  list.innerHTML = '';
   const storeNames = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+  if (!storeNames.length) {
+    list.innerHTML = `<div class="m-empty"><div class="m-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="m-empty-txt">Nothing on the list</div></div>`;
+    return;
+  }
+  list.innerHTML = storeNames.map(store =>
+    `<div class="m-shop-store-hd">${escHtml(store)}</div>` + groups[store].map(s => mShopRow(s, store)).join('')
+  ).join('');
+
+  // Checked state set directly (not baked into the template) so togShop's own
+  // optimistic-then-confirm flow doesn't need a full re-render to reflect a toggle.
   storeNames.forEach(store => {
-    const hd = document.createElement('div');
-    hd.className = 'm-shop-store-hd';
-    hd.textContent = store;
-    list.appendChild(hd);
-
     groups[store].forEach(s => {
-      const row = document.createElement('div');
-      row.className = 'm-shop-item';
-      row.dataset.shopId = s.id;
-      row.dataset.store = store;
-
-      const chk = document.createElement('input');
-      chk.type = 'checkbox'; chk.className = 'chk';
-      chk.addEventListener('change', () => togShop(s.id, chk.checked));
-
-      const name = document.createElement('span');
-      name.className = 'm-shop-name';
-      name.textContent = s.name;
-
-      const dueLbl = document.createElement('span');
-      dueLbl.className = 'm-shop-due-lbl';
-      if (s.due_date) {
-        const d = new Date(s.due_date + 'T00:00:00');
-        dueLbl.textContent = d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
-      }
-
-      const del = document.createElement('button');
-      del.className = 'm-shop-del'; del.textContent = '\u2715';
-      del.addEventListener('click', e => { e.stopPropagation(); mDeleteShopDirect(s.id); });
-
-      row.appendChild(chk); row.appendChild(name); row.appendChild(dueLbl); row.appendChild(del);
-
-      // Tap to edit
-      row.addEventListener('click', e => {
-        if (e.target.closest('.chk') || e.target.closest('.m-shop-del')) return;
-        mOpenShopEdit(s.id);
-      });
-
-      // Touch drag reorder within store
-      _mShopTouchDrag(row, store);
-
-      list.appendChild(row);
+      const outer = list.querySelector(`.m-row-outer[data-shopid="${s.id}"]`);
+      const chk = outer?.querySelector('input[type=checkbox]');
+      if (chk) chk.checked = !!s.done;
+      if (outer) _mShopTouchDrag(outer, store);
     });
   });
+}
+
+// Single tap -> task menu (Edit/Delete, via _mShowTaskMenu's existing 'shop' rtype
+// branch), double tap -> edit sheet directly. Exact port of mInitTodayDblTap, scoped to
+// #mShopList — reuses _mShowTaskMenu/_mRowEdit as-is since both already handle rtype
+// 'shop' generically (built for when shop rows show up on the Today list).
+let _shopTapTimer = null;
+function mInitShopDblTap() {
+  const list = document.getElementById('mShopList');
+  if (!list || list._dblTapInited) return;
+  list._dblTapInited = true;
+  let tapStartX = 0, tapStartY = 0;
+  list.addEventListener('touchstart', e => {
+    tapStartX = e.touches[0].clientX;
+    tapStartY = e.touches[0].clientY;
+  }, {passive: true});
+  list.addEventListener('touchend', e => {
+    const outer = e.target.closest('.m-row-outer[data-rid]');
+    if (!outer) return;
+    if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
+    const ct = e.changedTouches[0];
+    if (Math.abs(ct.clientX - tapStartX) > 10 || Math.abs(ct.clientY - tapStartY) > 10) return;
+    const id = outer.dataset.rid;
+    if (_isDblTap(id)) {
+      if (_shopTapTimer) { clearTimeout(_shopTapTimer); _shopTapTimer = null; }
+      _mRowEdit(outer);
+      return;
+    }
+    clearTimeout(_shopTapTimer);
+    _shopTapTimer = setTimeout(() => { _shopTapTimer = null; _mShowTaskMenu(outer); }, 350);
+  }, {passive: true});
 }
 
 // Touch drag reorder within a store group
 function _mShopTouchDrag(row, store) {
   let startY = 0, dragging = false, ph = null, scrollStart = 0;
   row.addEventListener('touchstart', e => {
-    if (e.target.closest('.chk') || e.target.closest('.m-shop-del')) return;
+    if (e.target.closest('.m-chk-wrap')) return;
     startY = e.touches[0].clientY;
     scrollStart = document.getElementById('mMain').scrollTop;
     dragging = false;
@@ -3535,7 +3570,7 @@ function _mShopTouchDrag(row, store) {
     e.preventDefault();
     const list = document.getElementById('mShopList');
     const y = e.touches[0].clientY;
-    const siblings = [...list.querySelectorAll(`.m-shop-item[data-store="${store}"]`)].filter(r => r !== row);
+    const siblings = [...list.querySelectorAll(`.m-row-outer[data-store="${store}"]`)].filter(r => r !== row);
     let inserted = false;
     for (const sib of siblings) {
       const rc = sib.getBoundingClientRect();
@@ -3558,9 +3593,9 @@ function _mShopTouchDrag(row, store) {
       ph.remove();
       // Update shop_order for this store group
       const list = document.getElementById('mShopList');
-      const rows = [...list.querySelectorAll(`.m-shop-item[data-store="${store}"]`)];
+      const rows = [...list.querySelectorAll(`.m-row-outer[data-store="${store}"]`)];
       rows.forEach((r, i) => {
-        const id = r.dataset.shopId;
+        const id = r.dataset.shopid;
         const item = st.shopping.find(x => String(x.id) === String(id));
         if (item) {
           item.shop_order = i;
@@ -3584,6 +3619,7 @@ async function mAddShopItem() {
   st.shopping.push(s);
   save(); mRenderShop();
   nameEl.value = '';
+  mCloseShopAdd();
   const sv = await sbReq('POST', 'shopping_list', {name: n, store, done: false});
   if (sv && sv[0]) {
     const i = st.shopping.findIndex(x => x.id === s.id);
@@ -3592,7 +3628,7 @@ async function mAddShopItem() {
   }
 }
 
-// Delete shop item directly (X button)
+// Delete shop item directly (task menu's Delete button — mTaskMenuDelete)
 async function mDeleteShopDirect(id) {
   const s = st.shopping.find(x => String(x.id) === String(id));
   if (!s) return;
@@ -4407,6 +4443,7 @@ async function mInit() {
   mInitPickers();
   mInitTodayDblTap();
   mInitTodayDrag();
+  mInitShopDblTap();
   mInitPTR();
   mInitTBSwipe();
   mInitBlockDrag();

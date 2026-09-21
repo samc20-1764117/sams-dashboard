@@ -75,6 +75,9 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </button>
       <div id="mShopHeaderBtns" style="display:none">
+        <button id="mShopHdrAddBtn" class="m-shop-hdr-icon" onclick="mToggleShopAdd()" aria-label="Add item" title="Add item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
         <button class="m-shop-hdr-icon" onclick="mOpenMeals()" title="Meals">🍽</button>
         <button class="m-shop-hdr-heb" onclick="mOpenFullList()" title="HEB List">HEB</button>
       </div>
@@ -170,6 +173,7 @@
        is required on every non-submit button inside a form, or it defaults to type=submit
        and double-fires the action. -->
   <div id="mQuickAddBackdrop" onclick="mCloseQuickAdd()"></div>
+  <div id="mShopAddBackdrop" onclick="mCloseShopAdd()"></div>
   <form id="mAddBar" onsubmit="event.preventDefault();mAddTask();return false">
     <input id="mNewTask" type="text" placeholder="Add task for today…">
     <!-- Type-specific fields — shown/hidden by _mAddSyncTypeFields (mobile-overview.js) as
@@ -220,8 +224,9 @@
     </div>
   </form>
 
-  <!-- Shop add bar (shop tab only) — same form-wrap fix as #mAddBar above. -->
-  <form id="mShopAddBar" style="display:none" onsubmit="event.preventDefault();mAddShopItem();return false">
+  <!-- Shop add bar — same form-wrap fix as #mAddBar above. On-demand popup (opened via
+       #mShopHdrAddBtn's "+" in the header, mToggleShopAdd), same pattern as #mAddBar. -->
+  <form id="mShopAddBar" onsubmit="event.preventDefault();mAddShopItem();return false">
     <input id="mShopNewName" type="text" placeholder="Add item...">
     <div class="m-add-row2">
       <select id="mShopNewStore" class="m-shop-store-sel">
