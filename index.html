@@ -16,14 +16,14 @@
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
 <title>Sam's Dashboard</title>
 <script>
-window._BUILD='20260923g';var BUILD=window._BUILD;
+window._BUILD='20260923h';var BUILD=window._BUILD;
 if(sessionStorage._mReloaded===BUILD);else{
   fetch('/version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(d.v&&d.v!==BUILD){sessionStorage._mReloaded=d.v;location.reload();}
   }).catch(function(){});
 }
 </script>
-<link rel="stylesheet" href="styles.css?v=20260923g">
+<link rel="stylesheet" href="styles.css?v=20260923h">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');var d=document.documentElement;var isDk=!!(s.cfg&&s.cfg.dark);if(isDk)d.classList.add('init-dark');
   /* Body colors mirrored from THEMES[key].body in features.js (~line 7850) — duplicated here
      since this runs before features.js loads, purely so the native title bar / PWA chrome
@@ -1057,9 +1057,9 @@ if(sessionStorage._mReloaded===BUILD);else{
 </div>
 
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260923g"></script>
-<script src="overview.js?v=20260923g"></script>
-<script src="features.js?v=20260923g"></script>
+<script src="core.js?v=20260923h"></script>
+<script src="overview.js?v=20260923h"></script>
+<script src="features.js?v=20260923h"></script>
 <script src="pup-skills.js?v=20260608b"></script>
 <script src="videos.js?v=20260917a"></script>
 
@@ -1257,7 +1257,7 @@ document.addEventListener('visibilitychange',()=>{
 init();
 </script>
 <!-- Quick Notes -->
-<button id="qnBtn" onclick="toggleQN()" title="Quick Notes"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+<button id="qnBtn" onclick="toggleQN()" title="Quick Notes"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
 <div id="qnPanel">
   <div class="qn-header">
     <span class="qn-title">Quick Notes</span>

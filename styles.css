@@ -1029,7 +1029,11 @@ body.dark .rt-heat-cell.rt-heat-wr-col{background:rgba(59,130,246,.07)}
 .rt-heat-dot.sch-other{background:#5eead4}
 
 /* Quick Notes */
-#qnBtn{position:fixed;bottom:20px;right:20px;z-index:950;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.6);box-shadow:0 4px 18px rgba(0,0,0,.1),0 8px 32px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .18s}
+/* Sized to match #settingsBtn (28x28, styles.css ~187) — its `right` offset is set in JS
+   (_alignQnBtnToSettings(), features.js) to track #settingsBtn's actual right edge, since
+   that edge moves with the topbar's own centering (see .ov-topbar's max-width fix) —
+   2026-09-23: "move quick notes so it's same size and alignment as settings". */
+#qnBtn{position:fixed;bottom:20px;right:20px;z-index:950;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.6);box-shadow:0 4px 18px rgba(0,0,0,.1),0 8px 32px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .18s}
 #qnBtn:hover{background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.14),0 12px 40px rgba(0,0,0,.08);transform:translateY(-2px)}
 body.dark #qnBtn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15)}
 /* Panel — glass card like .card but notepad shaped */

@@ -7880,6 +7880,21 @@ function showAlignGuides(){
 }
 function hideAlignGuides(){document.querySelectorAll('._alignGuide').forEach(el=>el.remove());}
 
+// Keeps #qnBtn's right edge tracking #settingsBtn's actual right edge (which itself moves
+// with .ov-topbar's centering) instead of a fixed 20px-from-viewport offset — 2026-09-23:
+// "move quick notes so it's same size and alignment as settings". Re-runs on resize since
+// the topbar's centered position depends on viewport width.
+function _alignQnBtnToSettings(){
+  const qn=document.getElementById('qnBtn'),sb=document.getElementById('settingsBtn');
+  if(!qn||!sb)return;
+  const sbRect=sb.getBoundingClientRect();
+  if(!sbRect.width)return;
+  qn.style.right=(window.innerWidth-sbRect.right)+'px';
+}
+window.addEventListener('resize',_alignQnBtnToSettings);
+document.addEventListener('DOMContentLoaded',_alignQnBtnToSettings);
+setTimeout(_alignQnBtnToSettings,300);
+
 // ══════════════════════════════════════════════════════════
 // THEMES
 // ══════════════════════════════════════════════════════════
