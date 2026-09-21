@@ -421,7 +421,7 @@ function mInitPickers() {
   mSelectCat('fulladd', 'Home');
   document.addEventListener('click', e => {
     if (!e.target.closest('.m-cpick')) {
-      ['mAddPickOpts','mEditPickOpts','mBlockPickOpts','mWkAddPickOpts','mFullAddPickOpts','mAddStoreOpts','mAddDayOpts'].forEach(id => {
+      ['mAddPickOpts','mEditPickOpts','mBlockPickOpts','mWkAddPickOpts','mFullAddPickOpts','mAddStoreOpts','mAddDayOpts','mShopAddStoreOpts','mShopEditStoreOpts'].forEach(id => {
         document.getElementById(id)?.classList.remove('open');
       });
     }
@@ -876,10 +876,28 @@ function mOpenShopAdd() {
 function mCloseShopAdd() {
   document.getElementById('mShopAddBar')?.classList.remove('open');
   document.getElementById('mShopAddBackdrop')?.classList.remove('open');
+  document.getElementById('mShopAddStoreOpts')?.classList.remove('open');
   document.getElementById('mShopNewName')?.blur();
 }
 function mToggleShopAdd() {
   document.getElementById('mShopAddBar')?.classList.contains('open') ? mCloseShopAdd() : mOpenShopAdd();
+}
+
+// Shop add bar's store picker — exact port of Today's own mToggleStorePick/mSelectStore
+// (used by the Shopping-type add fields there), scoped to #mShopAddStoreOpts instead.
+let _mShopAddStore = 'HEB';
+function mToggleShopAddStorePick() {
+  document.getElementById('mShopAddStoreOpts')?.classList.toggle('open');
+}
+function mSelectShopAddStore(store) {
+  _mShopAddStore = store;
+  const lbl = document.getElementById('mShopAddStoreLbl');
+  if (lbl) lbl.textContent = store;
+  document.getElementById('mShopAddStoreOpts')?.classList.remove('open');
+  const isOther = store === 'Other';
+  const f = document.getElementById('mShopAddStoreCustomField');
+  if (f) f.style.display = isOther ? '' : 'none';
+  if (isOther) document.getElementById('mShopAddStoreCustom')?.focus();
 }
 
 function mToggleAddFlag() {
@@ -3555,23 +3573,20 @@ function _mSetDate() {
 }
 
 // ── Shop tab ──────────────────────────────────────────────────────────────────
-// Row markup ported from mTaskRow's Today-list convention (.m-row-outer/.m-row, left
-// color band, .m-chk-wrap circle checkbox) so Shop reads as the same list system as
-// Today instead of its own older glass-pill style. Color band uses gc('shopping') (the
-// same color Today/Week already use for shop-type rows), swapping to the overdue color
-// when the item's own due_date has passed — mirrors mTaskRow's ov/color precedence.
-function mShopRow(s, store) {
+// Row markup ported from mTaskRow's Today-list convention (.m-row-outer/.m-row,
+// .m-chk-wrap circle checkbox) so Shop reads as the same list system as Today instead of
+// its own older glass-pill style. No left color band (unlike Today's rows) — every Shop
+// row was the same shopping-orange, so it carried no information; overdue items still get
+// the tinted-background treatment (m-ov) that Today's overdue rows use.
+function mShopRow(s) {
   const overdue = !!(s.due_date && isOv(s.due_date));
-  const col = overdue ? (_isDk() ? OV_DARK : OV) : gc('shopping');
-  const band = `<span style="position:absolute;left:6px;top:8px;bottom:8px;width:3px;border-radius:3px;background:${col.bg};border:1px solid ${col.d}"></span>`;
   let dueTxt = '';
   if (s.due_date) {
     const d = new Date(s.due_date + 'T00:00:00');
     dueTxt = d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
   }
-  return `<div class="m-row-outer" data-rid="${s.id}" data-rtype="shop" data-shopid="${s.id}" data-store="${escHtml(store)}">
+  return `<div class="m-row-outer" data-rid="${s.id}" data-rtype="shop" data-shopid="${s.id}">
     <div class="m-row${overdue ? ' m-ov' : ''}">
-      ${band}
       <label class="m-chk-wrap"><input type="checkbox" onchange="togShop('${s.id}',this.checked)"></label>
       <span class="m-row-name">${escHtml(s.name || '')}</span>
       ${dueTxt ? `<span class="m-shop-due-lbl">${dueTxt}</span>` : ''}
@@ -3600,7 +3615,7 @@ function mRenderShop() {
     return;
   }
   list.innerHTML = storeNames.map(store =>
-    `<div class="m-shop-store-hd">${escHtml(store)}</div>` + groups[store].map(s => mShopRow(s, store)).join('')
+    `<div class="m-shop-store-hd">${escHtml(store)}</div>` + groups[store].map(s => mShopRow(s)).join('')
   ).join('');
 
   // Checked state set directly (not baked into the template) so togShop's own
@@ -3610,7 +3625,6 @@ function mRenderShop() {
       const outer = list.querySelector(`.m-row-outer[data-shopid="${s.id}"]`);
       const chk = outer?.querySelector('input[type=checkbox]');
       if (chk) chk.checked = !!s.done;
-      if (outer) _mShopTouchDrag(outer, store);
     });
   });
 }
@@ -3646,81 +3660,24 @@ function mInitShopDblTap() {
   }, {passive: true});
 }
 
-// Touch drag reorder within a store group
-function _mShopTouchDrag(row, store) {
-  let startY = 0, dragging = false, ph = null, scrollStart = 0;
-  row.addEventListener('touchstart', e => {
-    if (e.target.closest('.m-chk-wrap')) return;
-    startY = e.touches[0].clientY;
-    scrollStart = document.getElementById('mMain').scrollTop;
-    dragging = false;
-  }, {passive: true});
-
-  row.addEventListener('touchmove', e => {
-    const dy = Math.abs(e.touches[0].clientY - startY);
-    const scrollDelta = Math.abs(document.getElementById('mMain').scrollTop - scrollStart);
-    if (!dragging && dy < 12) return;
-    if (!dragging && scrollDelta > 5) return; // scrolling, not dragging
-    if (!dragging) {
-      dragging = true;
-      row.classList.add('m-shop-dragging');
-      ph = document.createElement('div');
-      ph.className = 'm-shop-drag-ph';
-    }
-    e.preventDefault();
-    const list = document.getElementById('mShopList');
-    const y = e.touches[0].clientY;
-    const siblings = [...list.querySelectorAll(`.m-row-outer[data-store="${store}"]`)].filter(r => r !== row);
-    let inserted = false;
-    for (const sib of siblings) {
-      const rc = sib.getBoundingClientRect();
-      if (y < rc.top + rc.height / 2) { list.insertBefore(ph, sib); inserted = true; break; }
-    }
-    if (!inserted && siblings.length) siblings[siblings.length - 1].after(ph);
-    else if (!inserted) {
-      // Find store header and insert after it
-      const headers = [...list.querySelectorAll('.m-shop-store-hd')];
-      const hd = headers.find(h => h.textContent === store);
-      if (hd) hd.after(ph);
-    }
-  }, {passive: false});
-
-  row.addEventListener('touchend', () => {
-    if (!dragging) return;
-    row.classList.remove('m-shop-dragging');
-    if (ph && ph.parentNode) {
-      ph.parentNode.insertBefore(row, ph);
-      ph.remove();
-      // Update shop_order for this store group
-      const list = document.getElementById('mShopList');
-      const rows = [...list.querySelectorAll(`.m-row-outer[data-store="${store}"]`)];
-      rows.forEach((r, i) => {
-        const id = r.dataset.shopid;
-        const item = st.shopping.find(x => String(x.id) === String(id));
-        if (item) {
-          item.shop_order = i;
-          sbReqSilent('PATCH', 'shopping_list', {shop_order: i}, `?id=eq.${id}`);
-        }
-      });
-      save();
-    }
-    ph = null; dragging = false;
-  });
-}
-
-// Add shop item
+// Add shop item — store/link handling mirrors Today's own Shopping-type add branch
+// (mAddTask's `cat === 'Shopping'` case) exactly: _mShopAddStore picker, 'Other' hands off
+// to the free-text field, link is optional.
 async function mAddShopItem() {
   const nameEl = document.getElementById('mShopNewName');
-  const storeEl = document.getElementById('mShopNewStore');
   const n = nameEl.value.trim();
   if (!n) return;
-  const store = storeEl.value || 'Other';
-  const s = {id: 'l-' + Date.now(), name: n, store, done: false};
+  let store = _mShopAddStore || 'HEB';
+  if (store === 'Other') store = document.getElementById('mShopAddStoreCustom')?.value.trim() || 'Other';
+  const link = document.getElementById('mShopAddLink')?.value.trim() || null;
+  const s = {id: 'l-' + Date.now(), name: n, store, link, done: false};
   st.shopping.push(s);
   save(); mRenderShop();
   nameEl.value = '';
+  const customEl = document.getElementById('mShopAddStoreCustom'); if (customEl) customEl.value = '';
+  const linkEl = document.getElementById('mShopAddLink'); if (linkEl) linkEl.value = '';
   mCloseShopAdd();
-  const sv = await sbReq('POST', 'shopping_list', {name: n, store, done: false});
+  const sv = await sbReq('POST', 'shopping_list', {name: n, store, link, done: false});
   if (sv && sv[0]) {
     const i = st.shopping.findIndex(x => x.id === s.id);
     if (i > -1) st.shopping[i] = sv[0];
@@ -3739,12 +3696,23 @@ async function mDeleteShopDirect(id) {
 
 // Shop edit sheet
 let _mShopEditId = null;
+// Known store-picker options — any other stored value (e.g. a prior custom name) falls
+// back to "Other" with that value pre-filled in the free-text field.
+const M_SHOP_STORES = ['HEB', 'Costco', 'Ikea', 'Online'];
 function mOpenShopEdit(id) {
   const s = st.shopping.find(x => String(x.id) === String(id));
   if (!s) return;
   _mShopEditId = String(id);
   document.getElementById('mShopEditName').value = s.name || '';
-  document.getElementById('mShopEditStore').value = s.store || 'Other';
+  // Set picker state directly (not via mSelectShopEditStore) — that function also steals
+  // focus to the custom field when landing on "Other", which would fight the name-field
+  // focus below on every open.
+  const knownStore = M_SHOP_STORES.includes(s.store) ? s.store : 'Other';
+  _mShopEditStoreVal = knownStore;
+  const lbl = document.getElementById('mShopEditStoreLbl'); if (lbl) lbl.textContent = knownStore;
+  const cf = document.getElementById('mShopEditStoreCustomField'); if (cf) cf.style.display = knownStore === 'Other' ? '' : 'none';
+  const customEl = document.getElementById('mShopEditStoreCustom'); if (customEl) customEl.value = knownStore === 'Other' ? (s.store || '') : '';
+  document.getElementById('mShopEditLink').value = s.link || '';
   document.getElementById('mShopEditDue').value = s.due_date || '';
   document.getElementById('mShopEditTime').value = s.default_start_time || '';
   document.getElementById('mShopEditBackdrop').classList.add('open');
@@ -3756,6 +3724,24 @@ function mCloseShopEdit() {
   _mShopEditId = null;
   document.getElementById('mShopEditBackdrop').classList.remove('open');
   document.getElementById('mShopEditSheet').classList.remove('open');
+  document.getElementById('mShopEditStoreOpts')?.classList.remove('open');
+}
+
+// Shop edit sheet's store picker — same "Other" -> free-text pattern as
+// mSelectShopAddStore/Today's mSelectStore, scoped to #mShopEditStoreOpts instead.
+let _mShopEditStoreVal = 'HEB';
+function mToggleShopEditStorePick() {
+  document.getElementById('mShopEditStoreOpts')?.classList.toggle('open');
+}
+function mSelectShopEditStore(store) {
+  _mShopEditStoreVal = store;
+  const lbl = document.getElementById('mShopEditStoreLbl');
+  if (lbl) lbl.textContent = store;
+  document.getElementById('mShopEditStoreOpts')?.classList.remove('open');
+  const isOther = store === 'Other';
+  const f = document.getElementById('mShopEditStoreCustomField');
+  if (f) f.style.display = isOther ? '' : 'none';
+  if (isOther) document.getElementById('mShopEditStoreCustom')?.focus();
 }
 
 async function mSaveShopEdit() {
@@ -3764,13 +3750,15 @@ async function mSaveShopEdit() {
   if (!s) return;
   const name = document.getElementById('mShopEditName').value.trim();
   if (!name) return;
-  const store = document.getElementById('mShopEditStore').value || s.store;
+  let store = _mShopEditStoreVal || s.store;
+  if (store === 'Other') store = document.getElementById('mShopEditStoreCustom')?.value.trim() || 'Other';
+  const link = document.getElementById('mShopEditLink')?.value.trim() || null;
   const due_date = document.getElementById('mShopEditDue').value || null;
   const time = document.getElementById('mShopEditTime').value || null;
   const id = _mShopEditId;
-  s.name = name; s.store = store; s.due_date = due_date; s.default_start_time = time;
+  s.name = name; s.store = store; s.link = link; s.due_date = due_date; s.default_start_time = time;
   save(); mCloseShopEdit(); mRenderShop(); mRenderToday();
-  const patch = {name, store, due_date};
+  const patch = {name, store, link, due_date};
   if (time !== null) patch.default_start_time = time;
   await sbReq('PATCH', 'shopping_list', patch, `?id=eq.${id}`);
 }

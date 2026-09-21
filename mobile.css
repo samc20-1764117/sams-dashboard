@@ -265,7 +265,12 @@ body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.
 @keyframes mNavPop{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
 
 /* ── Shop tab ────────────────────────────────────────────────────────────── */
-#mShopList{padding:0 16px 12px}
+/* No horizontal padding here — #mMain's own 16px (isSimplePage, mShowTab) already gives
+   Shop the same left/right margin as Today; a second 16px here on top of it was doubling
+   the margin (32px total). 96px bottom clears the floating nav (20px bottom + 56px height
+   = 76px footprint, plus a small buffer) so the last row can actually scroll clear of it
+   instead of stopping short, same idea as #mWeekList's own static padding-bottom below. */
+#mShopList{padding:0 0 96px}
 #mShopHeaderBtns{display:flex;align-items:center;gap:10px}
 .m-shop-hdr-icon{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--sub);font-size:17px;font-weight:600;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .m-shop-hdr-icon:active{background:var(--glass)}
@@ -273,13 +278,13 @@ body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.
 .m-shop-hdr-heb:active{background:#c40025}
 .m-shop-store-hd{font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--muted);padding:10px 0 3px}
 /* Shop rows now reuse Today's .m-row-outer/.m-row list convention (flat --bg-elevated +
-   hairline border-top, .m-chk-wrap circle checkbox, left color band) instead of the old
-   glass-blur pill cards — see mShopRow() in mobile-overview.js. .m-shop-due-lbl is the one
-   Shop-only addition (Today's rows have no per-row due-date badge). */
+   hairline border-top, .m-chk-wrap circle checkbox) instead of the old glass-blur pill
+   cards — see mShopRow() in mobile-overview.js. No left color band (unlike Today's rows) —
+   every Shop row was the same shopping-orange, so the band carried no information here.
+   .m-shop-due-lbl is the one Shop-only addition (Today's rows have no per-row due-date
+   badge). No touch-drag reorder either (removed — desktop's manual store-order sort makes
+   sense there; on mobile it's dead weight, and items still sort by desktop's shop_order). */
 .m-shop-due-lbl{font-size:11px;color:var(--accent);flex-shrink:0;font-weight:600}
-.m-row-outer.m-shop-dragging{opacity:.4}
-.m-shop-drag-ph{height:46px;margin-bottom:3px;border-radius:var(--rs);background:rgba(109,95,230,.1);border:2px dashed rgba(109,95,230,.4);box-sizing:border-box}
-.m-shop-store-sel{padding:8px 10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:14px;font-family:inherit;color:var(--text);outline:none;flex:1}
 
 /* ── Meals / Full List sheets ───────────────────────────────────────────── */
 .m-groc-week-hdr{font-size:14px;font-weight:700;color:var(--text);padding:0 0 10px;display:flex;align-items:baseline;gap:6px}
@@ -319,6 +324,7 @@ body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.
 #mShopEditDue,#mShopEditTime{width:100%;max-width:100%;-webkit-appearance:none;appearance:none;box-sizing:border-box;padding:11px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none}
 #mShopEditDel{background:rgba(239,68,68,.12);color:#dc2626}
 #mShopEditSave{background:var(--accent);color:#fff}
+#mShopEditSheet .m-cpick-opts{z-index:102}
 
 /* ── Edit bottom sheet ────────────────────────────────────────────────────── */
 /* Recurring/WR edit sheet — same slide-up/backdrop idiom as #mEditSheet. */

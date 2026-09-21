@@ -75,11 +75,11 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </button>
       <div id="mShopHeaderBtns" style="display:none">
+        <button class="m-shop-hdr-icon" onclick="mOpenMeals()" title="Meals">🍽</button>
+        <button class="m-shop-hdr-heb" onclick="mOpenFullList()" title="HEB List">HEB</button>
         <button id="mShopHdrAddBtn" class="m-shop-hdr-icon" onclick="mToggleShopAdd()" aria-label="Add item" title="Add item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
-        <button class="m-shop-hdr-icon" onclick="mOpenMeals()" title="Meals">🍽</button>
-        <button class="m-shop-hdr-heb" onclick="mOpenFullList()" title="HEB List">HEB</button>
       </div>
       <button id="mMonthAddBtn" class="m-shop-hdr-icon" onclick="mMonthAddTask()" title="Add task" style="display:none">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -206,6 +206,7 @@
         </button>
         <div class="m-cpick-opts" id="mAddStoreOpts">
           <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('HEB')"><span>HEB</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('Costco')"><span>Costco</span></div>
           <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('Ikea')"><span>Ikea</span></div>
           <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('Online')"><span>Online</span></div>
           <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('Other')"><span>Other</span></div>
@@ -248,16 +249,38 @@
   </form>
 
   <!-- Shop add bar — same form-wrap fix as #mAddBar above. On-demand popup (opened via
-       #mShopHdrAddBtn's "+" in the header, mToggleShopAdd), same pattern as #mAddBar. -->
+       #mShopHdrAddBtn's "+" in the header, mToggleShopAdd), same pattern as #mAddBar.
+       Store/link fields mirror Today's own add bar's Shopping-type fields exactly
+       (#mAddStoreField/#mAddStoreCustomField/#mAddLinkField) — same custom picker (a
+       native select forces the keyboard down, see the comment on #mAddStoreField above),
+       same "Other" -> free-text store name behavior, same optional link field. -->
   <form id="mShopAddBar" onsubmit="event.preventDefault();mAddShopItem();return false">
-    <input id="mShopNewName" type="text" placeholder="Add item...">
+    <input id="mShopNewName" type="text" placeholder="Item name…">
+    <div class="m-add-field">
+      <span class="m-add-field-lbl">Store</span>
+      <div class="m-cpick" id="mShopAddStorePick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleShopAddStorePick()">
+          <span id="mShopAddStoreLbl">HEB</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts" id="mShopAddStoreOpts">
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopAddStore('HEB')"><span>HEB</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopAddStore('Costco')"><span>Costco</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopAddStore('Ikea')"><span>Ikea</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopAddStore('Online')"><span>Online</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopAddStore('Other')"><span>Other</span></div>
+        </div>
+      </div>
+    </div>
+    <div id="mShopAddStoreCustomField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Store name</span>
+      <input id="mShopAddStoreCustom" class="m-add-field-inp" type="text" placeholder="Store name…" onkeydown="if(event.key==='Enter')event.stopPropagation()">
+    </div>
+    <div class="m-add-field">
+      <span class="m-add-field-lbl">Link <span style="opacity:.55;font-weight:400">(optional)</span></span>
+      <input id="mShopAddLink" class="m-add-field-inp" type="url" placeholder="https://…">
+    </div>
     <div class="m-add-row2">
-      <select id="mShopNewStore" class="m-shop-store-sel">
-        <option value="HEB">HEB</option>
-        <option value="Ikea">Ikea</option>
-        <option value="Online">Online</option>
-        <option value="Other">Other</option>
-      </select>
       <button type="submit" id="mShopAddBtn">Add</button>
     </div>
   </form>
@@ -457,13 +480,31 @@
 <div id="mShopEditBackdrop" onclick="mCloseShopEdit()"></div>
 <div id="mShopEditSheet">
   <h3>Edit Item</h3>
-  <input id="mShopEditName" type="text" placeholder="Item name" onkeydown="if(event.key==='Enter')mSaveShopEdit()">
-  <select id="mShopEditStore" class="m-shop-store-sel" style="margin-bottom:10px">
-    <option value="HEB">HEB</option>
-    <option value="Ikea">Ikea</option>
-    <option value="Online">Online</option>
-    <option value="Other">Other</option>
-  </select>
+  <input id="mShopEditName" type="text" placeholder="Item name" onkeydown="if(event.key==='Enter')mSaveShopEdit()" style="margin-bottom:10px">
+  <div class="m-add-field">
+    <span class="m-add-field-lbl">Store</span>
+    <div class="m-cpick" id="mShopEditStorePick">
+      <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleShopEditStorePick()">
+        <span id="mShopEditStoreLbl">HEB</span>
+        <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      </button>
+      <div class="m-cpick-opts m-cpick-opts--up" id="mShopEditStoreOpts">
+        <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopEditStore('HEB')"><span>HEB</span></div>
+        <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopEditStore('Costco')"><span>Costco</span></div>
+        <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopEditStore('Ikea')"><span>Ikea</span></div>
+        <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopEditStore('Online')"><span>Online</span></div>
+        <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopEditStore('Other')"><span>Other</span></div>
+      </div>
+    </div>
+  </div>
+  <div id="mShopEditStoreCustomField" class="m-add-field" style="display:none">
+    <span class="m-add-field-lbl">Store name</span>
+    <input id="mShopEditStoreCustom" class="m-add-field-inp" type="text" placeholder="Store name…" onkeydown="if(event.key==='Enter')event.stopPropagation()">
+  </div>
+  <div class="m-add-field">
+    <span class="m-add-field-lbl">Link <span style="opacity:.55;font-weight:400">(optional)</span></span>
+    <input id="mShopEditLink" class="m-add-field-inp" type="url" placeholder="https://…">
+  </div>
   <input id="mShopEditDue" type="date" style="margin-bottom:10px">
   <input id="mShopEditTime" type="time" style="margin-bottom:12px">
   <div class="m-edit-actions">
