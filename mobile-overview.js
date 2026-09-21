@@ -712,7 +712,12 @@ function mMoveAllOverdueToToday() {
 function mOpenQuickAdd() {
   document.getElementById('mAddBar')?.classList.add('open');
   document.getElementById('mQuickAddBackdrop')?.classList.add('open');
-  setTimeout(() => document.getElementById('mNewTask')?.focus(), 50);
+  // Focus synchronously, in the same tick as the tap that opened this — iOS Safari only
+  // reliably raises the keyboard for a programmatic .focus() when it happens inside the
+  // original user-gesture call stack; a setTimeout (even a short one) falls outside that
+  // window and the input can end up focused with no keyboard, which reads as "still have
+  // to tap it myself."
+  document.getElementById('mNewTask')?.focus();
 }
 function mCloseQuickAdd() {
   document.getElementById('mAddBar')?.classList.remove('open');
@@ -1918,25 +1923,21 @@ function _mUpdateTodayHeader() {
   }
 }
 
-function _mInitTodaySwipe() {
-  // Bound to #mMain (gated to the today tab), not #mTodayPage — #mTodayPage is a normal
-  // flex child that only sizes to its own content height (banner + list), so on a day
-  // with few tasks it can end well short of the full screen; swipes starting in the empty
-  // space below it never reached this listener at all, which is the likely reason day-
-  // navigation seemed to randomly stop working. #mMain always spans the full viewport
-  // (same reasoning mInitPTR, right below, already uses for the exact same element).
-  const main = document.getElementById('mMain');
-  if (!main || main._todaySwipeInited) return;
-  main._todaySwipeInited = true;
-  // Tracks the live finger position via touchmove (not just the touchstart/touchend
-  // endpoints) so a gesture that iOS decides to cancel — e.g. because #mMain's own
-  // vertical scroll grabbed it, plausible on a swipe that isn't perfectly horizontal —
-  // still has a last-known position to evaluate, via touchcancel below, instead of
-  // silently dropping the day-change.
-  let startX = 0, startY = 0, lastX = 0, lastY = 0, swiping = false;
+// Shared day-swipe gesture, bindable to any element — used for #mMain itself (below) and
+// for the task menu's backdrop (also below), so a swipe started while that popup is open
+// changes the day directly instead of requiring a tap-to-dismiss first. Tracks the live
+// finger position via touchmove (not just the touchstart/touchend endpoints) so a gesture
+// that iOS decides to cancel — e.g. because a vertical scroll grabbed it, plausible on a
+// swipe that isn't perfectly horizontal — still has a last-known position to evaluate, via
+// touchcancel, instead of silently dropping the day-change. `onDragStart` (optional) fires
+// once, as soon as the drag is unambiguously horizontal, before the gesture actually
+// finishes — used to dismiss the task menu immediately rather than waiting for touchend.
+function _mBindDaySwipe(el, {gate, onDragStart} = {}) {
+  let startX = 0, startY = 0, lastX = 0, lastY = 0, swiping = false, dragStarted = false;
   const finish = () => {
     if (!swiping) return;
     swiping = false;
+    dragStarted = false;
     const dx = lastX - startX;
     const dy = lastY - startY;
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
@@ -1945,19 +1946,46 @@ function _mInitTodaySwipe() {
       _mUpdateTodayHeader();
     }
   };
-  main.addEventListener('touchstart', e => {
-    if (_mCurTab !== 'today') return;
+  el.addEventListener('touchstart', e => {
+    if (gate && !gate()) return;
     startX = lastX = e.touches[0].clientX;
     startY = lastY = e.touches[0].clientY;
     swiping = true;
+    dragStarted = false;
   }, {passive: true});
-  main.addEventListener('touchmove', e => {
+  el.addEventListener('touchmove', e => {
     if (!swiping) return;
     lastX = e.touches[0].clientX;
     lastY = e.touches[0].clientY;
+    if (!dragStarted && onDragStart) {
+      const dx = lastX - startX, dy = lastY - startY;
+      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) { dragStarted = true; onDragStart(); }
+    }
   }, {passive: true});
-  main.addEventListener('touchend', finish, {passive: true});
-  main.addEventListener('touchcancel', finish, {passive: true});
+  el.addEventListener('touchend', finish, {passive: true});
+  el.addEventListener('touchcancel', finish, {passive: true});
+}
+function _mInitTodaySwipe() {
+  // Bound to #mMain (gated to the today tab), not #mTodayPage — #mTodayPage is a normal
+  // flex child that only sizes to its own content height (banner + list), so on a day
+  // with few tasks it can end well short of the full screen; swipes starting in the empty
+  // space below it never reached this listener at all, which is the likely reason day-
+  // navigation seemed to randomly stop working. #mMain always spans the full viewport
+  // (same reasoning mInitPTR, right below, already uses for the exact same element).
+  const main = document.getElementById('mMain');
+  if (main && !main._todaySwipeInited) {
+    main._todaySwipeInited = true;
+    _mBindDaySwipe(main, {gate: () => _mCurTab === 'today'});
+  }
+  // Task menu's backdrop sits above #mMain while the popup is open, silently absorbing
+  // the swipe. Bound the same gesture here too, dismissing the menu the moment the drag
+  // is recognized as horizontal (not waiting for release) so it reads as "swipe changes
+  // the day and the menu gets out of the way," not "swipe does nothing until I let go."
+  const tmBackdrop = document.getElementById('mTaskMenuBackdrop');
+  if (tmBackdrop && !tmBackdrop._daySwipeInited) {
+    tmBackdrop._daySwipeInited = true;
+    _mBindDaySwipe(tmBackdrop, {gate: () => _mCurTab === 'today', onDragStart: mCloseTaskMenu});
+  }
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────────────

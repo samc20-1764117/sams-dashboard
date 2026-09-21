@@ -1936,11 +1936,17 @@ body.theme-modern .card-hero .ti{border-radius:0;margin-left:0;margin-right:0}
 
 /* Left-edge color band replacing the round .cat-dot indicator on Today-list rows only
    (mobile's two-tone band idiom — light fill + darker outline — ported per 2026-09-21
-   feedback). .ti-band is emitted by tRow() (overview.js) whenever the dot indicator
-   would be (o.catDot), but stays display:none outside this theme so other themes are
-   unaffected; here it replaces the dot instead of sitting alongside it. */
+   feedback). .ti-band is emitted by every Today-list row renderer (tRow, tRowTodayVirt,
+   tRowShopVirt, tRowFinCancel, tRowVidVirt, tRowVidStepVirt, tRowPupSess — overview.js —
+   covers plain/recurring+WR/shopping/finance/video/video-stage/pup rows) wherever the dot
+   indicator used to render, but stays display:none outside this theme so other themes
+   are unaffected; here it replaces the dot instead of sitting alongside it. The dot-hide
+   rule matches ANY .cat-dot under #todList, so it already covers every row type above.
+   #todList's own .ti gets extra left padding here (was 7px, shared with every theme) so
+   the checkbox clears the band instead of touching it (2026-09-22 feedback). */
 body.theme-modern #todList .cat-dot,body.theme-modern #todList .cat-dot-note{display:none}
 body.theme-modern #todList .ti-band{display:block;position:absolute;left:4px;top:6px;bottom:6px;width:3px;border-radius:3px}
+body.theme-modern #todList .ti{padding-left:18px}
 
 /* Glass status chips: overdue tint reads as translucent glass, not a flat fill. */
 body.theme-modern .ti.ov-row{background:rgba(239,68,68,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
@@ -1955,6 +1961,18 @@ body.theme-modern.dark .ov-banner-btn{background:rgba(239,68,68,.22);color:#fca5
 /* Heavier frosted blur on floating chrome (sidebar, quick-note, settings/dark toggle). */
 body.theme-modern .sidebar,body.theme-modern #qnPanel{backdrop-filter:blur(34px) saturate(200%);-webkit-backdrop-filter:blur(34px) saturate(200%)}
 body.theme-modern #qnBtn,body.theme-modern .dark-toggle,body.theme-modern .settings-btn{backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%)}
+
+/* Checkbox refinement: bigger, higher-contrast ring + solid checked fill (was 12px/thin
+   1px stroke, low-contrast checked state) + a tactile press animation, mirroring mobile's
+   redrawn checkbox (mobile.css .m-chk-wrap input). Only the SIZE/COLOR change; the
+   underlying "::after draws a circle, background-color fills it, background-image draws
+   the ring/check" technique is unchanged from the base .chk rule. */
+body.theme-modern .chk,body.theme-modern .chk::after{width:16px;height:16px;min-width:16px;min-height:16px;max-width:16px;max-height:16px}
+body.theme-modern .chk::after{background-color:rgba(255,255,255,.9);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(0,0,0,.22)' stroke-width='1.4'/%3E%3C/svg%3E");transition:transform .12s ease,background .15s ease,box-shadow .15s ease}
+body.theme-modern .chk:checked::after{background:#8b8b96;box-shadow:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.5 8.3l2.6 2.6L11.5 5.5' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+body.theme-modern.dark .chk::after{background-color:rgba(255,255,255,.07);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(255,255,255,.24)' stroke-width='1.4'/%3E%3C/svg%3E")}
+body.theme-modern.dark .chk:checked::after{background:#9a9aa6}
+body.theme-modern .chk-wrap:active .chk::after{transform:scale(.82)}
 
 /* Thin SVG icons replacing unicode glyphs (✕ delete button, ▾ category-select caret). */
 body.theme-modern .delbtn{font-size:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;background-size:12px}
