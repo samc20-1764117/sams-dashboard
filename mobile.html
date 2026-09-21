@@ -66,21 +66,27 @@
     <div style="display:flex;align-items:center;gap:8px;min-height:30px">
       <div id="mProgress" class="m-prog-ring" style="display:none">
         <svg width="30" height="30" viewBox="0 0 30 30">
-          <circle class="m-prog-ring-bg" cx="15" cy="15" r="13" fill="none" stroke-width="3"></circle>
-          <circle id="mProgressFg" class="m-prog-ring-fg" cx="15" cy="15" r="13" fill="none" stroke-width="3" stroke-dasharray="81.68" stroke-dashoffset="81.68"></circle>
+          <circle class="m-prog-ring-bg" cx="15" cy="15" r="13.5" fill="none" stroke-width="3"></circle>
+          <circle id="mProgressFg" class="m-prog-ring-fg" cx="15" cy="15" r="13.5" fill="none" stroke-width="3" stroke-dasharray="84.82" stroke-dashoffset="84.82"></circle>
         </svg>
         <span id="mProgressTxt" class="m-prog-ring-txt"></span>
       </div>
-      <button id="mTodayAddBtn" class="m-shop-hdr-icon" onclick="mOpenFullAdd()" aria-label="Add task" title="Add task" style="display:none">+</button>
+      <button id="mTodayAddBtn" class="m-shop-hdr-icon" onclick="mOpenFullAdd()" aria-label="Add task" title="Add task" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
       <div id="mShopHeaderBtns" style="display:none">
         <button class="m-shop-hdr-icon" onclick="mOpenMeals()" title="Meals">🍽</button>
         <button class="m-shop-hdr-heb" onclick="mOpenFullList()" title="HEB List">HEB</button>
       </div>
-      <button id="mMonthAddBtn" class="m-shop-hdr-icon" onclick="mMonthAddTask()" title="Add task" style="display:none">+</button>
+      <button id="mMonthAddBtn" class="m-shop-hdr-icon" onclick="mMonthAddTask()" title="Add task" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
       <button id="mGoTodayBtn" class="m-shop-hdr-icon" onclick="mGoToday()" title="Today" style="display:none">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="2.2" fill="currentColor" stroke="none"/></svg>
       </button>
-      <button class="m-reload-btn" onclick="mReloadTap()" title="Reload app (hold to undo)">↻</button>
+      <button class="m-reload-btn" onclick="mReloadTap()" title="Reload app (hold to undo)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
     </div>
   </div>
   <div id="mPTR"><div class="m-ptr-spinner"></div><span id="mPTRLbl">Pull to refresh</span></div>

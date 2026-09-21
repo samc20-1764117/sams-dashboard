@@ -1905,3 +1905,41 @@ body.dark #todProgressDonut[data-donut-tip]:hover::after{background:rgba(30,30,4
 #todProgressDonut svg{filter:drop-shadow(0 0 5px rgba(16,185,129,.35))}
 #_donutFrac{font-size:13px;font-weight:700;fill:#059669}
 body.dark #_donutFrac{fill:#34d399}
+/* ══════════════════════════════════════════════════════════
+   THEME: Modern (Apple-style) — opt-in swatch (THEMES.modern in
+   features.js), toggled as body.theme-modern in applyTheme().
+   Ported from mobile's Apple Reminders/Mail-style redesign
+   (mobile.css, Sep 2026): flat task lists, glass status chips,
+   heavier frosted-glass chrome, thin SVG icons. Scoped narrowly
+   (via :has()/specific classes) so it only touches what it's meant
+   to and layers correctly on top of body.dark. Desktop's Overview
+   progress indicator is already a donut ring — nothing to port there.
+   ══════════════════════════════════════════════════════════ */
+
+/* Flat task lists: card chrome removed wherever a .card wraps .ti rows,
+   hairline separators between rows instead (Reminders/Mail convention). */
+body.theme-modern .card:has(.ti){background:transparent!important;backdrop-filter:none;-webkit-backdrop-filter:none;border:none!important;box-shadow:none!important}
+body.theme-modern .card:has(.ti) .ti{border-top:1px solid rgba(0,0,0,.08);border-radius:0;margin-left:0;margin-right:0}
+body.theme-modern .card:has(.ti) .ti:first-child{border-top:none}
+body.theme-modern.dark .card:has(.ti) .ti{border-top-color:rgba(255,255,255,.08)}
+
+/* Glass status chips: overdue tint reads as translucent glass, not a flat fill. */
+body.theme-modern .ti.ov-row{background:rgba(239,68,68,.08);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top-color:rgba(239,68,68,.2)}
+body.theme-modern .ti.ov-row .tn{color:#b91c1c}
+body.theme-modern.dark .ti.ov-row{background:rgba(239,68,68,.14);border-top-color:rgba(239,68,68,.3)}
+body.theme-modern.dark .ti.ov-row .tn{color:#fca5a5}
+body.theme-modern .ov-banner{background:rgba(239,68,68,.08);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom-color:rgba(239,68,68,.2)}
+body.theme-modern .ov-banner-btn{background:rgba(239,68,68,.16);color:#b91c1c}
+body.theme-modern.dark .ov-banner{background:rgba(239,68,68,.14);border-bottom-color:rgba(239,68,68,.3)}
+body.theme-modern.dark .ov-banner-btn{background:rgba(239,68,68,.22);color:#fca5a5}
+
+/* Heavier frosted blur on floating chrome (sidebar, quick-note, settings/dark toggle). */
+body.theme-modern .sidebar,body.theme-modern #qnPanel{backdrop-filter:blur(34px) saturate(200%);-webkit-backdrop-filter:blur(34px) saturate(200%)}
+body.theme-modern #qnBtn,body.theme-modern .dark-toggle,body.theme-modern .settings-btn{backdrop-filter:blur(24px) saturate(200%);-webkit-backdrop-filter:blur(24px) saturate(200%)}
+
+/* Thin SVG icons replacing unicode glyphs (✕ delete button, ▾ category-select caret). */
+body.theme-modern .delbtn{font-size:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;background-size:12px}
+body.theme-modern .delbtn:hover{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E")}
+body.theme-modern.dark .delbtn{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E")}
+body.theme-modern .cat-sel-trigger span:last-child{font-size:0;display:inline-block;width:10px;height:10px;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
+body.theme-modern.dark .cat-sel-trigger span:last-child{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}

@@ -37,12 +37,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* 30px, matching every other header circle (.m-shop-hdr-icon: add/today/meals buttons,
    the reload button below) — count sits INSIDE the ring (consolidated, was a separate
    text pill next to it) via the same centered-overlay technique, ring behind/text on top. */
-.m-prog-ring{position:relative;width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.m-prog-ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg)}
+.m-prog-ring{position:relative;width:30px;height:30px;flex-shrink:0;line-height:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.m-prog-ring svg{position:absolute;top:0;left:0;width:30px;height:30px;transform:rotate(-90deg)}
 .m-prog-ring-bg{stroke:rgba(0,0,0,.08)}
 .m-prog-ring-fg{stroke:#eab308;stroke-linecap:round;transition:stroke-dashoffset .35s ease,stroke .2s ease}
 .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#22c55e}
-.m-prog-ring-txt{position:relative;font-size:9px;font-weight:800;color:var(--text);letter-spacing:-.03em;white-space:nowrap}
+.m-prog-ring-txt{position:relative;font-size:9px;font-weight:800;line-height:1;color:var(--text);letter-spacing:-.03em;white-space:nowrap}
 body.dark .m-prog-ring-bg{stroke:rgba(255,255,255,.12)}
 body.dark .m-prog-ring-fg{stroke:#fbbf24}
 body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
