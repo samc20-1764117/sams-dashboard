@@ -187,7 +187,9 @@ Persisted to `localStorage._mLastTab`; init restores it (refresh keeps current t
                                          2026-09-18 from a header row INSIDE the Tasks card (that
                                          row/the "TASKS" label were removed entirely to reclaim
                                          vertical space for the list)
-  #mShopHeaderBtns (shop only)        ← 🍽 Meals icon + red "HEB" List badge
+  #mShopHeaderBtns (shop only)        ← 🍽 Meals icon, red "HEB" List badge, then #mShopHdrAddBtn
+                                         "+" (mToggleShopAdd) — "+" last so it sits next to reload,
+                                         same spot Today's own "+" occupies
   #mMonthAddBtn (month only)          ← "+" opens full-add sheet for the selected day (mMonthAddTask)
   #mGoTodayBtn (week only)            ← jumps to Today tab; gone from Shop/More/Month (Month has its
                                          own dedicated Today button, see below). On Week, mGoToday()
@@ -430,28 +432,31 @@ Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
 #mShopPage
   #mShopList        ← store groups with items (no header/count line — removed)
 ```
-Header (shared `#mHeader`, shop tab only): `#mShopHeaderBtns` = 🍽 Meals icon + red "HEB" List badge (`.m-shop-hdr-heb`, NOT a circle icon — literal red badge, white bold text, since it's the one store name that should stay all-caps). Store group headers (`.m-shop-store-hd`) are NOT force-uppercased (removed `text-transform:uppercase` — "Ikea"/"Online"/"Other" show in their natural stored casing; "HEB" stays caps because that's its literal stored name).
+Header (shared `#mHeader`, shop tab only): `#mShopHeaderBtns` = 🍽 Meals icon, red "HEB" List badge (`.m-shop-hdr-heb`, NOT a circle icon — literal red badge, white bold text, since it's the one store name that should stay all-caps), then `#mShopHdrAddBtn` "+" — in that order, so "+" sits immediately left of the header's reload icon (mirrors Today's `#mTodayAddBtn`, which has nothing else between it and reload). Store group headers (`.m-shop-store-hd`) are NOT force-uppercased (removed `text-transform:uppercase` — "Ikea"/"Online"/custom names show in their natural stored casing; "HEB" stays caps because that's its literal stored name).
+`#mShopList` has **no horizontal padding of its own** (was `0 16px`, doubling up with `#mMain`'s own `12px 16px` — same margin bug fixed on `#mTodayList`/`.m-section`, which never had one). `padding-bottom:96px` clears the floating nav (76px footprint + buffer) so the last row can actually scroll past it — `#mShopPage`'s own inline `paddingBottom` is always cleared to `''` in `mShowTab()`, this static CSS value is the only reservation now (same idea as `#mWeekList`'s own static padding-bottom, not `#mTodayList`'s zero-reservation "scrolls behind the nav" approach — Today's content is short enough per-day that this hasn't been an issue there yet).
 
-### Key functions
-- `mRenderShop()` — groups undone `st.shopping` items by store (alpha sorted), items within store sorted by `shop_order`
-- `mAddShopItem()` — adds item with name + store from `#mShopAddBar` → `sbReq POST shopping_list`
-- `mOpenShopEdit(id)` / `mSaveShopEdit()` / `mDeleteShopItem()` / `mCloseShopEdit()` — edit sheet with name, store, due_date, time
-- `mDeleteShopDirect(id)` — X button inline delete
+### Store list — `M_SHOP_STORES` (mobile-overview.js)
+`const M_SHOP_STORES = ['HEB', 'Costco', 'Ikea', 'Online'];` — fixed order, HEB first (an explicit request, not alphabetical). Drives three independent things that must all agree:
+- The picker option order in `#mShopAddStoreOpts`/`#mShopEditStoreOpts`/Today's own `#mAddStoreOpts` (all hardcoded HTML in that same order, `Other` appended last after the array's four).
+- `mOpenShopEdit`'s "is this a known store" check (`M_SHOP_STORES.includes(s.store)`) — unknown falls back to `Other` with the real value pre-filled in the custom field.
+- **`mRenderShop()`'s store-group sort order** — known stores sort by `M_SHOP_STORES.indexOf(...)` (HEB first), anything else (a custom name, or the literal string `"Other"`) sorts alphabetically after them. Do NOT revert this to plain `.sort(localeCompare)` — that was the original bug (alphabetical put Costco before HEB in the actual rendered list even after the picker itself was already reordered correctly).
 
-### Shop add bar (`#mShopAddBar`)
-- `position:fixed`, same treatment as `#mAddBar` (elevated white/`--bg-elevated` card, shadow, no accent-colored border — visible without leaning on an accent color). **Must stay `position:fixed`** — a normal-flex-flow version was tried and regressed to rendering halfway up the page on cold load before jumping to the bottom once `#mMain`'s height resolved. List clearance is measured via `mSyncBarClearance`, not guessed.
-- Name input + store `<select>` (HEB/Ikea/Online/Other) + Add button
+### Row markup (`mShopRow(s)`) — reuses Today's list convention, not its own style
+Same `.m-row-outer`/`.m-row` wrapper, `.m-chk-wrap` circle checkbox, and `.m-ov` overdue background tint that `mTaskRow` (Today) uses — NOT the old glass-pill `.m-shop-item` cards. Two intentional differences from Today's rows:
+- **No left color band.** Today's band carries category color; every Shop row would've been the same shopping-orange, so it was removed as pure noise.
+- **`#mShopList .m-row{padding-left:8px}`** (vs the shared `.m-row`'s `14px`) — scoped override, not a change to the shared rule. Today's `14px` reserves gutter room for its band; Shop has no band, so the full gutter read as excess empty space.
+- `.m-shop-due-lbl` (small accent-colored date badge) is the one Shop-only addition — Today's rows have no per-row due-date badge.
+
+### Row interaction — reuses Today's tap-menu/edit machinery, not its own
+`mInitShopDblTap()` is an exact port of `mInitTodayDblTap()`, scoped to `#mShopList`: single tap → `_mShowTaskMenu(el)` (the shared `#mTaskMenuSheet`, Edit/Delete only — it already special-cases `rtype==='shop'` for when shop items show up on the Today list, so nothing new was added there), double tap → `_mRowEdit(el)` → `mOpenShopEdit`. Delete routes through `mTaskMenuDelete` → `mDeleteShopDirect(id)` — there is no more inline per-row delete button.
+**No touch-drag reorder** (`_mShopTouchDrag` removed entirely, along with `.m-shop-dragging`/`.m-shop-drag-ph` CSS) — explicit request: desktop's manual drag-to-set-`shop_order` doesn't carry its weight on mobile. Items still sort by whatever `shop_order` desktop last wrote.
+
+### Shop add popup (`#mShopAddBar`)
+On-demand popup now, same exact pattern as Today's `#mAddBar` (opened via `#mShopHdrAddBtn`'s "+", `mToggleShopAdd()`/`mOpenShopAdd()`/`mCloseShopAdd()`, own backdrop `#mShopAddBackdrop`, own keyboard-tracking reposition pair `_mShopAddReposition()`/`_mInitShopAddKeyboardTracking()`) — **not** a permanently-docked bar any more, and no longer reserves list clearance (`mShowTab()` just clears `#mShopPage`'s inline padding, same as Today).
+Fields mirror Today's own Shopping-type add fields exactly (`_mAddSyncTypeFields`'s `isShop` branch) — a custom `.m-cpick` store picker (`_mShopAddStore` state, `mToggleShopAddStorePick()`/`mSelectShopAddStore()`), NOT a native `<select>` (forces the keyboard down on iOS, see the comment on `#mAddStoreField`), `Other` reveals `#mShopAddStoreCustomField`'s free-text input, plus an optional `#mShopAddLink` Link field. `mAddShopItem()` reads `_mShopAddStore` (or the custom field when `Other`) + link, POSTs `{name, store, link, done}`.
 
 ### Shop edit sheet (`#mShopEditSheet`)
-- Bottom slide-up sheet (same pattern as `#mEditSheet`)
-- Fields: name, store (select), due_date (date), time (time input)
-- Tap any item row to open edit
-- `mSaveShopEdit()` → `sbReq PATCH shopping_list` (name, store, due_date, default_start_time)
-
-### Touch drag reorder
-- `_mShopTouchDrag(row, store)` — drag reorder within a store group
-- Updates `shop_order` for all items in group → `sbReqSilent PATCH shopping_list`
-- 12px threshold; cancelled if scroll detected
+Same store-picker + custom-field + Link-field pattern as the add popup, own state (`_mShopEditStoreVal`, `mToggleShopEditStorePick()`/`mSelectShopEditStore()`), dropdown opens **upward** (`.m-cpick-opts--up`, matches `#mEditPickOpts` in `#mEditSheet` — the sheet already sits near the bottom, a downward dropdown would run off-screen) and needs `#mShopEditSheet .m-cpick-opts{z-index:102}` to sit above the sheet itself. `mOpenShopEdit(id)` sets the picker state directly (not via `mSelectShopEditStore`, which would steal focus to the custom field) so it doesn't fight the name field's own focus. `mSaveShopEdit()` → `sbReq PATCH shopping_list` (name, store, link, due_date, default_start_time).
 
 ### Desktop stubs wired up
 - `renderShopOv()` / `renderShopFull()` → call `mRenderShop()` when on shop tab
@@ -605,3 +610,8 @@ Mobile overrides `showLoginOverlay(event)` and `hideLoginOverlay()` from core.js
 - `_mLoggedIn` flag prevents transient auth events (token refresh) from showing login
 - **Desktop `core.js`**: `onAuthStateChange` never shows login overlay — network blips (DNS `ERR_NAME_NOT_RESOLVED`) cause false `SIGNED_OUT`. Login gated by `checkAuth()` on page load only.
 - Mobile has its own `showLoginOverlay` override with `_mLoggedIn` guard
+
+### Boot loading (`#mBootLoading`) — no more login-flash on an already-signed-in session
+`#mLogin` used to be `display:flex` by default in mobile.css, so on EVERY load it painted before `checkAuth()`'s async session check could resolve — an already-signed-in user saw the login form flash, then get yanked into the app once `hideLoginOverlay()` fired. Most visible on a cold relaunch (swiped out of Recents, reopened) since that async check takes longest then — read by the user as "getting logged out" even though the session was valid the whole time (it does correctly auto-continue, hence "logged out" reports that don't correlate with any actual failed sign-in).
+Fix: `#mLogin` (and `#mApp`) now both default to `display:none`. `#mBootLoading` (fixed, full-screen, small spinner reusing `.m-ptr-spinner`'s look) is the one element visible by default, covering that gap with a neutral loading state instead of the wrong screen. Both `showLoginOverlay()` and `hideLoginOverlay()` `.remove()` it the first time either actually runs — whichever branch `checkAuth()` lands on always removes it, so there's no added dead-end state.
+**If a real login prompt still shows** (not just a brief spinner) and the user has to actually type credentials, that's a genuine session expiry, not this bug — a different investigation (iOS PWA storage eviction after inactivity vs. a multi-device refresh-token race are the two live theories, unconfirmed).

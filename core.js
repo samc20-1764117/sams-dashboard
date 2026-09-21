@@ -330,7 +330,12 @@ async function manualBackup(){
 // Desktop assigns video steps/videos to days in localStorage (_vidStepDayMap/_vidDayMap),
 // which mobile could never see. Mirror those blobs through the client_kv table:
 // push when the local copy changed since last push, otherwise adopt the server copy.
-const _KV_MAPS={vid_step_day_map:'_vidStepDayMap',vid_day_map:'_vidDayMap',holiday_toggles:'_holidayToggles'};
+// day_order (added 2026-09-21, migration 015): manual per-day task order was localStorage-
+// only, per device — a drag-reorder on desktop never showed up on mobile and vice versa,
+// even though the underlying sort algorithm has always matched exactly. Both platforms'
+// _dayOrder()/_dayOrderSet() already just read/write localStorage._dayOrder directly, so
+// adding it here is the ENTIRE fix — no changes needed anywhere else, on either platform.
+const _KV_MAPS={vid_step_day_map:'_vidStepDayMap',vid_day_map:'_vidDayMap',holiday_toggles:'_holidayToggles',day_order:'_dayOrder'};
 async function _kvSyncMaps(rows){
   for(const[k,lsKey]of Object.entries(_KV_MAPS)){
     try{

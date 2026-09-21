@@ -311,7 +311,7 @@ function _mBuildOpts(elId, which, cats = M_CATS) {
 // open input in mobile.css for why. Harmless to call from every picker context (edit/block/
 // wkadd/fulladd aren't inside #mAddBar, so this has no visible effect for those).
 function _mSyncPickerOpenClass() {
-  const anyOpen = ['mAddPickOpts', 'mAddStoreOpts', 'mAddDayOpts'].some(id => document.getElementById(id)?.classList.contains('open'));
+  const anyOpen = M_ADD_PICKER_IDS.some(id => document.getElementById(id)?.classList.contains('open'));
   document.getElementById('mAddBar')?.classList.toggle('picker-open', anyOpen);
 }
 function mTogglePick(which) {
@@ -3807,7 +3807,17 @@ function mRenderShop() {
   // Sort items within each store by shop_order
   Object.values(groups).forEach(arr => arr.sort((a, b) => (a.shop_order ?? 9999) - (b.shop_order ?? 9999)));
 
-  const storeNames = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+  // Known stores (M_SHOP_STORES, below) group in that fixed order — HEB first, matching
+  // the store picker's own order — not alphabetically (that put Costco ahead of HEB).
+  // Anything else (a custom "Other" name, or the literal "Other") sorts alphabetically
+  // after the known ones.
+  const storeNames = Object.keys(groups).sort((a, b) => {
+    const pa = M_SHOP_STORES.indexOf(a), pb = M_SHOP_STORES.indexOf(b);
+    if (pa !== -1 && pb !== -1) return pa - pb;
+    if (pa !== -1) return -1;
+    if (pb !== -1) return 1;
+    return a.localeCompare(b);
+  });
   if (!storeNames.length) {
     list.innerHTML = `<div class="m-empty"><div class="m-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="m-empty-txt">Nothing on the list</div></div>`;
     return;

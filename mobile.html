@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260921o';var BUILD=window._BUILD;
+  window._BUILD='20260921p';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260921o">
+<link rel="stylesheet" href="mobile.css?v=20260921p">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -250,8 +250,8 @@
          modal (wrRuleAddModal, overview.js): both types share Cadence; which OTHER fields
          show depends on type AND (for Starting date) cadence — see _mAddSyncTypeFields. -->
     <div id="mAddPupField" class="m-add-field" style="display:none">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;font-size:14px;color:var(--text)">
-        <input type="checkbox" id="mAddPupCk" style="width:15px;height:15px;accent-color:var(--accent)"> 🐾 Pup related
+      <label onmousedown="event.preventDefault()" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;font-size:14px;color:var(--text)">
+        <input type="checkbox" id="mAddPupCk" onmousedown="event.preventDefault()" style="width:15px;height:15px;accent-color:var(--accent)"> 🐾 Pup related
       </label>
     </div>
     <div id="mAddCadenceField" class="m-add-field" style="display:none">
@@ -605,7 +605,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260921o"></script>
-<script src="features.js?v=20260921o"></script>
-<script src="mobile-overview.js?v=20260921o"></script>
+<script src="core.js?v=20260921p"></script>
+<script src="features.js?v=20260921p"></script>
+<script src="mobile-overview.js?v=20260921p"></script>
 </body></html>
