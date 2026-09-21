@@ -645,7 +645,7 @@ function _mIsOvMovable(t) {
 // true 30px boundary, matching the visual footprint of the other 30px bordered icon
 // circles instead of reading smaller (the previous 36-unit viewBox scaled the r=15.5
 // ring down to ~26px, visibly shy of the other circles' full 30px).
-const M_PROG_RING_C = 2 * Math.PI * 13;
+const M_PROG_RING_C = 2 * Math.PI * 13.5;
 function mRenderToday() {
   const sorted = mGetTodayTasks();
   const doneCount = sorted.filter(t => t.done).length;
@@ -1704,15 +1704,16 @@ function _mShowTaskMenu(el) {
   _mPositionTaskMenu(el, sheet);
   sheet.classList.add('open');
 }
-// Anchors the popup next to the row that was tapped instead of a generic full-width
-// bottom sheet — below the row if there's room, flipped above it otherwise; clamped
-// horizontally so it never runs off either edge of the screen.
+// Anchors the popup on the RIGHT side of the row that was tapped, vertically centered
+// on it — reads as popping out of that row, not a generic full-width bottom sheet.
+// Clamped on every edge so it never runs off the screen (a short row near the top/bottom,
+// or one that fills the full width, still gets a fully on-screen menu).
 function _mPositionTaskMenu(row, sheet) {
   const r = row.getBoundingClientRect();
   const sw = sheet.offsetWidth, sh = sheet.offsetHeight;
-  let top = r.bottom + 6;
-  if (top + sh > window.innerHeight - 12) top = Math.max(12, r.top - sh - 6);
-  let left = r.left + r.width / 2 - sw / 2;
+  let top = r.top + r.height / 2 - sh / 2;
+  top = Math.max(12, Math.min(top, window.innerHeight - sh - 12));
+  let left = r.right - sw;
   left = Math.max(12, Math.min(left, window.innerWidth - sw - 12));
   sheet.style.top = top + 'px';
   sheet.style.left = left + 'px';
