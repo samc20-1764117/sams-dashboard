@@ -158,7 +158,14 @@ body.dark .m-empty-icon{background:rgba(34,197,94,.16);color:#4ade80}
    Capped + scrollable, with a tighter row height so more options are visible before
    scrolling is even needed. Scoped to #mAddBar only — other pickers elsewhere (Edit/Block/
    Week-add/Full-add) have short, fixed option counts and are untouched. */
-#mAddBar .m-cpick-opts{max-height:230px;overflow-y:auto}
+/* overscroll-behavior:contain stops scroll CHAINING to #mMain (the page's own scroll
+   container) once this list hits its top/bottom edge — without it, a swipe that starts on
+   the dropdown but runs past its scrollable content keeps going and scrolls the page
+   behind it, which reads as "the background scrolls, not the options" (the actual bug
+   reported — the list wasn't failing to scroll, the gesture was leaking through to
+   whatever's behind it). -webkit-overflow-scrolling:touch is the standard companion fix
+   for momentum/touch scroll inside a nested absolutely-positioned region on iOS Safari. */
+#mAddBar .m-cpick-opts{max-height:230px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
 #mAddBar .m-cpick-opt{padding:8px 14px}
 .m-cpick-opt:last-child{border-bottom:none}
 .m-cpick-opt:active{filter:brightness(.95)}
