@@ -602,7 +602,7 @@ function mTaskRow(t) {
   // Two-tone band (light fill + darker outline), same pairing the old dot indicator used
   // (s.bg/s.d), instead of one flat vivid line — and inset top/bottom so it reads as a
   // mark on this row, not a continuous stripe running through the whole list.
-  const band = `<span style="position:absolute;left:6px;top:7px;bottom:7px;width:4px;border-radius:3px;background:${s.bg};border:1px solid ${s.d}"></span>`;
+  const band = `<span style="position:absolute;left:6px;top:8px;bottom:8px;width:3px;border-radius:3px;background:${s.bg};border:1px solid ${s.d}"></span>`;
   const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${band}
     ${noCheck
@@ -764,6 +764,11 @@ async function mAddTask() {
     const i = st.tasks.findIndex(x => x.id === t.id);
     if (i > -1) st.tasks[i] = sv[0];
     save();
+    // Row's data-tid still points at the temp local id until this re-renders — tapping it
+    // in that window looked up a task that no longer existed under that id (silently found
+    // nothing, so the menu never opened). The gap is normally sub-second, but real enough
+    // to hit if you tap the row right after adding it.
+    mRenderToday();
   }
 }
 

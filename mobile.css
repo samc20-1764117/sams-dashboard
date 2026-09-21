@@ -114,9 +114,9 @@ body.dark .m-row:active{background:rgba(255,255,255,.045)}
    stays a normal, fully-clickable input underneath. */
 .m-chk-wrap input[type=checkbox]{position:relative;width:19px;height:19px;flex-shrink:0;appearance:none;-webkit-appearance:none;border:none;background:none;padding:0;margin:0;outline:none;box-shadow:none;cursor:pointer;transition:transform .12s ease}
 .m-chk-wrap input[type=checkbox]:active{transform:scale(.85)}
-.m-chk-wrap input[type=checkbox]::after{content:'';position:absolute;top:0;left:0;width:19px;height:19px;border-radius:50%;background-color:rgba(255,255,255,.9);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 19 19'%3E%3Ccircle cx='9.5' cy='9.5' r='8.5' fill='none' stroke='rgba(180,170,210,.45)' stroke-width='1.3'/%3E%3C/svg%3E");background-size:contain;box-sizing:border-box;transition:all .15s}
+.m-chk-wrap input[type=checkbox]::after{content:'';position:absolute;top:0;left:0;width:19px;height:19px;border-radius:50%;background-color:rgba(255,255,255,.9);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 19 19'%3E%3Ccircle cx='9.5' cy='9.5' r='8.5' fill='none' stroke='rgba(107,104,128,.55)' stroke-width='1.4'/%3E%3C/svg%3E");background-size:contain;box-sizing:border-box;transition:all .15s}
 .m-chk-wrap input[type=checkbox]:checked::after{background:rgba(200,195,210,.4);box-shadow:inset 0 0 0 1px rgba(200,195,210,.4);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 19 19' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 9.7l2.8 2.8L14 6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:60%;background-position:center;background-repeat:no-repeat}
-body.dark .m-chk-wrap input[type=checkbox]::after{background-color:rgba(255,255,255,.06);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Ccircle cx='11' cy='11' r='10' fill='none' stroke='rgba(255,255,255,.15)' stroke-width='1.5'/%3E%3C/svg%3E")}
+body.dark .m-chk-wrap input[type=checkbox]::after{background-color:rgba(255,255,255,.06);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Ccircle cx='11' cy='11' r='10' fill='none' stroke='rgba(255,255,255,.22)' stroke-width='1.5'/%3E%3C/svg%3E")}
 body.dark .m-chk-wrap input[type=checkbox]:checked::after{background-color:rgba(152,152,160,.55);box-shadow:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 22 22' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 11.5l3.3 3.3L16.5 7.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:60%;background-position:center;background-repeat:no-repeat}
 
 .m-row-icon{font-size:16px;width:28px;text-align:center;flex-shrink:0}
@@ -182,10 +182,17 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
    Anchored near the TOP (top set dynamically in mOpenQuickAdd, just under #mHeader), not
    the bottom — bottom:82px sat right where the iOS keyboard covers it, so the input you'd
    just started typing into (and the keyboard's own suggestion bar) hid the field itself. */
-#mAddBar{bottom:auto;top:0;opacity:0;pointer-events:none;transform:translateY(-10px);transition:opacity .18s ease,transform .18s ease}
+/* Slight spring overshoot on the drop-down entrance (cubic-bezier with a >1 midpoint)
+   instead of a plain ease — matches the bottom nav's own highlight-pill spring feel, so
+   the tab's two pieces of motion read as one consistent language. */
+#mAddBar{bottom:auto;top:0;opacity:0;pointer-events:none;transform:translateY(-10px);transition:opacity .18s ease,transform .32s cubic-bezier(.34,1.56,.64,1)}
 #mAddBar.open{opacity:1;pointer-events:auto;transform:translateY(0)}
-#mQuickAddBackdrop{position:fixed;inset:0;z-index:19;display:none;background:transparent}
-#mQuickAddBackdrop.open{display:block}
+/* Liquid-glass blur behind the popup — adding a task becomes the focal point, everything
+   else recedes, instead of a plain transparent tap-catcher. Uses opacity (not display) so
+   the blur/tint actually fades in rather than snapping on. */
+#mQuickAddBackdrop{position:fixed;inset:0;z-index:19;opacity:0;pointer-events:none;background:rgba(22,20,31,.28);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);transition:opacity .22s ease}
+#mQuickAddBackdrop.open{opacity:1;pointer-events:auto}
+body.dark #mQuickAddBackdrop{background:rgba(0,0,0,.45)}
 #mNewTask,#mShopNewName{width:100%;padding:12px 14px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;box-sizing:border-box}
 #mNewTask:focus,#mShopNewName:focus{border-color:var(--accent)}
 .m-add-row2{display:flex;gap:8px;align-items:center}
