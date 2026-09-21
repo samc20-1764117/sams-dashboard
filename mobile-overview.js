@@ -263,7 +263,11 @@ const M_CATS_TRAVEL = [...M_CATS, 'Travel'];
 // Today's quick-add picker (mSelectCat('add', ...)) specifically — no "Long term" (not a
 // meaningful choice when adding a brand-new task for today), plus "Shopping" as a real
 // addable type (previously only creatable from the Shop tab's own add bar).
-const M_CATS_ADD = ['Home', 'My work', 'Work', 'Social', 'Travel', 'Shopping'];
+// "Weekly Reset Task" and "Recurring Task" create real wr_recurring_rules rows (same table
+// desktop's Add Recurring modal writes to — see _mAddRecurring below), scoped to the weekly
+// cadence only for now (desktop also supports biweekly/monthly/quarterly/etc. cadences with
+// their own extra fields; porting all of those is a separate, larger follow-up).
+const M_CATS_ADD = ['Home', 'My work', 'Work', 'Social', 'Travel', 'Shopping', 'Weekly Reset Task', 'Recurring Task'];
 let _mAddCat       = 'Home';
 let _mEditCat      = 'Home';
 let _mBlockCat     = 'Home';
@@ -276,7 +280,7 @@ let _mFullAddImportant = false;
 const _EDIT_SVG = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="m18.5 2.5 2 2L10 15l-3 1 1-3z"/></svg>`;
 
 function _mDotStyle(cat) {
-  const s = gc(cat);
+  const s = gc({'Weekly Reset Task': 'weekly_reset', 'Recurring Task': 'recurring'}[cat] || cat);
   return `background:${s.bg};border:1.5px solid ${s.d}`;
 }
 
@@ -287,8 +291,12 @@ function _mBuildOpts(elId, which, cats = M_CATS) {
   // blurring whatever text input currently has focus — without it, picking a category
   // dismissed the keyboard even though you're still mid-add, since tapping any element a
   // focused input doesn't "own" normally shifts focus away first.
+  // gc() keys off the exact CATS/CATS_DARK (core.js) object keys — "Weekly Reset Task"/
+  // "Recurring Task" are picker LABELS, not category keys, so they'd otherwise fall through
+  // to the default grey; map them to the real 'weekly_reset'/'recurring' color keys instead.
+  const _gcKey = {'Weekly Reset Task': 'weekly_reset', 'Recurring Task': 'recurring'};
   el.innerHTML = cats.map(cat => {
-    const s = gc(cat);
+    const s = gc(_gcKey[cat] || cat);
     return `<div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectCat('${which}','${escHtml(cat)}')">
       <span class="m-cpick-dot" style="background:${s.bg};border:1.5px solid ${s.d}"></span>
       <span>${escHtml(cat)}</span>
@@ -300,6 +308,8 @@ function mTogglePick(which) {
   const ids = {add: 'mAddPickOpts', edit: 'mEditPickOpts', block: 'mBlockPickOpts', wkadd: 'mWkAddPickOpts', fulladd: 'mFullAddPickOpts'};
   const myId = ids[which];
   Object.entries(ids).forEach(([k, id]) => { if (k !== which) document.getElementById(id)?.classList.remove('open'); });
+  document.getElementById('mAddStoreOpts')?.classList.remove('open');
+  document.getElementById('mAddDayOpts')?.classList.remove('open');
   document.getElementById(myId)?.classList.toggle('open');
 }
 
@@ -333,6 +343,8 @@ function mSelectCat(which, cat) {
 function _mAddSyncTypeFields(cat) {
   const isTv = cat === 'Travel';
   const isShop = cat === 'Shopping';
+  const isWr = cat === 'Weekly Reset Task';
+  const isRec = cat === 'Recurring Task';
   const _sh = (id, show) => { const el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; };
   _sh('mAddDestField', isTv);
   _sh('mAddDateRow', isTv);
@@ -340,26 +352,60 @@ function _mAddSyncTypeFields(cat) {
   _sh('mAddEndField', isTv);
   _sh('mAddStoreField', isShop);
   // Store custom-name field only shows if BOTH Shopping is selected AND the store picker
-  // is currently on "Other" — mAddStoreChange (below) owns that second half.
-  _sh('mAddStoreCustomField', isShop && document.getElementById('mAddStore')?.value === 'Other');
+  // is currently on "Other" — mSelectStore (below) owns that second half.
+  _sh('mAddStoreCustomField', isShop && _mAddStore === 'Other');
   _sh('mAddLinkField', isShop);
-  // Shopping items have no "important" concept in this data model — hide the flag rather
-  // than show a control that would silently do nothing.
-  _sh('mAddFlagBtn', !isShop);
+  _sh('mAddDayField', isRec);
+  // Shopping/Weekly-Reset/Recurring have no "important" concept in this data model — hide
+  // the flag rather than show a control that would silently do nothing.
+  _sh('mAddFlagBtn', !isShop && !isWr && !isRec);
   const nameInp = document.getElementById('mNewTask');
-  if (nameInp) nameInp.placeholder = isShop ? 'Item name…' : isTv ? 'Trip name…' : 'Add task for today…';
+  if (nameInp) nameInp.placeholder = isShop ? 'Item name…' : isTv ? 'Trip name…' : (isWr || isRec) ? 'Task name…' : 'Add task for today…';
   const btn = document.getElementById('mAddBtn');
-  if (btn) btn.textContent = isTv ? 'Add Trip' : isShop ? 'Add Item' : 'Add';
+  if (btn) btn.textContent = isTv ? 'Add Trip' : isShop ? 'Add Item' : (isWr || isRec) ? 'Add Recurring Task' : 'Add';
   if (isTv) { const s = document.getElementById('mAddStart'); if (s && !s.value) s.value = d2s(getDayDate(0)); }
 }
 // "Other" reveals a free-text store name field (mirrors desktop's qaStore/__custom
 // pattern, features.js) — any other store selection hides it again.
-function mAddStoreChange() {
-  const sel = document.getElementById('mAddStore');
-  const isOther = sel && sel.value === 'Other';
+let _mAddStore = 'HEB';
+function mToggleStorePick() {
+  document.getElementById('mAddPickOpts')?.classList.remove('open');
+  document.getElementById('mAddDayOpts')?.classList.remove('open');
+  document.getElementById('mAddStoreOpts')?.classList.toggle('open');
+}
+function mSelectStore(store) {
+  _mAddStore = store;
+  const lbl = document.getElementById('mAddStoreLbl');
+  if (lbl) lbl.textContent = store;
+  document.getElementById('mAddStoreOpts')?.classList.remove('open');
+  const isOther = store === 'Other';
   const f = document.getElementById('mAddStoreCustomField');
   if (f) f.style.display = isOther ? '' : 'none';
+  // "Other" hands off to its own text field, which DOES need (and is supposed to raise)
+  // its own keyboard — this is a genuine field change, not the same
+  // dismiss-when-it-shouldn't issue the store picker itself used to have as a native select.
   if (isOther) document.getElementById('mAddStoreCustom')?.focus();
+}
+// Recurring Task's "due on" day-of-week picker — defaults to today's weekday.
+const M_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+let _mAddDay = M_DAYS[new Date().getDay()];
+function _mBuildDayOpts() {
+  const el = document.getElementById('mAddDayOpts');
+  if (!el) return;
+  el.innerHTML = M_DAYS.map(d => `<div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectDay('${d}')"><span>${d}</span></div>`).join('');
+  const lbl = document.getElementById('mAddDayLbl');
+  if (lbl) lbl.textContent = _mAddDay;
+}
+function mToggleDayPick() {
+  document.getElementById('mAddPickOpts')?.classList.remove('open');
+  document.getElementById('mAddStoreOpts')?.classList.remove('open');
+  document.getElementById('mAddDayOpts')?.classList.toggle('open');
+}
+function mSelectDay(day) {
+  _mAddDay = day;
+  const lbl = document.getElementById('mAddDayLbl');
+  if (lbl) lbl.textContent = day;
+  document.getElementById('mAddDayOpts')?.classList.remove('open');
 }
 
 function mInitPickers() {
@@ -368,13 +414,14 @@ function mInitPickers() {
   _mBuildOpts('mBlockPickOpts',   'block');
   _mBuildOpts('mWkAddPickOpts',   'wkadd');
   _mBuildOpts('mFullAddPickOpts', 'fulladd', M_CATS_TRAVEL);
+  _mBuildDayOpts();
   mSelectCat('add',     'Home');
   mSelectCat('block',   'Home');
   mSelectCat('wkadd',   'Home');
   mSelectCat('fulladd', 'Home');
   document.addEventListener('click', e => {
     if (!e.target.closest('.m-cpick')) {
-      ['mAddPickOpts','mEditPickOpts','mBlockPickOpts','mWkAddPickOpts','mFullAddPickOpts'].forEach(id => {
+      ['mAddPickOpts','mEditPickOpts','mBlockPickOpts','mWkAddPickOpts','mFullAddPickOpts','mAddStoreOpts','mAddDayOpts'].forEach(id => {
         document.getElementById(id)?.classList.remove('open');
       });
     }
@@ -763,14 +810,19 @@ function _mQuickAddReposition() {
   const bar = document.getElementById('mAddBar');
   if (!bar || !bar.classList.contains('open')) return;
   const vv = window.visualViewport;
-  const kbHeight = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+  // Deliberately ignores vv.offsetTop (page SCROLL position) — only vv.height (the
+  // keyboard's actual height) should move the bar. Including offsetTop made the bar jump
+  // every time focus moved between fields in the SAME form (Link after Store, say): iOS
+  // auto-scrolls the page to keep a newly-focused field visible, which changes offsetTop
+  // even though the keyboard itself never resized, and the bar visibly jumped for no
+  // keyboard-related reason. Same logic is why there's no 'scroll' listener below any more.
+  const kbHeight = vv ? Math.max(0, window.innerHeight - vv.height) : 0;
   bar.style.bottom = (kbHeight + 10) + 'px';
 }
 function _mInitQuickAddKeyboardTracking() {
   if (!window.visualViewport || window.visualViewport._quickAddTracked) return;
   window.visualViewport._quickAddTracked = true;
   window.visualViewport.addEventListener('resize', _mQuickAddReposition);
-  window.visualViewport.addEventListener('scroll', _mQuickAddReposition);
 }
 function mOpenQuickAdd() {
   _mInitQuickAddKeyboardTracking();
@@ -854,7 +906,7 @@ async function mAddTask() {
     return;
   }
   if (cat === 'Shopping') {
-    let store = document.getElementById('mAddStore')?.value || 'Online';
+    let store = _mAddStore || 'Online';
     if (store === 'Other') store = document.getElementById('mAddStoreCustom')?.value.trim() || 'Other';
     const link = document.getElementById('mAddLink')?.value.trim() || null;
     const s = {id: 'l-' + Date.now(), name: n, store, link, done: false, due_date: ds};
@@ -872,6 +924,12 @@ async function mAddTask() {
       save();
       mRenderToday(); // same data-shopid staleness fix as the plain-task id swap below
     }
+    return;
+  }
+  if (cat === 'Weekly Reset Task' || cat === 'Recurring Task') {
+    await _mAddRecurring(n, cat === 'Weekly Reset Task', _mAddDay);
+    inp.value = '';
+    mCloseQuickAdd();
     return;
   }
   const important = _mAddImportant;
@@ -910,6 +968,48 @@ async function _mAddTravel(name, destination, start, end, mode) {
     // pushUndo closure above — reflects the real DB id if Undo is tapped after this resolves.
     Object.assign(tv, sv[0]);
     save(); renderAll();
+  }
+}
+
+// Creates a real wr_recurring_rules row — same table AND payload shape desktop's Add
+// Recurring modal writes (saveRecModal/saveWrRuleAdd, features.js/overview.js), scoped to
+// the weekly cadence only (desktop also has biweekly/monthly/quarterly/etc., each with
+// their own extra fields — not ported here yet). The is_weekly_reset flag is what actually
+// distinguishes the two mobile "types": true → a WR rule (st.wrRules, resets automatically
+// every week, no due-day of its own); false → a plain recurring task (st.recurring, due on
+// a specific weekday every week, appears_on_date carries which one).
+async function _mAddRecurring(name, isWeeklyReset, dayOfWeek) {
+  if (isWeeklyReset) {
+    const payload = {name, is_weekly_reset: true, is_enabled: true, sort_order: (st.wrRules || []).length, cadence: 'weekly', starting_date: null, pup_related: false, notes: null};
+    const tmpId = 'wrrule-tmp-' + Date.now();
+    const local = {...payload, id: tmpId};
+    st.wrRules = st.wrRules || [];
+    st.wrRules.push(local);
+    save(); renderAll();
+    pushUndo(() => { st.wrRules = st.wrRules.filter(x => String(x.id) !== String(local.id)); save(); renderAll(); if (String(local.id) !== tmpId) sbReq('DELETE', 'wr_recurring_rules', null, `?id=eq.${local.id}`); }, 'Added weekly reset task');
+    const sv = await sbReqSilent('POST', 'wr_recurring_rules', payload, '');
+    if (sv && sv[0]) {
+      const i = st.wrRules.findIndex(x => String(x.id) === tmpId);
+      if (i > -1) st.wrRules[i] = sv[0]; else st.wrRules.push(sv[0]);
+      local.id = sv[0].id;
+      save(); renderAll();
+    }
+  } else {
+    const startDate = tod();
+    const payload = {name, is_weekly_reset: false, appears_on_date: dayOfWeek, cadence: 'weekly', starting_date: startDate};
+    const tmpId = 'rec-tmp-' + Date.now();
+    const local = {...payload, id: tmpId, _doneByWk: {}, _done: false, _dateOverrides: {}};
+    st.recurring.push(local);
+    save(); renderAll();
+    pushUndo(() => { st.recurring = st.recurring.filter(x => String(x.id) !== String(local.id)); save(); renderAll(); if (String(local.id) !== tmpId) sbReq('DELETE', 'wr_recurring_rules', null, `?id=eq.${local.id}`); }, 'Added recurring task');
+    const sv = await sbReq('POST', 'wr_recurring_rules', payload);
+    if (sv && sv[0]) {
+      const i = st.recurring.findIndex(x => String(x.id) === tmpId);
+      const entry = {...sv[0], _doneByWk: {}, _done: false, _dateOverrides: {}};
+      if (i > -1) st.recurring[i] = entry; else st.recurring.push(entry);
+      local.id = sv[0].id;
+      save(); renderAll();
+    }
   }
 }
 

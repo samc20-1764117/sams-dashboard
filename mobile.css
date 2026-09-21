@@ -205,7 +205,10 @@ body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.
 /* Start/end date side by side instead of stacked full-width — reads as one range, not two
    unrelated fields, and takes less vertical space in an already-growing popup. */
 .m-add-daterow{display:flex;gap:8px;margin-bottom:8px}
-.m-add-daterow .m-add-field{flex:1;margin-bottom:0;min-width:0}
+/* flex-basis:0 (not auto) forces genuinely equal columns regardless of either date's
+   native-rendered content width — flex:1 alone lets content size nudge the two out of
+   parity. width:0 belt-and-suspenders for the same reason on the input itself. */
+.m-add-daterow .m-add-field{flex:1 1 0;margin-bottom:0;min-width:0;width:0}
 .m-add-row2{display:flex;gap:8px;align-items:center}
 #mAddBtn,#mShopAddBtn{height:44px;padding:0 24px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0;box-shadow:0 3px 10px rgba(124,106,247,.3)}
 #mAddFlagBtn,.m-flag-btn{height:44px;width:44px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);color:var(--sub);font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s}

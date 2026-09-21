@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260921l';var BUILD=window._BUILD;
+  window._BUILD='20260921m';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260921l">
+<link rel="stylesheet" href="mobile.css?v=20260921m">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -193,14 +193,24 @@
         <input id="mAddEnd" class="m-add-field-inp" type="date">
       </div>
     </div>
+    <!-- Custom picker, not a native <select> — a native select forces the keyboard down to
+         show its own wheel picker, which was also destabilizing the popup's keyboard-relative
+         position (see _mQuickAddReposition). This one is just styled divs, so a tap on it can
+         be preventDefault-ed like the category picker to keep the keyboard up throughout. -->
     <div id="mAddStoreField" class="m-add-field" style="display:none">
       <span class="m-add-field-lbl">Store</span>
-      <select id="mAddStore" class="m-add-field-inp" onchange="mAddStoreChange()">
-        <option value="HEB">HEB</option>
-        <option value="Ikea">Ikea</option>
-        <option value="Online">Online</option>
-        <option value="Other">Other</option>
-      </select>
+      <div class="m-cpick" id="mAddStorePick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleStorePick()">
+          <span id="mAddStoreLbl">HEB</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts" id="mAddStoreOpts">
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('HEB')"><span>HEB</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('Ikea')"><span>Ikea</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('Online')"><span>Online</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('Other')"><span>Other</span></div>
+        </div>
+      </div>
     </div>
     <div id="mAddStoreCustomField" class="m-add-field" style="display:none">
       <span class="m-add-field-lbl">Store name</span>
@@ -209,6 +219,19 @@
     <div id="mAddLinkField" class="m-add-field" style="display:none">
       <span class="m-add-field-lbl">Link <span style="opacity:.55;font-weight:400">(optional)</span></span>
       <input id="mAddLink" class="m-add-field-inp" type="url" placeholder="https://…">
+    </div>
+    <!-- Recurring Task only — which day of the week it's due. Weekly Reset Task needs no
+         extra field at all (it resets automatically every week; see _mAddRecurring,
+         mobile-overview.js), so nothing appears for that type beyond the name. -->
+    <div id="mAddDayField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Due on</span>
+      <div class="m-cpick" id="mAddDayPick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleDayPick()">
+          <span id="mAddDayLbl">Sunday</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts" id="mAddDayOpts"></div>
+      </div>
     </div>
     <div class="m-add-row2">
       <div class="m-cpick" id="mAddPick">
@@ -476,7 +499,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260921l"></script>
-<script src="features.js?v=20260921l"></script>
-<script src="mobile-overview.js?v=20260921l"></script>
+<script src="core.js?v=20260921m"></script>
+<script src="features.js?v=20260921m"></script>
+<script src="mobile-overview.js?v=20260921m"></script>
 </body></html>
