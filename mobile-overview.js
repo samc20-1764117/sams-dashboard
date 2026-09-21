@@ -4221,14 +4221,19 @@ async function mInit() {
   // (features.js). Must also clear the inline --bg custom property that features.js's
   // initTheme()/applyTheme() (script-top-level, runs before this) unconditionally sets on
   // <html> regardless of cfg.dark — an inline style always outranks mobile.css's
-  // `html.init-dark{--bg:...}` rule, so without removing it dark mode would silently never
-  // show through on the page background.
+  // `:root`/`html.init-dark{--bg:...}` rules, so without removing it the page keeps
+  // whatever decorative desktop gradient theme (default 'peach', a warm/orange gradient)
+  // is in localStorage._dashTheme no matter what mobile.css says. This must run for BOTH
+  // states, not just dark — a light-mode-only gap here previously left the peach gradient
+  // showing through even after mobile.css's own light --bg was changed.
   if (cfg.dark) {
     document.body.classList.add('dark');
     document.documentElement.classList.add('init-dark');
     document.documentElement.style.setProperty('--bg', '#16141f');
-    document.body.style.background = '';
+  } else {
+    document.documentElement.style.setProperty('--bg', '#f2f2f7');
   }
+  document.body.style.background = '';
   _fetchHolidays();
   // Clear stale local overrides on mobile — always trust Supabase as source of truth
   if (typeof localOverrides !== 'undefined') { for (const k in localOverrides) delete localOverrides[k]; }
