@@ -628,7 +628,7 @@ function mTaskRow(t) {
     rtype === 'vidstep' && t._vidId !== undefined ? ` data-vidid="${t._vidId}" data-vidstep="${t._vidStep}" data-day="${t.due_date}"` : ''
   ].join('');
   return `<div class="m-row-outer" data-rid="${t.id}" data-rtype="${rtype}"${canEdit ? ` data-tid="${t.id}"` : ''}${extraAttrs}>
-    ${canEdit ? '<div class="m-del-hint">✕</div>' : ''}
+    ${canEdit ? '<div class="m-del-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>' : ''}
     ${inner}
   </div>`;
 }
@@ -640,17 +640,25 @@ function _mIsOvMovable(t) {
   if (t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday') return false;
   return isOv(t.due_date) && !t.done;
 }
+// Ring circumference for r=15.5 (matches the SVG in mobile.html) — stroke-dashoffset
+// counts DOWN from this as tasks complete, so an untouched ring starts fully empty.
+const M_PROG_RING_C = 2 * Math.PI * 15.5;
 function mRenderToday() {
   const sorted = mGetTodayTasks();
   const doneCount = sorted.filter(t => t.done).length;
   const progEl = document.getElementById('mProgress');
   if (progEl && _mCurTab === 'today') {
-    progEl.textContent = doneCount + '/' + sorted.length;
-    progEl.classList.toggle('m-prog-complete', sorted.length > 0 && doneCount === sorted.length);
+    const complete = sorted.length > 0 && doneCount === sorted.length;
+    const pct = sorted.length ? doneCount / sorted.length : 0;
+    const fg = document.getElementById('mProgressFg');
+    if (fg) fg.style.strokeDashoffset = M_PROG_RING_C * (1 - pct);
+    const txt = document.getElementById('mProgressTxt');
+    if (txt) txt.textContent = doneCount + '/' + sorted.length;
+    progEl.classList.toggle('m-prog-complete', complete);
   }
   const el = document.getElementById('mTodayList');
   if (!el) return;
-  el.innerHTML = sorted.length ? sorted.map(mTaskRow).join('') : '<div class="m-empty">All done ✓</div>';
+  el.innerHTML = sorted.length ? sorted.map(mTaskRow).join('') : `<div class="m-empty"><div class="m-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="m-empty-txt">All done for today</div></div>`;
   const banner = document.getElementById('mOvBanner');
   if (banner) {
     // Only makes sense while actually viewing today — swiping to a future/past day (Today
