@@ -615,7 +615,7 @@ function mTaskRow(t) {
 
   // data-rid: every row, any type — lets drag-reorder capture the FULL day order (matches
   // desktop's .ti[id^="ti-"] full-list capture) and lets hold-drag reorder ANY row.
-  // data-tid: canEdit rows only — the narrower scope swipe-to-delete still uses.
+  // data-tid: canEdit rows only — real tasks, used for edit routing and mDeleteById.
   // data-rtype/data-shopid: which edit/menu surface (if any) a plain tap should route to
   // — mInitTodayDblTap/_mShowTaskMenu read these instead of re-deriving type from the id
   // string, since a virtual task's full object doesn't persist anywhere after render.
@@ -628,7 +628,6 @@ function mTaskRow(t) {
     rtype === 'vidstep' && t._vidId !== undefined ? ` data-vidid="${t._vidId}" data-vidstep="${t._vidStep}" data-day="${t.due_date}"` : ''
   ].join('');
   return `<div class="m-row-outer" data-rid="${t.id}" data-rtype="${rtype}"${canEdit ? ` data-tid="${t.id}"` : ''}${extraAttrs}>
-    ${canEdit ? '<div class="m-del-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>' : ''}
     ${inner}
   </div>`;
 }
@@ -666,7 +665,7 @@ function mRenderToday() {
     // desktop's ovBanner uses (dayOff!==0 hides it there too).
     const ovCount = _mTodayOffset === 0 ? sorted.filter(_mIsOvMovable).length : 0;
     if (ovCount > 0) {
-      banner.textContent = `${ovCount} Overdue — Move All to Today`;
+      banner.textContent = `${ovCount} Overdue – Move All to Today`;
       banner.style.display = 'flex';
     } else {
       banner.style.display = 'none';
@@ -693,9 +692,9 @@ function mMoveAllOverdueToToday() {
     mMoveToToday(id, kind, extra);
     moved++;
   });
-  if (moved && deferred) showToast(`Moved ${moved} to today — ${deferred} need review below`, '#7c6af7', 2200);
+  if (moved && deferred) showToast(`Moved ${moved} to today – ${deferred} need review below`, '#7c6af7', 2200);
   else if (moved) showToast(`Moved ${moved} to today`, '#7c6af7', 1600);
-  else if (deferred) showToast(`${deferred} recurring item${deferred > 1 ? 's' : ''} need review — use their own → Today button`, '#f59e0b', 2400);
+  else if (deferred) showToast(`${deferred} recurring item${deferred > 1 ? 's' : ''} need review – use their own → Today button`, '#f59e0b', 2400);
 }
 
 // ── Add task ──────────────────────────────────────────────────────────────────
@@ -1481,7 +1480,7 @@ async function mSaveFullAdd() {
   }
 }
 
-// ── Delete by id (swipe-to-delete) ───────────────────────────────────────────
+// ── Delete by id (task menu's Delete button) ─────────────────────────────────
 async function mDeleteById(id) {
   st.tasks = st.tasks.filter(x => String(x.id) !== String(id));
   save();
@@ -1519,6 +1518,12 @@ function mInitTodayDblTap() {
     const outer = e.target.closest('.m-row-outer[data-rid]');
     if (!outer) return;
     if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
+    // "→ Today" button owns its own tap too — it already calls stopPropagation() in its
+    // onclick, but that's on the (later-firing) synthesized click event, which can't retro-
+    // actively stop THIS touchend, a separate event this listener reads directly. Without
+    // this check, tapping the button both moved the task AND opened the task menu/edit
+    // sheet underneath it.
+    if (e.target.closest('.m-mv-today')) return;
     const ct = e.changedTouches[0];
     if (Math.abs(ct.clientX - tapStartX) > 10 || Math.abs(ct.clientY - tapStartY) > 10) return;
     const id = outer.dataset.rid;
@@ -1545,58 +1550,11 @@ function _mRowEdit(outer) {
   // double-tap intentionally no-ops for it.
 }
 
-// ── Swipe-to-delete ───────────────────────────────────────────────────────────
-let _sw = null;
-function mInitSwipe() {
-  const list = document.getElementById('mTodayList');
-  if (!list || list._swipeInited) return;
-  list._swipeInited = true;
-  const THRESHOLD = 90;
-
-  list.addEventListener('touchstart', e => {
-    const outer = e.target.closest('.m-row-outer[data-tid]');
-    if (!outer) return;
-    _sw = {outer, row: outer.querySelector('.m-row'), startX: e.touches[0].clientX, startY: e.touches[0].clientY, decided: false, dx: 0};
-  }, {passive: true});
-
-  list.addEventListener('touchmove', e => {
-    if (!_sw) return;
-    const dx = e.touches[0].clientX - _sw.startX;
-    const dy = e.touches[0].clientY - _sw.startY;
-    if (!_sw.decided) {
-      if (Math.abs(dy) > Math.abs(dx) + 3) { _sw = null; return; }
-      if (Math.abs(dx) > 6) _sw.decided = true;
-      else return;
-    }
-    if (dx > 0) return;
-    _sw.dx = Math.max(-(THRESHOLD + 30), dx);
-    _sw.row.style.transform = `translateX(${_sw.dx}px)`;
-    _sw.outer.classList.toggle('ptr-ready', _sw.dx <= -THRESHOLD);
-  }, {passive: true});
-
-  list.addEventListener('touchend', () => {
-    if (!_sw) return;
-    const {outer, row, dx} = _sw; _sw = null;
-    if (dx <= -THRESHOLD) {
-      row.style.transition = 'transform .18s';
-      row.style.transform = 'translateX(-110%)';
-      outer.style.transition = 'opacity .18s';
-      outer.style.opacity = '0';
-      setTimeout(() => mDeleteById(outer.dataset.tid), 190);
-    } else {
-      row.style.transition = 'transform .2s';
-      row.style.transform = '';
-      outer.classList.remove('ptr-ready');
-      setTimeout(() => row.style.transition = '', 200);
-    }
-  }, {passive: true});
-}
-
 // ── Today list drag-to-reorder ──────────────────────────────────────────────────
 // Hold + drag a task row up/down to set a manual sort order for today — touch port of
 // desktop's `_todDragRowId`/`_dropReorderToday` (core.js/overview.js, native HTML5 drag,
-// not usable on iOS Safari). Only real tasks (`.m-row-outer[data-tid]`, same scope as
-// swipe-to-delete/double-tap-edit above) are grabbable, but the order captured on drop
+// not usable on iOS Safari). Every row is grabbable (`.m-row-outer[data-rid]`, set on
+// all row types), and the order captured on drop
 // covers EVERY row (`data-rid`, set on all row types in mTaskRow) so a dragged task's
 // position relative to virtual/recurring/shopping rows is preserved exactly — matches
 // desktop's `.ti[id^="ti-"]` full-list capture. Unlike desktop's placeholder-divider
@@ -1921,23 +1879,36 @@ function _mInitTodaySwipe() {
   const page = document.getElementById('mTodayPage');
   if (!page || page._swipeInited) return;
   page._swipeInited = true;
-  let startX = 0, startY = 0, swiping = false;
-  page.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    swiping = true;
-  }, {passive: true});
-  page.addEventListener('touchend', e => {
+  // Tracks the live finger position via touchmove (not just the touchstart/touchend
+  // endpoints) so a gesture that iOS decides to cancel — e.g. because #mMain's own
+  // vertical scroll grabbed it, plausible on a swipe that isn't perfectly horizontal —
+  // still has a last-known position to evaluate, via touchcancel below, instead of
+  // silently dropping the day-change. Previously touchcancel wasn't handled at all, which
+  // is the likely cause of swipes intermittently "not working" past the first one or two.
+  let startX = 0, startY = 0, lastX = 0, lastY = 0, swiping = false;
+  const finish = () => {
     if (!swiping) return;
     swiping = false;
-    const dx = e.changedTouches[0].clientX - startX;
-    const dy = e.changedTouches[0].clientY - startY;
+    const dx = lastX - startX;
+    const dy = lastY - startY;
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
       _mTodayOffset += dx < 0 ? 1 : -1;
       mRenderToday();
       _mUpdateTodayHeader();
     }
+  };
+  page.addEventListener('touchstart', e => {
+    startX = lastX = e.touches[0].clientX;
+    startY = lastY = e.touches[0].clientY;
+    swiping = true;
   }, {passive: true});
+  page.addEventListener('touchmove', e => {
+    if (!swiping) return;
+    lastX = e.touches[0].clientX;
+    lastY = e.touches[0].clientY;
+  }, {passive: true});
+  page.addEventListener('touchend', finish, {passive: true});
+  page.addEventListener('touchcancel', finish, {passive: true});
 }
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
@@ -1983,8 +1954,6 @@ function mShowTab(tab) {
   if (titleEl) titleEl.textContent = titles[tab] || '';
   const progEl = document.getElementById('mProgress');
   if (progEl) progEl.style.display = isToday ? '' : 'none';
-  const tbBtn = document.getElementById('mTodayTBBtn');
-  if (tbBtn) tbBtn.style.display = isToday ? '' : 'none';
   // "+" moved here from the Tasks card's own header (removed, per redesign) to reclaim
   // vertical space for the list itself.
   const addBtn = document.getElementById('mTodayAddBtn');
@@ -4248,7 +4217,6 @@ async function mInit() {
   _mSetDate();
   mInitPickers();
   mInitTodayDblTap();
-  mInitSwipe();
   mInitTodayDrag();
   mInitPTR();
   mInitTBSwipe();

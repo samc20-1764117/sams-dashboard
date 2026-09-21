@@ -34,16 +34,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
    stroke-dasharray/-offset on the SAME persistent SVG node every render (#mProgress
    lives in the header, outside #mTodayList's full-innerHTML replace), so the fill
    genuinely animates between states instead of just snapping. */
-.m-prog-ring{display:flex;align-items:center;gap:5px;flex-shrink:0}
-.m-prog-ring svg{transform:rotate(-90deg);flex-shrink:0}
+/* 30px, matching every other header circle (.m-shop-hdr-icon: add/today/meals buttons,
+   the reload button below) — count sits INSIDE the ring (consolidated, was a separate
+   text pill next to it) via the same centered-overlay technique, ring behind/text on top. */
+.m-prog-ring{position:relative;width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.m-prog-ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg)}
 .m-prog-ring-bg{stroke:rgba(0,0,0,.08)}
 .m-prog-ring-fg{stroke:#eab308;stroke-linecap:round;transition:stroke-dashoffset .35s ease,stroke .2s ease}
 .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#22c55e}
-.m-prog-ring-txt{font-size:11px;font-weight:700;color:var(--sub);white-space:nowrap}
+.m-prog-ring-txt{position:relative;font-size:9px;font-weight:800;color:var(--text);letter-spacing:-.03em;white-space:nowrap}
 body.dark .m-prog-ring-bg{stroke:rgba(255,255,255,.12)}
 body.dark .m-prog-ring-fg{stroke:#fbbf24}
 body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
-.m-reload-btn{background:none;border:none;font-size:18px;color:var(--sub);cursor:pointer;padding:4px;line-height:1;opacity:.6}
+/* Matches .m-shop-hdr-icon exactly (30px circle, same border/color) instead of a bare
+   reduced-opacity glyph — every circular header control now reads as one consistent set. */
+.m-reload-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:none;font-size:16px;color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
+.m-reload-btn:active{background:var(--glass)}
 
 /* ── Main scroll area ─────────────────────────────────────────────────────── */
 #mMain{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-height:0}
@@ -67,16 +73,12 @@ body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
 #mPTR.ptr-loading .m-ptr-spinner{display:block;animation:ptr-spin .7s linear infinite}
 @keyframes ptr-spin{to{transform:rotate(360deg)}}
 
-/* ── Task row wrapper (swipe-to-delete, drag-to-reorder) ─────────────────────── */
-.m-row-outer{position:relative;background:transparent;overflow:hidden}
+/* ── Task row wrapper (drag-to-reorder) ───────────────────────────────────── */
+/* Swipe-to-delete removed — it shared the same horizontal-drag gesture space as
+   Today's own day-swipe navigation (_mInitTodaySwipe, mobile-overview.js) and the two
+   fought each other. Delete still reaches via the tap menu (Edit/Duplicate/Flag/Delete). */
+.m-row-outer{position:relative;background:transparent}
 .m-row-outer:first-child .m-row{border-top:none}
-/* Contained rounded delete badge (Apple's actual swipe-action look: a colored button
-   revealed behind the row, not a full-bleed color wash across the whole row). Row-outer
-   no longer tints red itself — only this badge does, and it pops in with a small scale
-   bounce once the drag crosses THRESHOLD (mInitSwipe, mobile-overview.js). */
-.m-del-hint{position:absolute;right:14px;top:50%;transform:translateY(-50%) scale(.6);width:34px;height:34px;border-radius:10px;background:#ef4444;color:#fff;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .15s ease,transform .15s ease}
-.m-del-hint svg{width:17px;height:17px}
-.m-row-outer.ptr-ready .m-del-hint{opacity:1;transform:translateY(-50%) scale(1)}
 /* Long-press-drag reorder (Today list): no text-selection/callout during the long-press
    (same requirement as .m-wk-row/.m-mo-day's own long-press-drag gestures), and a lifted
    look while actively dragging. */
@@ -566,7 +568,7 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
 #mLoginErr{color:#e05;font-size:13px;text-align:center;display:none}
 
 /* Overdue → Today pill (today list) */
-.m-mv-today{flex-shrink:0;border:1px solid #ef4444;color:#ef4444;background:#fff0f0;border-radius:12px;font-size:11px;font-weight:600;padding:4px 9px;margin-left:4px;font-family:inherit;white-space:nowrap}
+.m-mv-today{flex-shrink:0;border:1px solid #ef4444;color:#ef4444;background:#fff0f0;border-radius:var(--rs);font-size:11px;font-weight:600;padding:4px 9px;margin-left:4px;font-family:inherit;white-space:nowrap}
 .m-mv-today:active{background:#ef4444;color:#fff}
 /* Translucent red "glass" chip instead of a solid alarm-red block — still reads as
    urgent (red, bold) without shouting; matches the restrained-color-use convention the
