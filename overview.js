@@ -3286,7 +3286,7 @@ function renderRecOv(){
       const uaDot=document.createElement('span');
       uaDot.className='wr-unassigned';
       uaDot.title='Not assigned to a day yet';
-      row.appendChild(uaDot);
+      row.insertBefore(uaDot,row.firstChild);
     }
     if(wrBadgeLetter){
       row.classList.add('wr-has-cad');

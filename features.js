@@ -7852,7 +7852,7 @@ function ctxDoDelete(){
 // enough after a previous "I measured it and it's centered" claim didn't match what was
 // actually seen on screen.
 function showAlignGuides(){
-  hideAlignGuides();
+  if(document.querySelector('._alignGuide')){hideAlignGuides();return;}
   const mk=(x,color,label)=>{
     const line=document.createElement('div');
     line.className='_alignGuide';

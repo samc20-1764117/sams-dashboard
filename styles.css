@@ -198,12 +198,14 @@ body.dark .settings-popup-item{color:var(--text);}
 /* The Night Mode + Pics row holds TWO separate controls in one .settings-popup-item, so
    the item's own whole-row hover highlight (above) was lighting up across both — including
    the unrelated Pics toggle — whenever hovering anywhere in the row (2026-09-23 feedback).
-   .settings-popup-item-split cancels that row-wide highlight; .settings-popup-subitem gives
-   just the Night Mode control its own small, correctly-scoped hover target instead. */
+   .settings-popup-item-split cancels that row-wide highlight entirely; .settings-popup-
+   subitem is now just plain layout (no padding/margin/background of its own — an earlier
+   version added a small hover highlight + a padding/negative-margin hit-area trick, which
+   the user explicitly didn't want ("I don't want to see anything... no grey container when
+   I click") and which threw off this row's vertical centering against its height:20px
+   parent. Just restores the original plain span layout, minus the row-wide highlight. */
 .settings-popup-item-split:hover{background:none!important}
-.settings-popup-subitem{display:flex;align-items:center;gap:8px;height:100%;cursor:pointer;padding:2px 6px;margin:-2px -6px;border-radius:6px;transition:background .12s}
-.settings-popup-subitem:hover{background:rgba(0,0,0,.06)}
-body.dark .settings-popup-subitem:hover{background:rgba(255,255,255,.08)}
+.settings-popup-subitem{display:flex;align-items:center;gap:8px;height:100%;cursor:pointer}
 .settings-popup-divider{height:1px;background:rgba(0,0,0,.08);margin:4px 0;}
 body.dark .settings-popup-divider{background:rgba(255,255,255,.08);}
 .settings-popup-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:2px 8px;opacity:.7;}
@@ -293,13 +295,19 @@ body.dark .menu-open:hover{background:rgba(40,40,46,.95)}
 .main{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 0 36px 0;margin-left:186px;transition:margin-left .25s cubic-bezier(.4,0,.2,1)}
 #page-overview{padding:clamp(12px,3vw,56px);padding-top:60px;padding-bottom:24px}
 #page-pups{padding:0 clamp(12px,3vw,56px);width:100%;box-sizing:border-box}
-/* max-width+margin:auto added (2026-09-23) — .ov-topbar previously centered its content
-   across the FULL viewport width (left:0/186px to right:0), while .overview-cols (the
-   actual page content below it) is capped at max-width:1600px and centered within that
-   narrower box. On any viewport wider than 1600px+sidebar the two centers didn't match —
-   the header looked centered on the whole window while the content below it (Weekly
-   Reset, etc.) was centered on a narrower zone. Now both share the same 1600px cap. */
-.ov-topbar{position:fixed;top:18px;left:0;right:0;max-width:1600px;margin:0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;z-index:89;pointer-events:none;transition:left .25s cubic-bezier(.4,0,.2,1)}
+/* 2026-09-23, take 2 — the real, always-present bug wasn't the 1600px cap (that only
+   matters on ultra-wide screens, >~1898px, so the first attempt at this fix had no visible
+   effect on a normal monitor — user: "even worse now"/"way off"). The actual cause:
+   #page-overview (line above) has its OWN responsive padding, clamp(12px,3vw,56px), which
+   insets .overview-cols on every viewport width — .ov-topbar never accounted for that
+   padding at all, only for the sidebar's 186px. Confirmed via showAlignGuides(): at a
+   1600px-wide test window, .overview-cols measured left:234/right:1552 while .ov-topbar
+   measured left:186/right:1600 — a consistent 48px gap on both sides (matching
+   clamp(12px,3vw,56px) evaluated at 3vw = 48px for a 1600px viewport). Fixed by mirroring
+   that same clamp() expression as the topbar's own left/right inset (on top of the
+   186px sidebar clearance below), so both elements are now inset by an IDENTICAL amount on
+   both sides at every viewport width, not just matched at one arbitrary breakpoint. */
+.ov-topbar{position:fixed;top:18px;left:0;right:clamp(12px,3vw,56px);max-width:1600px;margin:0 auto;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;z-index:89;pointer-events:none;transition:left .25s cubic-bezier(.4,0,.2,1)}
 .ov-topbar-left{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-right:10px;pointer-events:none}
 .ov-topbar-right{display:flex;align-items:center;justify-content:flex-start;gap:10px;padding-left:10px;pointer-events:none}
 .ov-topbar-label{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.02em}
@@ -475,12 +483,17 @@ body.dark .note-tip{background:rgba(30,30,40,.88);color:#fff;border-color:transp
    since it's a status marker rather than a per-theme decoration. Absolutely positioned
    (like .ti-band) so its position in the DOM doesn't matter; .ti already has
    position:relative (base rule) so no extra positioning context is needed. */
-/* No border — a 1px border on a 3px-wide absolutely-positioned bar rendered visibly
-   thicker in #recList's LEFT CSS-multicol column than the right one (subpixel rounding:
-   the two columns' `.ti` elements don't always land on the same fractional device-pixel
-   offset, so a hairline border anti-aliases differently between them). A single flat fill
-   with no border sidesteps the inconsistency entirely — also lighter per feedback. */
-.wr-unassigned{position:absolute;left:3px;top:6px;bottom:6px;width:3px;border-radius:3px;background:rgba(0,0,0,.16);pointer-events:none}
+/* Normal in-flow flex child now (was position:absolute;top:6px;bottom:6px, stretching to
+   match its row's own rendered height) — removing the border alone didn't fully fix the
+   left-column-looks-thicker-and-taller-than-right-column inconsistency (2026-09-23:
+   "still column 1 seems thicker... waterbottles seems taller than wipe surfaces"), because
+   the root cause wasn't the border, it was relying on an absolutely-positioned element's
+   size tracking its row's rendered height inside a CSS multi-column (`columns:2`) list,
+   where the two columns can end up with subtly different effective row heights/offsets. A
+   fixed `height:16px` in-flow flex item (prepended before the checkbox in JS,
+   overview.js's WR-row builder) can't inherit that inconsistency — it's the same fixed
+   size everywhere, full stop. */
+.wr-unassigned{display:inline-block;width:3px;height:16px;border-radius:3px;background:rgba(0,0,0,.16);flex-shrink:0;margin-right:2px;pointer-events:none}
 body.dark .wr-unassigned{background:rgba(255,255,255,.16)}
 #todList .cat-dot{right:7px}
 #todList .tn{padding-right:12px}
@@ -1033,7 +1046,11 @@ body.dark .rt-heat-cell.rt-heat-wr-col{background:rgba(59,130,246,.07)}
    (_alignQnBtnToSettings(), features.js) to track #settingsBtn's actual right edge, since
    that edge moves with the topbar's own centering (see .ov-topbar's max-width fix) —
    2026-09-23: "move quick notes so it's same size and alignment as settings". */
-#qnBtn{position:fixed;bottom:20px;right:20px;z-index:950;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.6);box-shadow:0 4px 18px rgba(0,0,0,.1),0 8px 32px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .18s}
+/* padding:0 added — #settingsBtn gets this via an inline style (index.html), but #qnBtn
+   never had it; the browser's default <button> padding was stretching it wider than tall,
+   an oval instead of a circle even with width==height (2026-09-23: "too wide, should be a
+   circle button"). box-sizing:border-box too, so width/height are the true outer size. */
+#qnBtn{position:fixed;bottom:20px;right:20px;z-index:950;width:28px;height:28px;padding:0;box-sizing:border-box;border-radius:50%;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.6);box-shadow:0 4px 18px rgba(0,0,0,.1),0 8px 32px rgba(0,0,0,.06),inset 0 1px 0 rgba(255,255,255,.9);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .18s}
 #qnBtn:hover{background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.14),0 12px 40px rgba(0,0,0,.08);transform:translateY(-2px)}
 body.dark #qnBtn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15)}
 /* Panel — glass card like .card but notepad shaped */
@@ -1913,7 +1930,10 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
 /* Anti-FOUC: applied before first paint via html classes set in head script */
 html.init-dark body{background:#111113!important;background-attachment:fixed!important;}
 html.init-sb #main{left:186px!important;}
-html.init-sb .ov-topbar{left:186px!important;}
+/* calc(186px + clamp(...)) — was a bare 186px (just sidebar clearance); now mirrors
+   #page-overview's own left padding too, matching the right-side fix above so the topbar
+   is inset identically to .overview-cols on both sides at every viewport width. */
+html.init-sb .ov-topbar{left:calc(186px + clamp(12px,3vw,56px))!important;}
 
 /* ── Overview Batch A polish — delete this block to fully revert ── */
 /* 1. category pills as rounded chips (today list) */
