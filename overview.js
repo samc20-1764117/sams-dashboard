@@ -3285,7 +3285,7 @@ function renderRecOv(){
     if(!isDone&&!_wrAssigned){
       const uaDot=document.createElement('span');
       uaDot.className='wr-unassigned';
-      uaDot.textContent='›';
+      uaDot.title='Not assigned to a day yet';
       row.appendChild(uaDot);
     }
     if(wrBadgeLetter){

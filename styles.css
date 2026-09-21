@@ -448,6 +448,11 @@ body.dark .note-tip{background:rgba(30,30,40,.88);color:#fff;border-color:transp
 .tn:hover{color:var(--accent)}
 .cpill{font-size:9px;font-weight:600;padding:2px 7px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,0.6);white-space:nowrap;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.7)}
 .cat-dot{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;overflow:visible;transition:opacity .1s}
+/* Weekly Reset "not assigned to a day yet" indicator — a small discrete grey dot (was a
+   literal "›" arrow character, unstyled) instead, per 2026-09-23 feedback; global, all
+   themes, since it's a status marker rather than a per-theme decoration. */
+.wr-unassigned{display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,.22);flex-shrink:0;margin-left:2px}
+body.dark .wr-unassigned{background:rgba(255,255,255,.28)}
 #todList .cat-dot{right:7px}
 #todList .tn{padding-right:12px}
 /* Small glowing bar under the cat-dot when a task has notes — a separate element, not styling
@@ -1980,9 +1985,13 @@ body.theme-modern #qnBtn,body.theme-modern .dark-toggle,body.theme-modern .setti
    e.g. the .ti-band — show through at the edges) per 2026-09-22 feedback; #todList's
    .chk-wrap also raised onto its own stacking layer so it always paints above .ti-band. */
 body.theme-modern .chk::after{background-color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(0,0,0,.13)' stroke-width='1.2'/%3E%3C/svg%3E");transition:transform .12s ease,background .15s ease,box-shadow .15s ease}
-body.theme-modern .chk:checked::after{background:#8b8b96;box-shadow:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.5 8.3l2.6 2.6L11.5 5.5' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+/* Checked state: translucent fill (not a solid/opaque disc) + checkmark, matching the
+   base app's own faded-checkbox pattern (styles.css ~442, ~91) instead of the solid
+   #8b8b96 this theme used at first — per 2026-09-23 feedback ("not filled in circle...
+   more faded, similar to weekly view"). */
+body.theme-modern .chk:checked::after{background:rgba(139,139,150,.4);box-shadow:inset 0 0 0 1px rgba(139,139,150,.32);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.5 8.3l2.6 2.6L11.5 5.5' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
 body.theme-modern.dark .chk::after{background-color:#2c2c32;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(255,255,255,.16)' stroke-width='1.2'/%3E%3C/svg%3E")}
-body.theme-modern.dark .chk:checked::after{background:#9a9aa6}
+body.theme-modern.dark .chk:checked::after{background:rgba(190,190,198,.3);box-shadow:none}
 body.theme-modern .chk-wrap:active .chk::after{transform:scale(.82)}
 body.theme-modern #todList .chk,body.theme-modern #todList .chk::after{width:16px;height:16px;min-width:16px;min-height:16px;max-width:16px;max-height:16px}
 body.theme-modern #todList .chk-wrap{position:relative;z-index:1}
@@ -1990,13 +1999,10 @@ body.theme-modern #todList .chk-wrap{position:relative;z-index:1}
 /* Today-list done tasks fade out as a unit instead of getting struck through, per
    2026-09-22 feedback ("more like weekly view"). Base .ti.done{opacity:.38} wasn't faded
    enough on its own per follow-up feedback, so this drops it further for #todList
-   specifically and additionally washes out the checkmark itself (was full-contrast
-   #8b8b96/white even inside an already-faded row) — both scoped to #todList only, other
-   lists keep the strikethrough + base opacity. */
+   specifically — the checked-checkbox fill above is already translucent, so row opacity
+   alone now fades it further without needing its own override. */
 body.theme-modern #todList .ti.done{opacity:.3}
-body.theme-modern #todList .ti.done .tn{text-decoration:none}
-body.theme-modern #todList .ti.done .chk:checked::after{background:#c7c7cd}
-body.theme-modern.dark #todList .ti.done .chk:checked::after{background:#5a5a60}
+body.theme-modern #todList .ti.done .tn{text-decoration:none;position:relative;top:.5px}
 
 /* Thin SVG delete-button icon — GLOBAL, ALL THEMES (moved out of body.theme-modern per
    2026-09-23 feedback: "standardize the sizing of that X... not just within this theme").
