@@ -493,8 +493,12 @@ body.dark .note-tip{background:rgba(30,30,40,.88);color:#fff;border-color:transp
    fixed `height:16px` in-flow flex item (prepended before the checkbox in JS,
    overview.js's WR-row builder) can't inherit that inconsistency — it's the same fixed
    size everywhere, full stop. */
-.wr-unassigned{display:inline-block;width:3px;height:16px;border-radius:3px;background:rgba(0,0,0,.16);flex-shrink:0;margin-right:2px;pointer-events:none}
-body.dark .wr-unassigned{background:rgba(255,255,255,.16)}
+/* Border re-added (safe now that this is a fixed-size in-flow element, not the earlier
+   absolute-positioned/row-height-dependent version that made a border render inconsistent
+   across columns) — lighter center fill so the border reads as a distinct edge instead of
+   the whole thing being one flat block, and shorter per feedback (16px→12px). */
+.wr-unassigned{display:inline-block;width:3px;height:12px;border-radius:3px;background:rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.28);box-sizing:border-box;flex-shrink:0;margin-right:2px;pointer-events:none}
+body.dark .wr-unassigned{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.32)}
 #todList .cat-dot{right:7px}
 #todList .tn{padding-right:12px}
 /* Small glowing bar under the cat-dot when a task has notes — a separate element, not styling
@@ -593,7 +597,9 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .row1-right-panel{display:flex;flex-direction:column;gap:14px;min-height:0}
 /* Weekly Reset widened, Shopping narrowed (was 1.05fr/0.9fr) per 2026-09-23 feedback —
    Quick Links (0.6fr) and the row's total width are unchanged; global, not theme-scoped. */
-.row1-right-top{display:grid;grid-template-columns:1.3fr 0.65fr 0.6fr;gap:14px;flex-shrink:0;height:min(225px,28vh)}
+/* Dialed back from 1.3fr/0.65fr (2026-09-23 feedback: "weekly reset is too wide") — still
+   wider than the original 1.05fr/0.9fr per the original request, just less extreme. */
+.row1-right-top{display:grid;grid-template-columns:1.15fr 0.8fr 0.6fr;gap:14px;flex-shrink:0;height:min(225px,28vh)}
 .top-right-controls{position:fixed;top:14px;right:20px;z-index:1000;display:flex;align-items:center;gap:8px}
 .row1-right{display:grid;grid-template-columns:1fr 0.85fr 0.6fr;grid-template-rows:auto 1fr;gap:14px;min-height:0}
 .row1-left{display:flex;flex-direction:column;gap:8px;min-height:0}

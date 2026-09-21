@@ -7853,30 +7853,50 @@ function ctxDoDelete(){
 // actually seen on screen.
 function showAlignGuides(){
   if(document.querySelector('._alignGuide')){hideAlignGuides();return;}
+  let rowIdx=0;
   const mk=(x,color,label)=>{
     const line=document.createElement('div');
     line.className='_alignGuide';
     line.style.cssText=`position:fixed;top:0;bottom:0;left:${x}px;width:0;border-left:1px dashed ${color};z-index:99999;pointer-events:none`;
     const tag=document.createElement('div');
     tag.className='_alignGuide';
+    // Fixed, sequential row per guide (was random top offsets — overlapped/scattered
+    // unreadably, 2026-09-23 feedback: "your alignment guide seems off").
     tag.textContent=label+' '+Math.round(x)+'px';
-    tag.style.cssText=`position:fixed;top:${40+Math.random()*140}px;left:${x+3}px;font:10px monospace;color:${color};background:rgba(255,255,255,.9);padding:1px 4px;border-radius:3px;z-index:99999;white-space:nowrap;pointer-events:none`;
+    tag.style.cssText=`position:fixed;top:${8+rowIdx*15}px;left:${x+3}px;font:10px monospace;color:${color};background:rgba(255,255,255,.95);padding:1px 4px;border-radius:3px;z-index:99999;white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.15)`;
+    rowIdx++;
     document.body.appendChild(line);document.body.appendChild(tag);
   };
   const sidebar=document.querySelector('.sidebar');
   const cols=document.querySelector('.overview-cols');
   const topbar=document.querySelector('.ov-topbar');
+  const wrCard=document.getElementById('recList')?.closest('.card');
   const vw=window.innerWidth;
   mk(0,'#999','viewport L');
-  mk(vw,'#999','viewport R');
   if(sidebar)mk(sidebar.getBoundingClientRect().right,'#f59e0b','sidebar edge');
-  if(cols){const r=cols.getBoundingClientRect();mk(r.left,'#22c55e','content L');mk(r.right,'#22c55e','content R');}
-  if(topbar){const r=topbar.getBoundingClientRect();mk(r.left,'#3b82f6','header L');mk(r.right,'#3b82f6','header R');}
+  if(topbar){const r=topbar.getBoundingClientRect();mk(r.left,'#3b82f6','header L');}
+  if(cols){const r=cols.getBoundingClientRect();mk(r.left,'#22c55e','content L');}
+  if(wrCard){const r=wrCard.getBoundingClientRect();mk(r.left,'#ec4899','WR card L');mk(r.right,'#ec4899','WR card R');}
+  if(cols){const r=cols.getBoundingClientRect();mk(r.right,'#22c55e','content R');}
+  if(topbar){const r=topbar.getBoundingClientRect();mk(r.right,'#3b82f6','header R');}
+  mk(vw,'#999','viewport R');
+  // On-screen summary panel — was console-only before, easy to miss if devtools weren't
+  // open (2026-09-23 feedback implied this wasn't being seen/trusted).
+  const panel=document.createElement('div');
+  panel.className='_alignGuide';
+  panel.style.cssText='position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:100000;background:#1a1a1e;color:#fff;font:11px/1.5 monospace;padding:10px 14px;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.3);white-space:pre;pointer-events:none';
+  let txt='';
   if(cols&&topbar){
     const cr=cols.getBoundingClientRect(),tr=topbar.getBoundingClientRect();
-    console.log('[alignGuides] content L/R:',Math.round(cr.left),Math.round(cr.right),' header L/R:',Math.round(tr.left),Math.round(tr.right),
-      cr.left===tr.left&&cr.right===tr.right?'✅ MATCH':'❌ MISMATCH — header and content are NOT sharing the same centered zone');
+    const match=Math.round(cr.left)===Math.round(tr.left)&&Math.round(cr.right)===Math.round(tr.right);
+    txt+=`header  L:${Math.round(tr.left)}  R:${Math.round(tr.right)}\ncontent L:${Math.round(cr.left)}  R:${Math.round(cr.right)}\n${match?'✅ header/content MATCH':'❌ header/content MISMATCH'}`;
   }
+  if(wrCard&&cols){
+    const wr=wrCard.getBoundingClientRect(),cr=cols.getBoundingClientRect();
+    txt+=`\nWR card L:${Math.round(wr.left)} R:${Math.round(wr.right)} width:${Math.round(wr.width)}px (content width:${Math.round(cr.width)}px)`;
+  }
+  panel.textContent=txt;
+  document.body.appendChild(panel);
 }
 function hideAlignGuides(){document.querySelectorAll('._alignGuide').forEach(el=>el.remove());}
 
