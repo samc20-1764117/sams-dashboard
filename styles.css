@@ -1982,14 +1982,27 @@ body.theme-modern .chk-wrap:active .chk::after{transform:scale(.82)}
 body.theme-modern #todList .chk,body.theme-modern #todList .chk::after{width:16px;height:16px;min-width:16px;min-height:16px;max-width:16px;max-height:16px}
 body.theme-modern #todList .chk-wrap{position:relative;z-index:1}
 
-/* Today-list done tasks fade out as a unit (row already inherits opacity:.38 from base
-   .ti.done — this just drops the strikethrough) instead of getting struck through, per
-   2026-09-22 feedback ("more like weekly view"). Scoped to #todList only — other lists
-   keep the strikethrough. */
+/* Today-list done tasks fade out as a unit instead of getting struck through, per
+   2026-09-22 feedback ("more like weekly view"). Base .ti.done{opacity:.38} wasn't faded
+   enough on its own per follow-up feedback, so this drops it further for #todList
+   specifically and additionally washes out the checkmark itself (was full-contrast
+   #8b8b96/white even inside an already-faded row) — both scoped to #todList only, other
+   lists keep the strikethrough + base opacity. */
+body.theme-modern #todList .ti.done{opacity:.3}
 body.theme-modern #todList .ti.done .tn{text-decoration:none}
+body.theme-modern #todList .ti.done .chk:checked::after{background:#c7c7cd}
+body.theme-modern.dark #todList .ti.done .chk:checked::after{background:#5a5a60}
 
-/* Thin SVG icons replacing unicode glyphs (✕ delete button, ▾ category-select caret). */
-body.theme-modern .delbtn{font-size:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;background-size:12px}
+/* Thin SVG icons replacing unicode glyphs (✕ delete button, ▾ category-select caret).
+   .delbtn's base rule (styles.css ~486) sizes itself from its own text content (font-size
+   10px + 1-2px padding, no explicit width/height) — everywhere EXCEPT #todList/.tb-
+   list-only, which happen to have their own explicit-size overrides already. Setting
+   font-size:0 to hide the ✕ glyph collapsed the box down to just its ~2-4px padding
+   everywhere else (Weekly Reset, Shopping, etc.), clipping the 12px icon down to a
+   sliver/wedge fragment — the "minus sign" / "something sticking out" artifact reported
+   2026-09-22. Fixed by giving every .delbtn an explicit box size directly here instead of
+   depending on scattered per-container overrides. */
+body.theme-modern .delbtn{font-size:0;width:16px;height:16px;padding:0;display:inline-flex;align-items:center;justify-content:center;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;background-size:12px}
 body.theme-modern .delbtn:hover{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E")}
 body.theme-modern.dark .delbtn{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E")}
 body.theme-modern .cat-sel-trigger span:last-child{font-size:0;display:inline-block;width:10px;height:10px;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}

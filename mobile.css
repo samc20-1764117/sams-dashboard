@@ -179,20 +179,24 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
    in mobile-overview.js) instead of permanently docked on screen — same exact card look as
    before, just hidden until requested, reclaiming the space it used to always occupy. Shop's
    own add bar (#mShopAddBar) is untouched by this and stays always-visible.
-   Anchored near the TOP (top set dynamically in mOpenQuickAdd, just under #mHeader), not
-   the bottom — bottom:82px sat right where the iOS keyboard covers it, so the input you'd
-   just started typing into (and the keyboard's own suggestion bar) hid the field itself. */
+   `bottom` is tracked LIVE against window.visualViewport (_mQuickAddReposition,
+   mobile-overview.js) so the popup sits right above the keyboard as it animates open/closed
+   — typing stays visible right next to what you're typing, instead of the popup living
+   somewhere disconnected from the keyboard. Growing the form (e.g. travel's date-range
+   fields appearing) naturally pushes it further up too, since it's anchored by its BOTTOM
+   edge, not its top — no extra reflow logic needed for that. 82px default matches the old
+   docked position, used only for the brief moment before the keyboard finishes animating in. */
 /* Slight spring overshoot on the drop-down entrance (cubic-bezier with a >1 midpoint)
    instead of a plain ease — matches the bottom nav's own highlight-pill spring feel, so
    the tab's two pieces of motion read as one consistent language. */
-#mAddBar{bottom:auto;top:0;opacity:0;pointer-events:none;transform:translateY(-10px);transition:opacity .18s ease,transform .32s cubic-bezier(.34,1.56,.64,1)}
+#mAddBar{bottom:82px;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .18s ease,transform .32s cubic-bezier(.34,1.56,.64,1),bottom .12s ease}
 #mAddBar.open{opacity:1;pointer-events:auto;transform:translateY(0)}
-/* Liquid-glass blur behind the popup — adding a task becomes the focal point, everything
-   else recedes, instead of a plain transparent tap-catcher. Uses opacity (not display) so
-   the blur/tint actually fades in rather than snapping on. */
-#mQuickAddBackdrop{position:fixed;inset:0;z-index:19;opacity:0;pointer-events:none;background:rgba(22,20,31,.28);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);transition:opacity .22s ease}
+/* Liquid-glass blur behind the popup — adding a task becomes the focal point without
+   fully obscuring the rest of the screen. Kept deliberately light (was blur(14px)/28%
+   tint, read as too heavy) — opacity (not display) so it actually fades in. */
+#mQuickAddBackdrop{position:fixed;inset:0;z-index:19;opacity:0;pointer-events:none;background:rgba(20,18,28,.12);backdrop-filter:blur(5px) saturate(140%);-webkit-backdrop-filter:blur(5px) saturate(140%);transition:opacity .22s ease}
 #mQuickAddBackdrop.open{opacity:1;pointer-events:auto}
-body.dark #mQuickAddBackdrop{background:rgba(0,0,0,.45)}
+body.dark #mQuickAddBackdrop{background:rgba(0,0,0,.22)}
 #mNewTask,#mShopNewName{width:100%;padding:12px 14px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;box-sizing:border-box}
 #mNewTask:focus,#mShopNewName:focus{border-color:var(--accent)}
 .m-add-row2{display:flex;gap:8px;align-items:center}

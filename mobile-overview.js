@@ -728,6 +728,10 @@ function mOpenQuickAdd() {
 function mCloseQuickAdd() {
   document.getElementById('mAddBar')?.classList.remove('open');
   document.getElementById('mQuickAddBackdrop')?.classList.remove('open');
+  // Hiding the bar visually (opacity) doesn't blur its input — the field keeps DOM focus,
+  // so the iOS keyboard stayed on screen after Enter/Add even though the popup itself
+  // disappeared. Explicit blur is what actually dismisses it.
+  document.getElementById('mNewTask')?.blur();
 }
 function mToggleQuickAdd() {
   document.getElementById('mAddBar')?.classList.contains('open') ? mCloseQuickAdd() : mOpenQuickAdd();
