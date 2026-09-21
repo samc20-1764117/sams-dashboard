@@ -1966,13 +1966,23 @@ body.theme-modern #qnBtn,body.theme-modern .dark-toggle,body.theme-modern .setti
    1px stroke, low-contrast checked state) + a tactile press animation, mirroring mobile's
    redrawn checkbox (mobile.css .m-chk-wrap input). Only the SIZE/COLOR change; the
    underlying "::after draws a circle, background-color fills it, background-image draws
-   the ring/check" technique is unchanged from the base .chk rule. */
+   the ring/check" technique is unchanged from the base .chk rule. Ring softened + fill
+   made fully opaque (was translucent, letting whatever sat behind — e.g. the .ti-band —
+   show through at the edges) per 2026-09-22 feedback; .chk-wrap also raised onto its own
+   stacking layer so it always paints above .ti-band regardless of source order. */
 body.theme-modern .chk,body.theme-modern .chk::after{width:16px;height:16px;min-width:16px;min-height:16px;max-width:16px;max-height:16px}
-body.theme-modern .chk::after{background-color:rgba(255,255,255,.9);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(0,0,0,.22)' stroke-width='1.4'/%3E%3C/svg%3E");transition:transform .12s ease,background .15s ease,box-shadow .15s ease}
+body.theme-modern .chk-wrap{position:relative;z-index:1}
+body.theme-modern .chk::after{background-color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(0,0,0,.13)' stroke-width='1.2'/%3E%3C/svg%3E");transition:transform .12s ease,background .15s ease,box-shadow .15s ease}
 body.theme-modern .chk:checked::after{background:#8b8b96;box-shadow:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.5 8.3l2.6 2.6L11.5 5.5' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
-body.theme-modern.dark .chk::after{background-color:rgba(255,255,255,.07);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(255,255,255,.24)' stroke-width='1.4'/%3E%3C/svg%3E")}
+body.theme-modern.dark .chk::after{background-color:#2c2c32;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(255,255,255,.16)' stroke-width='1.2'/%3E%3C/svg%3E")}
 body.theme-modern.dark .chk:checked::after{background:#9a9aa6}
 body.theme-modern .chk-wrap:active .chk::after{transform:scale(.82)}
+
+/* Today-list done tasks fade out as a unit (row already inherits opacity:.38 from base
+   .ti.done — this just drops the strikethrough) instead of getting struck through, per
+   2026-09-22 feedback ("more like weekly view"). Scoped to #todList only — other lists
+   keep the strikethrough. */
+body.theme-modern #todList .ti.done .tn{text-decoration:none}
 
 /* Thin SVG icons replacing unicode glyphs (✕ delete button, ▾ category-select caret). */
 body.theme-modern .delbtn{font-size:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:center;background-size:12px}

@@ -42,7 +42,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .m-prog-ring-bg{stroke:rgba(0,0,0,.08)}
 .m-prog-ring-fg{stroke:#eab308;stroke-linecap:round;transition:stroke-dashoffset .35s ease,stroke .2s ease}
 .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#22c55e}
-.m-prog-ring-txt{position:relative;font-size:9px;font-weight:800;line-height:1;color:var(--text);letter-spacing:-.03em;white-space:nowrap}
+.m-prog-ring-txt{position:relative;font-size:9px;font-weight:800;line-height:1;color:var(--sub);letter-spacing:-.03em;white-space:nowrap}
 body.dark .m-prog-ring-bg{stroke:rgba(255,255,255,.12)}
 body.dark .m-prog-ring-fg{stroke:#fbbf24}
 body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
@@ -178,8 +178,11 @@ body.dark #mAddBar,body.dark #mShopAddBar{box-shadow:0 8px 24px rgba(0,0,0,.4),i
 /* Today's add bar is now an on-demand popup (opened via #mTodayAddBtn's "+", mToggleQuickAdd
    in mobile-overview.js) instead of permanently docked on screen — same exact card look as
    before, just hidden until requested, reclaiming the space it used to always occupy. Shop's
-   own add bar (#mShopAddBar) is untouched by this and stays always-visible. */
-#mAddBar{opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .18s ease,transform .18s ease}
+   own add bar (#mShopAddBar) is untouched by this and stays always-visible.
+   Anchored near the TOP (top set dynamically in mOpenQuickAdd, just under #mHeader), not
+   the bottom — bottom:82px sat right where the iOS keyboard covers it, so the input you'd
+   just started typing into (and the keyboard's own suggestion bar) hid the field itself. */
+#mAddBar{bottom:auto;top:0;opacity:0;pointer-events:none;transform:translateY(-10px);transition:opacity .18s ease,transform .18s ease}
 #mAddBar.open{opacity:1;pointer-events:auto;transform:translateY(0)}
 #mQuickAddBackdrop{position:fixed;inset:0;z-index:19;display:none;background:transparent}
 #mQuickAddBackdrop.open{display:block}

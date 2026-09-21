@@ -710,7 +710,13 @@ function mMoveAllOverdueToToday() {
 // Quick-add popup open/close — #mAddBar itself is unchanged (same form/fields/IDs as
 // when it was permanently docked), just gated behind a tap on #mTodayAddBtn now.
 function mOpenQuickAdd() {
-  document.getElementById('mAddBar')?.classList.add('open');
+  const bar = document.getElementById('mAddBar');
+  const header = document.getElementById('mHeader');
+  // Positioned just under the real (live-measured, not guessed) header height rather than
+  // a hardcoded offset — safe-area insets vary by device, and this stays correct if the
+  // header's own height ever changes.
+  if (bar && header) bar.style.top = (header.getBoundingClientRect().bottom + 10) + 'px';
+  bar?.classList.add('open');
   document.getElementById('mQuickAddBackdrop')?.classList.add('open');
   // Focus synchronously, in the same tick as the tap that opened this — iOS Safari only
   // reliably raises the keyboard for a programmatic .focus() when it happens inside the
