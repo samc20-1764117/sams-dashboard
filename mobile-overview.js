@@ -4201,7 +4201,7 @@ function mMonthTapDay(ds) {
 function mToggleDark() {
   toggleDark();
   const isDark = document.body.classList.contains('dark');
-  document.documentElement.style.setProperty('--bg', isDark ? '#16141f' : '#f2f2f7');
+  document.documentElement.style.setProperty('--bg', isDark ? '#16141f' : '#ffffff');
   document.body.style.background = '';
   const hdr = document.getElementById('mHeader');
   if (hdr) void hdr.offsetHeight;
@@ -4231,7 +4231,7 @@ async function mInit() {
     document.documentElement.classList.add('init-dark');
     document.documentElement.style.setProperty('--bg', '#16141f');
   } else {
-    document.documentElement.style.setProperty('--bg', '#f2f2f7');
+    document.documentElement.style.setProperty('--bg', '#ffffff');
   }
   document.body.style.background = '';
   _fetchHolidays();

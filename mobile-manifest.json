@@ -2,10 +2,10 @@
   "name": "Sam's Dashboard",
   "short_name": "Dashboard",
   "description": "Sam's personal dashboard",
-  "start_url": "/mobile.html?v=20260921a",
+  "start_url": "/mobile.html?v=20260921b",
   "display": "standalone",
-  "background_color": "#f2f2f7",
-  "theme_color": "#f2f2f7",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait",
   "icons": [
     {

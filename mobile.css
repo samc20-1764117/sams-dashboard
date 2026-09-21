@@ -1,4 +1,4 @@
-:root{--bg:#f2f2f7;--glass:rgba(255,255,255,.7);--bg-elevated:#ffffff;--border:rgba(0,0,0,.08);--text:#1a1825;--sub:#6b6880;--r:14px;--rs:8px;--shadow:0 2px 12px rgba(0,0,0,.08);--accent:#7c6af7;
+:root{--bg:#ffffff;--glass:rgba(255,255,255,.7);--bg-elevated:#ffffff;--border:rgba(0,0,0,.08);--text:#1a1825;--sub:#6b6880;--r:14px;--rs:8px;--shadow:0 2px 12px rgba(0,0,0,.08);--accent:#7c6af7;
   --nav-glass-bg:rgba(255,255,255,.42);--nav-glass-shadow:0 8px 28px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 1px rgba(0,0,0,.04);
   --nav-icon-inactive:rgba(26,24,37,.55);--nav-pill-bg:rgba(255,255,255,.85);--nav-pill-shadow:0 4px 14px rgba(0,0,0,.10),inset 0 1px 0 rgba(255,255,255,.9)}
 html.init-dark{--bg:#16141f;--glass:rgba(30,28,40,.8);--bg-elevated:#242030;--border:rgba(255,255,255,.08);--text:#eeeaf8;--sub:#9a95b0;
