@@ -288,6 +288,11 @@ body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.
 .m-shop-hdr-heb{width:auto;height:24px;padding:0 8px;border-radius:6px;border:none;background:#e4002b;color:#fff;font-size:11px;font-weight:800;letter-spacing:.03em;cursor:pointer;flex-shrink:0}
 .m-shop-hdr-heb:active{background:#c40025}
 .m-shop-store-hd{font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--muted);padding:10px 0 3px}
+/* Shop rows sit closer to the left edge than Today's (8px vs .m-row's shared 14px) — Today
+   reserves that extra gutter for its left color band; Shop has no band (see below), so the
+   full 14px just read as excess empty space. Scoped to #mShopList only, not the shared
+   .m-row rule, so Today's own band gutter is untouched. */
+#mShopList .m-row{padding-left:8px}
 /* Shop rows now reuse Today's .m-row-outer/.m-row list convention (flat --bg-elevated +
    hairline border-top, .m-chk-wrap circle checkbox) instead of the old glass-blur pill
    cards — see mShopRow() in mobile-overview.js. No left color band (unlike Today's rows) —

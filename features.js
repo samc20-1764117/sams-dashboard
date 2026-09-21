@@ -7874,6 +7874,24 @@ function applyTheme(key,skipSave){
   document.body.classList.toggle('theme-modern',key==='modern');
   document.querySelectorAll('.theme-swatch').forEach(s=>{s.classList.toggle('active',s.dataset.theme===key);});
   if(!skipSave){localStorage._dashTheme=key;}
+  _updateThemeColorMeta(t.body);
+}
+// Keeps the browser/PWA chrome color (<meta name="theme-color">) AND the native macOS
+// wrapper's title bar (DockClock, via the webkit.messageHandlers.themeColor bridge — see
+// index.html's inline bootstrap script for the matching pre-JS-load version of this same
+// call) in sync with whichever theme swatch is actually selected. Previously hardcoded to
+// a fixed peach-toned '#fdf8f4' for ALL light themes regardless of which was selected —
+// only dark-vs-light ever changed it — so e.g. selecting Ocean or Modern still left the
+// native title bar showing the old peach tint (2026-09-23 feedback: "it should change
+// with every theme to match, similar to how it changes for dark mode"). Called from both
+// applyTheme() (theme switch) and toggleDark() (light/dark switch) so either trigger stays
+// in sync. NOTE: whether DockClock's own Swift code actually repaints its title bar for an
+// arbitrary hex (vs. just branching light/dark) is outside this repo — verify there too.
+function _updateThemeColorMeta(lightColor){
+  const isDark=document.body.classList.contains('dark');
+  const color=isDark?'#111113':(lightColor||'#fdf8f4');
+  const tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute('content',color);
+  try{window.webkit.messageHandlers.themeColor.postMessage(color);}catch(e){}
 }
 function initTheme(){
   let key=localStorage._dashTheme||'peach';
@@ -7901,10 +7919,10 @@ function toggleDark(){
   const isDark=document.body.classList.toggle('dark');
   document.documentElement.classList.toggle('init-dark',isDark);
   cfg.dark=isDark;save();
-  if(!isDark){const key=localStorage._dashTheme||'peach';applyTheme(key,true);}
+  const key=localStorage._dashTheme||'peach';
+  if(!isDark){applyTheme(key,true);}
   else{document.body.style.background='';void document.body.offsetHeight;}
-  const tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.setAttribute('content',isDark?'#111113':'#fdf8f4');
-  try{window.webkit.messageHandlers.themeColor.postMessage(isDark?'#111113':'#fdf8f4');}catch(e){}
+  _updateThemeColorMeta((THEMES[key]||THEMES.peach).body);
   const ic=document.getElementById('darkToggleIcon');if(ic)ic.textContent=isDark?'☀️':'🌙';
   const lb=document.getElementById('darkToggleLabel');if(lb)lb.textContent=isDark?'Light Mode':'Night Mode';
   if(typeof renderAll==='function')renderAll();
