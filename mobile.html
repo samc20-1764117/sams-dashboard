@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260921k';var BUILD=window._BUILD;
+  window._BUILD='20260921l';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260921k">
+<link rel="stylesheet" href="mobile.css?v=20260921l">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -175,30 +175,40 @@
     <!-- Type-specific fields — shown/hidden by _mAddSyncTypeFields (mobile-overview.js) as
          the category picker below changes. Placed above the picker row (not below) so the
          form still grows upward from the same bottom-anchored point when they appear. -->
-    <div id="mAddDestField" class="m-full-add-field" style="display:none">
-      <span class="m-full-add-lbl">Destination</span>
-      <input id="mAddDest" type="text" placeholder="e.g. New York, NY">
+    <div id="mAddDestField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Destination</span>
+      <input id="mAddDest" class="m-add-field-inp" type="text" placeholder="e.g. New York, NY">
     </div>
-    <div id="mAddStartField" class="m-full-add-field" style="display:none">
-      <span class="m-full-add-lbl">Start date</span>
-      <input id="mAddStart" type="date">
+    <div id="mAddDateRow" class="m-add-daterow" style="display:none">
+      <div id="mAddStartField" class="m-add-field" style="display:none">
+        <span class="m-add-field-lbl">Start date</span>
+        <input id="mAddStart" class="m-add-field-inp" type="date">
+      </div>
+      <div id="mAddEndField" class="m-add-field" style="display:none">
+        <span class="m-add-field-lbl">End date</span>
+        <input id="mAddEnd" class="m-add-field-inp" type="date">
+      </div>
     </div>
-    <div id="mAddEndField" class="m-full-add-field" style="display:none">
-      <span class="m-full-add-lbl">End date</span>
-      <input id="mAddEnd" type="date">
-    </div>
-    <div id="mAddStoreField" class="m-full-add-field" style="display:none">
-      <span class="m-full-add-lbl">Store</span>
-      <select id="mAddStore">
+    <div id="mAddStoreField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Store</span>
+      <select id="mAddStore" class="m-add-field-inp" onchange="mAddStoreChange()">
         <option value="HEB">HEB</option>
         <option value="Ikea">Ikea</option>
         <option value="Online">Online</option>
         <option value="Other">Other</option>
       </select>
     </div>
+    <div id="mAddStoreCustomField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Store name</span>
+      <input id="mAddStoreCustom" class="m-add-field-inp" type="text" placeholder="Store name…" onkeydown="if(event.key==='Enter')event.stopPropagation()">
+    </div>
+    <div id="mAddLinkField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Link <span style="opacity:.55;font-weight:400">(optional)</span></span>
+      <input id="mAddLink" class="m-add-field-inp" type="url" placeholder="https://…">
+    </div>
     <div class="m-add-row2">
       <div class="m-cpick" id="mAddPick">
-        <button type="button" class="m-cpick-btn" onclick="mTogglePick('add')">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mTogglePick('add')">
           <span class="m-cpick-dot" id="mAddPickDot"></span>
           <span id="mAddPickLbl">Home</span>
           <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
@@ -271,7 +281,7 @@
   <input id="mEditName" type="text" placeholder="Task name" onkeydown="if(event.key==='Enter')mSaveEditTask()" style="margin-bottom:10px">
   <div class="m-add-row2" style="margin-bottom:10px">
     <div class="m-cpick" id="mEditPick">
-      <button type="button" class="m-cpick-btn" onclick="mTogglePick('edit')">
+      <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mTogglePick('edit')">
         <span class="m-cpick-dot" id="mEditPickDot"></span>
         <span id="mEditPickLbl">Home</span>
         <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
@@ -303,7 +313,7 @@
     </div>
   </div>
   <div class="m-cpick" id="mBlockPick" style="margin-bottom:16px">
-    <button type="button" class="m-cpick-btn" onclick="mTogglePick('block')">
+    <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mTogglePick('block')">
       <span class="m-cpick-dot" id="mBlockPickDot"></span>
       <span id="mBlockPickLbl">Home</span>
       <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
@@ -322,7 +332,7 @@
   <h3 id="mWkAddTitle">Add Task</h3>
   <input id="mWkAddName" type="text" placeholder="Task name" onkeydown="if(event.key==='Enter')mSaveWkTask()">
   <div class="m-cpick" id="mWkAddPick" style="margin-bottom:16px">
-    <button type="button" class="m-cpick-btn" onclick="mTogglePick('wkadd')">
+    <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mTogglePick('wkadd')">
       <span class="m-cpick-dot" id="mWkAddPickDot"></span>
       <span id="mWkAddPickLbl">Home</span>
       <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
@@ -359,7 +369,7 @@
   </div>
   <div class="m-add-row2" style="margin-bottom:12px">
     <div class="m-cpick" id="mFullAddPick">
-      <button type="button" class="m-cpick-btn" onclick="mTogglePick('fulladd')">
+      <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mTogglePick('fulladd')">
         <span class="m-cpick-dot" id="mFullAddPickDot"></span>
         <span id="mFullAddPickLbl">Home</span>
         <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
@@ -461,7 +471,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260921k"></script>
-<script src="features.js?v=20260921k"></script>
-<script src="mobile-overview.js?v=20260921k"></script>
+<script src="core.js?v=20260921l"></script>
+<script src="features.js?v=20260921l"></script>
+<script src="mobile-overview.js?v=20260921l"></script>
 </body></html>

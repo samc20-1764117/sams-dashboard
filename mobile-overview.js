@@ -283,9 +283,13 @@ function _mDotStyle(cat) {
 function _mBuildOpts(elId, which, cats = M_CATS) {
   const el = document.getElementById(elId);
   if (!el) return;
+  // onmousedown preventDefault (here and on the trigger .m-cpick-btn) stops the tap from
+  // blurring whatever text input currently has focus — without it, picking a category
+  // dismissed the keyboard even though you're still mid-add, since tapping any element a
+  // focused input doesn't "own" normally shifts focus away first.
   el.innerHTML = cats.map(cat => {
     const s = gc(cat);
-    return `<div class="m-cpick-opt" onclick="mSelectCat('${which}','${escHtml(cat)}')">
+    return `<div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectCat('${which}','${escHtml(cat)}')">
       <span class="m-cpick-dot" style="background:${s.bg};border:1.5px solid ${s.d}"></span>
       <span>${escHtml(cat)}</span>
     </div>`;
@@ -331,9 +335,14 @@ function _mAddSyncTypeFields(cat) {
   const isShop = cat === 'Shopping';
   const _sh = (id, show) => { const el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; };
   _sh('mAddDestField', isTv);
+  _sh('mAddDateRow', isTv);
   _sh('mAddStartField', isTv);
   _sh('mAddEndField', isTv);
   _sh('mAddStoreField', isShop);
+  // Store custom-name field only shows if BOTH Shopping is selected AND the store picker
+  // is currently on "Other" — mAddStoreChange (below) owns that second half.
+  _sh('mAddStoreCustomField', isShop && document.getElementById('mAddStore')?.value === 'Other');
+  _sh('mAddLinkField', isShop);
   // Shopping items have no "important" concept in this data model — hide the flag rather
   // than show a control that would silently do nothing.
   _sh('mAddFlagBtn', !isShop);
@@ -342,6 +351,15 @@ function _mAddSyncTypeFields(cat) {
   const btn = document.getElementById('mAddBtn');
   if (btn) btn.textContent = isTv ? 'Add Trip' : isShop ? 'Add Item' : 'Add';
   if (isTv) { const s = document.getElementById('mAddStart'); if (s && !s.value) s.value = d2s(getDayDate(0)); }
+}
+// "Other" reveals a free-text store name field (mirrors desktop's qaStore/__custom
+// pattern, features.js) — any other store selection hides it again.
+function mAddStoreChange() {
+  const sel = document.getElementById('mAddStore');
+  const isOther = sel && sel.value === 'Other';
+  const f = document.getElementById('mAddStoreCustomField');
+  if (f) f.style.display = isOther ? '' : 'none';
+  if (isOther) document.getElementById('mAddStoreCustom')?.focus();
 }
 
 function mInitPickers() {
@@ -804,14 +822,18 @@ async function mAddTask() {
     return;
   }
   if (cat === 'Shopping') {
-    const store = document.getElementById('mAddStore')?.value || 'Other';
-    const s = {id: 'l-' + Date.now(), name: n, store, done: false, due_date: ds};
+    let store = document.getElementById('mAddStore')?.value || 'Online';
+    if (store === 'Other') store = document.getElementById('mAddStoreCustom')?.value.trim() || 'Other';
+    const link = document.getElementById('mAddLink')?.value.trim() || null;
+    const s = {id: 'l-' + Date.now(), name: n, store, link, done: false, due_date: ds};
     st.shopping.push(s);
     save();
     inp.value = '';
+    const storeCustomEl = document.getElementById('mAddStoreCustom'); if (storeCustomEl) storeCustomEl.value = '';
+    const linkEl = document.getElementById('mAddLink'); if (linkEl) linkEl.value = '';
     mCloseQuickAdd();
     mRenderToday();
-    const sv = await sbReq('POST', 'shopping_list', {name: n, store, done: false, due_date: ds});
+    const sv = await sbReq('POST', 'shopping_list', {name: n, store, link, done: false, due_date: ds});
     if (sv && sv[0]) {
       const i = st.shopping.findIndex(x => x.id === s.id);
       if (i > -1) st.shopping[i] = sv[0];
