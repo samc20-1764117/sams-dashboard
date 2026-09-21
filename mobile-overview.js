@@ -707,6 +707,20 @@ function mMoveAllOverdueToToday() {
 }
 
 // ── Add task ──────────────────────────────────────────────────────────────────
+// Quick-add popup open/close — #mAddBar itself is unchanged (same form/fields/IDs as
+// when it was permanently docked), just gated behind a tap on #mTodayAddBtn now.
+function mOpenQuickAdd() {
+  document.getElementById('mAddBar')?.classList.add('open');
+  document.getElementById('mQuickAddBackdrop')?.classList.add('open');
+  setTimeout(() => document.getElementById('mNewTask')?.focus(), 50);
+}
+function mCloseQuickAdd() {
+  document.getElementById('mAddBar')?.classList.remove('open');
+  document.getElementById('mQuickAddBackdrop')?.classList.remove('open');
+}
+function mToggleQuickAdd() {
+  document.getElementById('mAddBar')?.classList.contains('open') ? mCloseQuickAdd() : mOpenQuickAdd();
+}
 function mToggleAddFlag() {
   _mAddImportant = !_mAddImportant;
   const btn = document.getElementById('mAddFlagBtn');
@@ -722,6 +736,7 @@ async function mAddTask() {
   if (cat === 'Travel') {
     await _mAddTravel(n, null, ds, null, null);
     inp.value = '';
+    mCloseQuickAdd();
     return;
   }
   const important = _mAddImportant;
@@ -730,6 +745,7 @@ async function mAddTask() {
   save();
   inp.value = '';
   _mAddImportant = false;
+  mCloseQuickAdd();
   document.getElementById('mAddFlagBtn')?.classList.remove('flagged');
   mRenderToday();
   const sv = await sbReq('POST', 'tasks', {name: n, category: cat, due_date: ds, done: false, important});
@@ -1960,7 +1976,11 @@ function mShowTab(tab) {
   const isToday = tab === 'today';
   const isShop = tab === 'shop';
   const isSimplePage = isToday || isShop || tab === 'recipes';
-  document.getElementById('mAddBar').style.display = isToday ? '' : 'none';
+  // #mAddBar's display is no longer tab-toggled — it's an on-demand popup now (opacity/
+  // pointer-events via .open, mToggleQuickAdd), positioned fixed regardless of tab, so it
+  // must always be explicitly closed on any tab switch or it could linger open behind
+  // whatever tab is now showing.
+  mCloseQuickAdd();
   const shopBar = document.getElementById('mShopAddBar');
   if (shopBar) shopBar.style.display = isShop ? '' : 'none';
   // The add bars are position:fixed, floating above content — #mApp's own padding only
@@ -2029,7 +2049,12 @@ function mShowTab(tab) {
   else if (tab === 'recipes') { _mRenderRecipesBrowse(); }
   else if (tab === 'today') { _mTodayOffset = 0; _mSetDate(); }
 
-  if (isToday || isShop) mSyncBarClearance(isToday ? 'mAddBar' : 'mShopAddBar', isToday ? 'mTodayPage' : 'mShopPage');
+  // Today no longer reserves list padding for #mAddBar — it's an on-demand popup now, not
+  // a permanently docked bar, so there's nothing to clear space for; explicitly clear any
+  // padding a previous build may have left behind. Shop's bar is still always-visible and
+  // still needs its own measured clearance.
+  if (isToday) { const tp = document.getElementById('mTodayPage'); if (tp) tp.style.paddingBottom = ''; }
+  if (isShop) mSyncBarClearance('mShopAddBar', 'mShopPage');
 }
 
 // Measures the (fixed-position) add bar's real rendered height and applies it as the
@@ -2203,7 +2228,7 @@ function mRenderUnassigned() {
     return `<button class="m-chip${sel ? ' selected' : ''}" onclick="mSelectChip('${t.id}')" data-cid="${t.id}" data-cname="${escHtml(t.name)}" data-ccat="${escHtml(t.category || '')}" style="--cdot:${s.bg};--cborder:${s.d}">${escHtml(t.name)}</button>`;
   }).join('');
   // Chips scroll in their own container so undo/redo/reload stay pinned at the right edge
-  const refreshBtn = `<button class="m-reload-btn" onclick="mReloadTap()" title="Reload app (hold to undo)" style="flex-shrink:0;margin-left:auto"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>`;
+  const refreshBtn = `<button class="m-reload-btn" onclick="mReloadTap()" title="Reload app (hold to undo)" style="flex-shrink:0;margin-left:auto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>`;
   bar.innerHTML = datePart + `<div id="mChipScroll">${chips}</div>` + refreshBtn;
   mInitChipDrag();
 }
