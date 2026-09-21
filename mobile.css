@@ -630,8 +630,21 @@ body.dark .m-tmenu-del{color:#fca5a5}
 .m-mo-detail-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .m-mo-detail-empty{font-size:12px;color:var(--sub);padding:8px 4px}
 
+/* ── Boot loading ─────────────────────────────────────────────────────────── */
+#mBootLoading{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.m-boot-spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:ptr-spin .7s linear infinite}
+
 /* ── Login ────────────────────────────────────────────────────────────────── */
-#mLogin{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100dvh;padding:14vh 24px calc(24px + env(safe-area-inset-bottom));gap:16px;overflow-y:auto}
+/* display:none by default (was flex) — #mLogin sits in the DOM ahead of the script tags
+   that decide whether it's actually needed, so a default-visible login form painted for a
+   frame or more on every load, even for an already-signed-in session, before checkAuth()
+   (core.js) resolved and mobile-overview.js's hideLoginOverlay() hid it again — a real
+   flash of the wrong screen, not just a loading blip. showLoginOverlay() (mobile-overview.js)
+   already sets this to 'flex' via inline style whenever a login is genuinely needed (no prior
+   session, or checkAuth() actually fails), which overrides this default same as before — the
+   only change is what shows during the brief async gap while checkAuth() is still running:
+   blank (matching #mApp's own default-hidden state) instead of the login form. */
+#mLogin{display:none;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100dvh;padding:14vh 24px calc(24px + env(safe-area-inset-bottom));gap:16px;overflow-y:auto}
 #mLogin .card{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);padding:28px 24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px}
 #mLogin h2{font-size:17px;font-weight:700;text-align:center}
 #mLogin input{padding:10px 12px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;width:100%}

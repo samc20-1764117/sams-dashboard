@@ -33,6 +33,14 @@
 </head>
 <body>
 
+<!-- Boot loading — covers the async checkAuth() gap (core.js) on every load, so an
+     already-signed-in session never flashes the login form first (#mLogin/#mApp both
+     default to display:none until checkAuth() resolves one way or the other; see
+     hideLoginOverlay/showLoginOverlay in mobile-overview.js, which both hide this).
+     Visible by default (unlike #mLogin/#mApp) since it's the one state that's always
+     correct to show first. -->
+<div id="mBootLoading"><div class="m-boot-spinner"></div></div>
+
 <!-- Login -->
 <div id="mLogin">
   <form class="card" onsubmit="event.preventDefault();mDoLogin();return false">
