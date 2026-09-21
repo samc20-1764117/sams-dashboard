@@ -448,11 +448,15 @@ body.dark .note-tip{background:rgba(30,30,40,.88);color:#fff;border-color:transp
 .tn:hover{color:var(--accent)}
 .cpill{font-size:9px;font-weight:600;padding:2px 7px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,0.6);white-space:nowrap;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.7)}
 .cat-dot{position:absolute;right:11px;top:50%;transform:translateY(-50%);display:block;overflow:visible;transition:opacity .1s}
-/* Weekly Reset "not assigned to a day yet" indicator — a small discrete grey dot (was a
-   literal "›" arrow character, unstyled) instead, per 2026-09-23 feedback; global, all
-   themes, since it's a status marker rather than a per-theme decoration. */
-.wr-unassigned{display:inline-block;width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,.22);flex-shrink:0;margin-left:2px}
-body.dark .wr-unassigned{background:rgba(255,255,255,.28)}
+/* Weekly Reset "not assigned to a day yet" indicator — a small discrete grey LEFT BORDER
+   on the row (was a literal "›" arrow character; a first attempt made it a dot, which
+   wasn't what was asked — corrected 2026-09-23: "supposed to be left border not dot",
+   matching the same left-edge-band idiom as #todList's .ti-band). Global, all themes,
+   since it's a status marker rather than a per-theme decoration. Absolutely positioned
+   (like .ti-band) so its position in the DOM doesn't matter; .ti already has
+   position:relative (base rule) so no extra positioning context is needed. */
+.wr-unassigned{position:absolute;left:3px;top:6px;bottom:6px;width:3px;border-radius:3px;background:rgba(0,0,0,.14);border:1px solid rgba(0,0,0,.22);pointer-events:none}
+body.dark .wr-unassigned{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.26)}
 #todList .cat-dot{right:7px}
 #todList .tn{padding-right:12px}
 /* Small glowing bar under the cat-dot when a task has notes — a separate element, not styling
@@ -767,7 +771,11 @@ body.dark .wkc-day-sel .wkc-dd{color:#1a1a1e}
 .tb-arrow{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;opacity:.75;color:var(--accent);pointer-events:none;transition:opacity .1s}
 #todList .tb-arrow{right:3px}
 .ti:hover .tb-arrow{opacity:0}
-.wr-unassigned{position:absolute;right:2px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;opacity:.75;color:var(--accent);pointer-events:none}
+/* .wr-unassigned's old right-positioned/accent-colored text styling removed — the element
+   no longer holds text (see overview.js), and this rule was silently fighting the real
+   left-border styling below it (styles.css ~454), landing the indicator on the wrong side
+   of the row. Left in place, deliberately empty, as a marker that nothing should re-add a
+   `.wr-unassigned{position:absolute;right:...}` rule here again. */
 .chip-name{flex:1;overflow:hidden;text-overflow:ellipsis;font-size:9px}
 /* Travel/birthday banner row spanning multiple days */
 .wkc-banners{height:20px;position:absolute;top:0;left:0;right:0;z-index:6;pointer-events:none}
@@ -1984,6 +1992,17 @@ body.theme-modern #qnBtn,body.theme-modern .dark-toggle,body.theme-modern .setti
    Ring softened + fill made fully opaque (was translucent, letting whatever sat behind —
    e.g. the .ti-band — show through at the edges) per 2026-09-22 feedback; #todList's
    .chk-wrap also raised onto its own stacking layer so it always paints above .ti-band. */
+/* 2026-09-23: three separate reports (Today list, Shopping, Weekly Reset — "Bubbler",
+   "Powder sunscreen", "Couch blanket") of a small dark wedge poking out the bottom-right
+   of the (unchecked, plain) circle. Not reproducible here in Chrome after extensive
+   testing (measured clean 8px+ gaps to every neighboring element — badges, delete button,
+   band — across multiple synthetic rows), which points at a native-checkbox-rendering
+   remnant in the user's actual browser that `appearance:none` isn't fully suppressing
+   (a known category of Safari/WebKit quirk) rather than a layout collision. Fixed
+   defensively with clip-path on `.chk` itself (the native input, not just its ::after) so
+   ANYTHING rendered outside a perfect circle — native chrome, a stray shadow, whatever the
+   real cause turns out to be — is masked, without needing to pin down the exact source. */
+body.theme-modern .chk{clip-path:circle(50%);-webkit-clip-path:circle(50%);box-shadow:none!important}
 body.theme-modern .chk::after{background-color:#fff;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(0,0,0,.13)' stroke-width='1.2'/%3E%3C/svg%3E");transition:transform .12s ease,background .15s ease,box-shadow .15s ease}
 /* Checked state: translucent fill (not a solid/opaque disc) + checkmark, matching the
    base app's own faded-checkbox pattern (styles.css ~442, ~91) instead of the solid
