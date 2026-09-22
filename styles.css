@@ -686,10 +686,16 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
 .tod-tb-body.tb-list-only .tod-list-row #todList .chk,.tod-tb-body.tb-list-only .tod-list-row #todList .chk::after{width:16px;height:16px;min-width:16px;min-height:16px;max-width:16px;max-height:16px}
 /* Scoped to just this enlarged-checkbox context, NOT the base .tn — applying this nudge
    app-wide broke Weekly Reset/Shopping rows, which were already correctly aligned at their
-   smaller sizes without it. line-height:1 + translateY together correct DM Sans's cap-height-vs-
+   smaller sizes without it. line-height + translateY together correct DM Sans's cap-height-vs-
    baseline asymmetry (more space above cap-height than below baseline) specifically at this
-   font-size/checkbox-size pairing; recalibrated live after the first pass overshot by ~1px. */
-.tod-tb-body.tb-list-only .tod-list-row #todList .tn{font-size:14px;line-height:1;transform:translateY(-.005em)}
+   font-size/checkbox-size pairing; recalibrated live after the first pass overshot by ~1px.
+   line-height was originally 1 (exactly font-size) — too tight for this font's descenders, so
+   letters like g/y got clipped by .tn's own overflow:hidden (screenshot evidence, 2026-09-22:
+   "Kevin birthday gift" cut off at the g). Bumped to 1.15 for descender headroom; .ti's
+   align-items:center re-centers the taller line box automatically so the checkbox alignment
+   this block was tuned for should still roughly hold, but re-check translateY live if it looks
+   off by a hair now. */
+.tod-tb-body.tb-list-only .tod-list-row #todList .tn{font-size:14px;line-height:1.15;transform:translateY(-.005em)}
 .tod-tb-body.tb-list-only .tod-list-row #todList .wk-note{font-size:14px}
 .tod-tb-body.tb-list-only .tod-list-row #todList .cat-dot{width:12px;height:12px}
 .tod-tb-body.tb-list-only .tod-list-row #todList .dlbl.ov{right:11px}
