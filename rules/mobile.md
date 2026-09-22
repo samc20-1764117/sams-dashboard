@@ -603,8 +603,7 @@ Real sub-page (not a sheet/popup — a popup was tried first and its backdrop co
 async function mInit() {
   load();              // load localStorage → st
   _mSetDate();         // set header date label
-  mInitPickers();      // build all 4 category pickers
-  mInitSwipe();        // swipe-to-delete on #mTodayList
+  mInitPickers();      // build all category/store/day/day-of-month/cadence pickers
   mInitPTR();          // pull-to-refresh on #mMain
   mInitTBSwipe();      // day-swipe on #mTLScroll
   mInitBlockDrag();    // longpress-drag on #mTLCol
