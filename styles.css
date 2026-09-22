@@ -468,14 +468,14 @@ body.dark .chip.sel-row{outline-color:color-mix(in srgb,var(--sel-d) 55%,transpa
 .chk::after{content:'';position:absolute;top:0;left:0;width:12px;height:12px;min-width:12px;min-height:12px;max-width:12px;max-height:12px;border-radius:50%;background-color:rgba(255,255,255,.8);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5.5' fill='none' stroke='rgba(180,170,210,.42)' stroke-width='1'/%3E%3C/svg%3E");background-size:contain;box-sizing:border-box;transition:all .2s}
 /* green checkbox option: #a3c41a */
 .chk:checked::after{background:rgba(200,195,210,.35);box-shadow:inset 0 0 0 1px rgba(200,195,210,.35);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-position:center}
-/* line-height:1.3 (was unset, defaulting to CSS "normal" — deliberately engine-dependent
-   per spec, computed from the font's own internal metrics) — combined with overflow:hidden
-   (here for horizontal ellipsis truncation, not meant to clip vertically at all), a tighter
-   "normal" line-box in WebKit than in Chrome was clipping descenders (g/y/p) on selected
-   rows in Today list, 2026-09-23 ("the Gs are getting cut off") — not reproducible in
-   Chrome testing, consistent with a cross-engine line-height difference. An explicit value
-   guarantees enough headroom below the baseline regardless of which engine renders it. */
-.tn{flex:1;font-size:12px;line-height:1.3;font-weight:500;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;letter-spacing:-.01em}
+/* line-height:1.3 (a ratio) wasn't enough — still clipping, and confirmed happening even
+   unselected, ruling out .sel-row's transform/border as a factor (2026-09-23: "still
+   slightly getting cut off even when not selecting"). A RATIO is still partly at the
+   engine's mercy (it multiplies the font's own em-square, whose ascent/descent split is
+   itself engine/font-dependent) — switched to a fixed px value instead, which removes that
+   remaining ambiguity entirely: 17px is a full 5px more than the 12px font-size, well
+   beyond what any reasonable descender needs regardless of engine. */
+.tn{flex:1;font-size:12px;line-height:17px;font-weight:500;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;letter-spacing:-.01em}
 .wk-note{opacity:.5;font-size:9px;font-weight:400}
 .note-tip{position:fixed;z-index:99999;padding:3px 8px;border-radius:6px;font-size:10px;font-family:'DM Sans',sans-serif;line-height:1.4;max-width:240px;pointer-events:none;background:rgba(250,247,244,.96);color:#57534e;border:1px solid rgba(0,0,0,.06);box-shadow:0 2px 6px rgba(0,0,0,.08);opacity:0;transform:translateY(2px);transition:opacity .08s,transform .08s}
 .note-tip.show{opacity:1;transform:translateY(0)}
@@ -606,7 +606,12 @@ body.dark .ov-banner{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,
    Quick Links (0.6fr) and the row's total width are unchanged; global, not theme-scoped. */
 /* Dialed back from 1.3fr/0.65fr (2026-09-23 feedback: "weekly reset is too wide") — still
    wider than the original 1.05fr/0.9fr per the original request, just less extreme. */
-.row1-right-top{display:grid;grid-template-columns:1.15fr 0.8fr 0.6fr;gap:14px;flex-shrink:0;height:min(225px,28vh)}
+/* Shopping widened / Quick Links narrowed (0.8fr/0.6fr → 0.9fr/0.5fr) so Quick Links' 2x3
+   grid cells come out closer to square (2026-09-23: "make quick links slightly less wide
+   and shopping slightly wider to account for") — Weekly Reset's 1.15fr and the fr TOTAL
+   (2.55, unchanged) are both left exactly as they were, so its actual pixel width doesn't
+   shift at all ("don't mess with the weekly reset container, it's centered right now"). */
+.row1-right-top{display:grid;grid-template-columns:1.15fr 0.86fr 0.54fr;gap:14px;flex-shrink:0;height:min(225px,28vh)}
 .top-right-controls{position:fixed;top:14px;right:20px;z-index:1000;display:flex;align-items:center;gap:8px}
 .row1-right{display:grid;grid-template-columns:1fr 0.85fr 0.6fr;grid-template-rows:auto 1fr;gap:14px;min-height:0}
 .row1-left{display:flex;flex-direction:column;gap:8px;min-height:0}
@@ -2010,13 +2015,15 @@ body.dark #_donutFrac{fill:#34d399}
 /* iOS-widget look (2026-09-23 feedback): bigger "squircle" rounding, a real elevation
    shadow (soft, no colored tint) instead of a flat bordered button, and a bigger icon with
    more breathing room — reads as a small tile sitting on the page rather than a button. */
-body.theme-modern .ql-btn{border:none;border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04),0 4px 10px rgba(0,0,0,.06);gap:6px;padding:10px 4px;transition:transform .15s,box-shadow .15s}
+/* Sized down a step (2026-09-23: "maybe we make a bit smaller") on top of the column-width
+   change above, which already makes each tile closer to square on its own. */
+body.theme-modern .ql-btn{border:none;border-radius:15px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04),0 4px 10px rgba(0,0,0,.06);gap:5px;padding:8px 3px;transition:transform .15s,box-shadow .15s}
 body.theme-modern .ql-btn:hover{background:#fff;border:none;box-shadow:0 2px 6px rgba(0,0,0,.06),0 8px 20px rgba(0,0,0,.1);transform:translateY(-2px)}
 /* .ql-icon's SVGs carry their own inline width/height="18" (index.html) — font-size alone
    doesn't resize them, CSS has to target the svg directly to override those attributes. */
 body.theme-modern .ql-icon{color:var(--muted);opacity:.75}
-body.theme-modern .ql-icon svg{width:21px;height:21px}
-body.theme-modern .ql-pic{width:23px!important;height:23px!important}
+body.theme-modern .ql-icon svg{width:19px;height:19px}
+body.theme-modern .ql-pic{width:20px!important;height:20px!important}
 body.theme-modern.dark .ql-btn{background:rgba(255,255,255,.05);box-shadow:0 1px 2px rgba(0,0,0,.2),0 4px 10px rgba(0,0,0,.25)}
 body.theme-modern.dark .ql-btn:hover{background:rgba(255,255,255,.07);box-shadow:0 2px 6px rgba(0,0,0,.25),0 8px 20px rgba(0,0,0,.3)}
 body.theme-modern.dark .ql-btn{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.02)}
