@@ -2750,8 +2750,18 @@ async function testConn(){
 function saveSettings(){cfg.url=document.getElementById('cfgUrl').value.trim();cfg.key=document.getElementById('cfgKey').value.trim();save();syncAll();}
 
 // ── Sidebar ────────────────────────────────────────────────────────────────────
-function closeSB(){document.documentElement.classList.remove('init-sb');sbOpen=false;document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');save();}
-function openSB(){document.documentElement.classList.remove('init-sb');sbOpen=true;document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');save();}
+// Plain JS, no CSS selector reliance (a :has()-based CSS attempt at this silently no-op'd
+// inside DockClock's embedded WKWebView — see styles.css's .ov-topbar comments). Sets the
+// SAME calc(186px + clamp(...)) expression #main gets, just via .style.left as a string —
+// the browser still parses/computes calc()/clamp() fine from a JS-assigned string, this
+// only avoids the :has() selector itself. Multiple .ov-topbar elements exist (one per
+// page), so this updates all of them.
+function _syncTopbarLeft(){
+  const left=sbOpen?'calc(186px + clamp(12px,3vw,56px))':'clamp(12px,3vw,56px)';
+  document.querySelectorAll('.ov-topbar').forEach(tb=>{tb.style.left=left;});
+}
+function closeSB(){document.documentElement.classList.remove('init-sb');sbOpen=false;document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');_syncTopbarLeft();save();}
+function openSB(){document.documentElement.classList.remove('init-sb');sbOpen=true;document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');_syncTopbarLeft();save();}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ── FINANCE PAGE ─────────────────────────────────────────────────────────────
@@ -6614,6 +6624,7 @@ async function init(){
   // Suppress left transition during init so sidebar positioning is instant (no squish glitch)
   const _initMain=document.getElementById('main');const _initMainT=_initMain.style.transition;_initMain.style.transition='none';
   if(!sbOpen){document.getElementById('sidebar').classList.add('closed');document.getElementById('main').style.left='0';document.getElementById('menuOpen').classList.add('visible');}else{document.getElementById('sidebar').classList.remove('closed');document.getElementById('main').style.left='186px';document.getElementById('menuOpen').classList.remove('visible');}
+  _syncTopbarLeft();
   document.documentElement.classList.remove('init-sb');
   _initMain.offsetWidth;requestAnimationFrame(()=>{_initMain.style.transition=_initMainT;});
   // Restore page from URL hash immediately

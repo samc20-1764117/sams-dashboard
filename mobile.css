@@ -165,8 +165,18 @@ body.dark .m-empty-icon{background:rgba(34,197,94,.16);color:#4ade80}
    reported — the list wasn't failing to scroll, the gesture was leaking through to
    whatever's behind it). -webkit-overflow-scrolling:touch is the standard companion fix
    for momentum/touch scroll inside a nested absolutely-positioned region on iOS Safari. */
-#mAddBar .m-cpick-opts{max-height:230px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+#mAddBar .m-cpick-opts{max-height:230px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:var(--sub) transparent}
 #mAddBar .m-cpick-opt{padding:8px 14px}
+/* Explicit, always-reserved (not the default nearly-invisible auto-hiding) scrollbar, so a
+   long list makes it visually obvious more options exist below the fold. scrollbar-width/
+   -color above cover Firefox; ::-webkit-scrollbar covers Chrome/desktop Safari. iOS itself
+   still shows its own brief native overlay indicator on touch-scroll — WebKit doesn't let a
+   touch-scrolled element's indicator be permanently forced on-screen the way a desktop
+   mouse-scrollbar can, this is the closest equivalent everywhere that DOES support it. */
+#mAddBar .m-cpick-opts::-webkit-scrollbar{width:6px}
+#mAddBar .m-cpick-opts::-webkit-scrollbar-track{background:transparent}
+#mAddBar .m-cpick-opts::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+#mAddBar .m-cpick-opts::-webkit-scrollbar-thumb:hover{background:var(--sub)}
 .m-cpick-opt:last-child{border-bottom:none}
 .m-cpick-opt:active{filter:brightness(.95)}
 /* Suppresses the blinking text caret in whichever field currently has focus while a
@@ -180,7 +190,10 @@ body.dark .m-empty-icon{background:rgba(34,197,94,.16);color:#4ade80}
 /* Custom calendar popover (Start/End/Starting date) — same floating-panel idiom as
    .m-cpick-opts but a fixed width (doesn't stretch full-row like a plain option list) and
    its own grid layout instead of stacked rows. */
-.m-add-cal{width:260px;left:auto;right:0;padding:10px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
+.m-add-cal{width:260px;left:auto;right:0;padding:10px;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:var(--sub) transparent}
+.m-add-cal::-webkit-scrollbar{width:6px}
+.m-add-cal::-webkit-scrollbar-track{background:transparent}
+.m-add-cal::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 /* Start date is the LEFT column of the two-column date row (.m-add-daterow) — a
    right-edge-anchored popover expanding further left from there runs out of room and
    gets clipped against the popup's own edge. Opening it rightward (left-anchored) instead
