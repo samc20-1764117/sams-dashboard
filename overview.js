@@ -3193,16 +3193,23 @@ function renderRecOv(){
     if(!aAsgn&&bAsgn)return -1;if(aAsgn&&!bAsgn)return 1;
     return recOvOrder(a)-recOvOrder(b);
   });
+  // Pup-related WR items get the SAME circular .chk checkbox as everything else (was a
+  // custom multi-circle "paw print" glyph that didn't match the dashboard's checkbox
+  // language, and used a one-off lavender tint no other theme referenced — 2026-09-22
+  // feedback: "they dont look like they match the rest of the dashboard style... maybe we
+  // just do circles like the others"). Kept distinguishable via color instead of shape:
+  // .chk-pup (styles.css) tints the ring/fill with the same pup-blue accent already used for
+  // pup time-blocks elsewhere (_pupSessStyle(), overview.js) rather than inventing a new color.
   function makePawEl(ruleId,isDone){
-    const col=isDone?'rgba(200,195,210,.35)':'rgba(255,255,255,.8)';
-    const str=isDone?'rgba(200,195,210,.35)':'rgba(180,170,210,.5)';
     const wrap=document.createElement('label');
     wrap.className='chk-wrap';
-    wrap.style.cssText='cursor:pointer;flex-shrink:0';
     wrap.title='Toggle';
-    wrap.innerHTML=`<svg viewBox="0 0 24 24" width="14" height="14" xmlns="http://www.w3.org/2000/svg" style="display:block;margin-left:-2px" fill="none" stroke="${str}" stroke-width="1.8"><rect x="8" y="10" width="8" height="4" rx="1.5" fill="${col}"/><circle cx="6.5" cy="8.5" r="2.8" fill="${col}"/><circle cx="6.5" cy="15.5" r="2.8" fill="${col}"/><circle cx="17.5" cy="8.5" r="2.8" fill="${col}"/><circle cx="17.5" cy="15.5" r="2.8" fill="${col}"/></svg>`;
-    wrap.addEventListener('click',e=>{e.stopPropagation();togWrRule(ruleId,!isDone,wkKey);});
+    wrap.addEventListener('click',e=>e.stopPropagation());
     wrap.addEventListener('mousedown',e=>e.stopPropagation());
+    const chk=document.createElement('input');
+    chk.type='checkbox';chk.className='chk chk-pup';chk.checked=isDone;
+    chk.addEventListener('change',function(){togWrRule(ruleId,this.checked,wkKey);});
+    wrap.appendChild(chk);
     return wrap;
   }
   // ── Overdue WR: PREVIOUS WEEK ONLY (older misses stay history), and only when the rule is

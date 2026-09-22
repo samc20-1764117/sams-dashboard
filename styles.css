@@ -112,6 +112,8 @@ body.dark .ctx-col-box{--ctx-col-bg:rgba(255,255,255,.04);--ctx-col-border:rgba(
 body.dark .wkc-chip{filter:brightness(.85);}
 body.dark .chk::after{background-color:rgba(255,255,255,.06);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5.5' fill='none' stroke='rgba(255,255,255,.15)' stroke-width='1'/%3E%3C/svg%3E");}
 body.dark .chk:checked::after{background-color:rgba(152,152,160,.55);box-shadow:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-position:center;}
+body.dark .chk-pup::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5.5' fill='none' stroke='rgba(56,170,210,.5)' stroke-width='1'/%3E%3C/svg%3E");}
+body.dark .chk-pup:checked::after{background-color:rgba(56,170,210,.5);box-shadow:none;}
 /* Today list checkboxes stay bright white in dark mode, same as the weekly-view chip checkboxes
    (.wchk, which never gets dimmed for dark mode) — deliberately more visible than every other .chk
    on the page so today's unfinished tasks draw the eye. */
@@ -491,6 +493,17 @@ body.dark .chip.sel-row{outline-color:color-mix(in srgb,var(--sel-d) 55%,transpa
 .chk::after{content:'';position:absolute;top:0;left:0;width:12px;height:12px;min-width:12px;min-height:12px;max-width:12px;max-height:12px;border-radius:50%;background-color:rgba(255,255,255,.8);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5.5' fill='none' stroke='rgba(180,170,210,.42)' stroke-width='1'/%3E%3C/svg%3E");background-size:contain;box-sizing:border-box;transition:all .2s}
 /* green checkbox option: #a3c41a */
 .chk:checked::after{background:rgba(200,195,210,.35);box-shadow:inset 0 0 0 1px rgba(200,195,210,.35);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8l3 3 6-6' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-size:contain;background-position:center}
+/* .chk-pup: pup-related Weekly Reset items (overview.js makePawEl) — the exact same circular
+   checkbox as .chk, just ring/fill tinted with the pup-blue accent already used for pup
+   time-blocks elsewhere (_pupSessStyle()) instead of a distinct shape, so it still reads as
+   "a pup task" without breaking the checkbox visual language (2026-09-22, replaced a custom
+   multi-circle "paw print" glyph). Mirror every .chk variant below (dark, Modern, Modern dark)
+   if that ever gets restyled. */
+.chk-pup::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='5.5' fill='none' stroke='rgba(56,170,210,.55)' stroke-width='1'/%3E%3C/svg%3E")}
+/* background-color, not the `background` shorthand — .chk:checked::after (above) sets its
+   checkmark via a separate background-image declaration, and the shorthand would silently
+   reset background-image back to none at equal specificity, erasing the checkmark. */
+.chk-pup:checked::after{background-color:rgba(56,170,210,.35);box-shadow:inset 0 0 0 1px rgba(56,170,210,.35)}
 /* line-height:1.3 (a ratio) wasn't enough — still clipping, and confirmed happening even
    unselected, ruling out .sel-row's transform/border as a factor (2026-09-23: "still
    slightly getting cut off even when not selecting"). A RATIO is still partly at the
@@ -2165,6 +2178,14 @@ body.theme-modern .chk::after{background-color:#fff;background-image:url("data:i
 body.theme-modern .chk:checked::after{background:rgba(139,139,150,.4);box-shadow:inset 0 0 0 1px rgba(139,139,150,.32);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.5 8.3l2.6 2.6L11.5 5.5' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
 body.theme-modern.dark .chk::after{background-color:#2c2c32;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(255,255,255,.16)' stroke-width='1.2'/%3E%3C/svg%3E")}
 body.theme-modern.dark .chk:checked::after{background:rgba(190,190,198,.3);box-shadow:none}
+/* .chk-pup under Modern — same circle, ring/fill tinted with the pup-blue accent used
+   elsewhere for pup time-blocks, in place of the neutral-gray ring/fill above. Uses
+   background-color (not the `background` shorthand) so it only overrides the fill color and
+   leaves .chk:checked::after's own checkmark background-image alone. */
+body.theme-modern .chk-pup::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(56,170,210,.45)' stroke-width='1.2'/%3E%3C/svg%3E")}
+body.theme-modern .chk-pup:checked::after{background-color:rgba(56,170,210,.4);box-shadow:inset 0 0 0 1px rgba(56,170,210,.32)}
+body.theme-modern.dark .chk-pup::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='none' stroke='rgba(56,170,210,.5)' stroke-width='1.2'/%3E%3C/svg%3E")}
+body.theme-modern.dark .chk-pup:checked::after{background-color:rgba(56,170,210,.35);box-shadow:none}
 body.theme-modern .chk-wrap:active .chk::after{transform:scale(.82)}
 body.theme-modern #todList .chk,body.theme-modern #todList .chk::after{width:16px;height:16px;min-width:16px;min-height:16px;max-width:16px;max-height:16px}
 body.theme-modern #todList .chk-wrap{position:relative;z-index:1}
