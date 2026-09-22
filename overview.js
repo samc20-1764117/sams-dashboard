@@ -3163,8 +3163,8 @@ function renderRecOv(){
   const{mon,sun}=getWkBounds(wrRecOff);
   const lbl=document.getElementById('wrRecWkLbl');
   if(lbl){
-    const _lnk=`<a href="#weekly" onclick="event.preventDefault();showPage('weekly')" class="wo-hdr-btn" style="text-decoration:none;width:auto;padding:4px 10px;font-size:10px">`;
-    if(wrRecOff===0){lbl.innerHTML=_lnk+'Weekly Reset</a>';}
+    const _lnk=`<a href="#weekly" onclick="event.preventDefault();showPage('weekly')" class="wo-hdr-btn wr-lbl-btn" style="text-decoration:none;width:auto;padding:4px 10px;font-size:10px">`;
+    if(wrRecOff===0){lbl.innerHTML=_lnk+'Reset</a>';}
     else{const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});lbl.innerHTML=_lnk+fmt(mon)+' – '+fmt(sun)+'</a>';}
   }
   const items=_wrItemsForWeek(wrRecOff);
@@ -3319,6 +3319,11 @@ function renderRecOv(){
   const _skCount=_skippedWrRuleCount+_skippedWrecCount;
   const _skBtn=document.getElementById('wrSkippedBtn');
   if(_skBtn){_skBtn.style.display=_skCount?'':'none';_skBtn.textContent='↩ '+_skCount;}
+  // Pill now only ever holds wrSkippedBtn (the + moved into the header, to the right of the
+  // Reset label) — hide the whole pill when there's nothing skipped, or it reads as a stray
+  // empty frosted-glass blob floating over the list.
+  const _pill=document.getElementById('wrFloatPill');
+  if(_pill)_pill.style.display=_skCount?'flex':'none';
   requestAnimationFrame(()=>{
     applySelHighlight();
     if(elReg){
