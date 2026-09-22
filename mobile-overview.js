@@ -3525,7 +3525,7 @@ function _mWkScrollToToday(attempt = 0) {
   // re-aligns the card's (post-margin) top edge right at the header's bottom edge, so any
   // margin just gets scrolled past rather than becoming visible breathing room. This is
   // the one place that actually controls it.
-  const GAP = 16;
+  const GAP = 10;
   const target = Math.max(0, sc.scrollTop + (todayEl.getBoundingClientRect().top - scTop - headerH) - GAP);
   _mWkScrollLock = true;
   sc.scrollTop = target;
