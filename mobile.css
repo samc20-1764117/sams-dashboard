@@ -535,51 +535,42 @@ body.dark .m-tmenu-del{color:#fca5a5}
 
 /* ── Week view ────────────────────────────────────────────────────────────── */
 #mWeekPage{display:flex;flex-direction:column;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;position:relative}
-#mWeekList{display:flex;flex-direction:column;padding-bottom:80px}
+#mWeekList{display:flex;flex-direction:column;padding:4px 12px 80px}
 
 /* Week divider */
-.m-wk-divider{display:flex;align-items:center;gap:10px;padding:16px 16px 8px;margin-top:14px;color:var(--text);font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-top:4px solid rgba(124,106,247,.30);background:linear-gradient(rgba(124,106,247,.08),transparent)}
-.m-wk-divider.is-current{color:var(--accent);border-top-color:var(--accent)}
+.m-wk-divider{display:flex;align-items:center;gap:10px;padding:16px 4px 8px;margin-top:10px;color:var(--text);font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.m-wk-divider.is-current{color:var(--accent)}
 
-/* Day group */
-.m-wk-day{border-bottom:1px solid var(--border)}
-.m-wk-day.is-today .m-wk-hd{background:rgba(124,106,247,.08)}
-.m-wk-day.is-past .m-wk-hd{opacity:.5}
-.m-wk-day.is-past .m-wk-row{opacity:.6}
-.m-wk-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg);position:sticky;top:0;z-index:4;border-bottom:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.m-wk-hd-left{display:flex;align-items:center;gap:10px}
-.m-wk-dname{font-size:14px;font-weight:700;color:var(--text);min-width:32px}
-.m-wk-ddate{font-size:13px;color:var(--sub)}
-.m-wk-today-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0}
-.m-wk-hd-right{display:flex;align-items:center;gap:8px}
-.m-wk-cnt{font-size:11px;font-weight:600;color:var(--sub);background:var(--glass);border:1px solid var(--border);padding:2px 8px;border-radius:10px}
-.m-wk-add{background:none;border:none;font-size:22px;color:var(--accent);cursor:pointer;padding:0 2px;line-height:1;font-weight:400;opacity:.7}
-.m-wk-add:active{opacity:1}
-.m-wk-day.m-wk-drop-target{background:rgba(124,106,247,.08);outline:none}
-.m-wk-day.m-wk-drop-target .m-wk-hd{background:rgba(124,106,247,.18);color:var(--accent)}
-.m-wk-day.m-wk-drop-target .m-wk-row{background:rgba(124,106,247,.05)}
-.m-wk-empty{padding:10px 16px;font-size:12px;color:var(--sub)}
+/* Day group — each day is its own bordered/tinted card (not just a hairline-separated
+   run of rows) so a long week reads as clearly divided sections, matching Today's own
+   move toward using color+borders for structure instead of overlaid labels/counts. */
+.m-wk-day{margin:6px 0;border-radius:var(--rs,14px);border:1px solid var(--border);background:rgba(0,0,0,.02);overflow:hidden}
+body.dark .m-wk-day{background:rgba(255,255,255,.035)}
+.m-wk-day.is-today{border-color:var(--accent);background:rgba(124,106,247,.06)}
+body.dark .m-wk-day.is-today{background:rgba(124,106,247,.12)}
+.m-wk-day.is-past{opacity:.55}
+.m-wk-hd{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.m-wk-day.is-today .m-wk-hd{border-bottom-color:rgba(124,106,247,.25)}
+.m-wk-dname{font-size:13px;font-weight:700;color:var(--text)}
+.m-wk-ddate{font-size:12px;color:var(--sub)}
+.m-wk-today-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-left:-2px}
+.m-wk-day.m-wk-drop-target{border-color:var(--accent);background:rgba(124,106,247,.1)}
+.m-wk-day.m-wk-drop-target .m-wk-row{background:rgba(124,106,247,.06)}
+.m-wk-empty{padding:12px 14px;font-size:12px;color:var(--sub)}
 
-/* Week task row */
-.m-wk-row{display:flex;align-items:center;gap:8px;padding:4px 16px;border-top:1px solid var(--border);background:var(--glass);-webkit-user-select:none;user-select:none}
-.m-wk-row.m-ov{background:rgba(239,68,68,.04)}
-.m-wk-row.m-wk-done{opacity:.25}
-.m-wk-task-name{flex:1;font-size:13px;line-height:1.2}
+/* Week task row — same left color bar + circle checkbox convention as Today's list
+   (.m-chk-wrap, shared CSS), just at a more compact size to fit a whole week on screen. */
+.m-wk-row{display:flex;align-items:center;gap:8px;padding:7px 14px;border-top:1px solid var(--border);-webkit-user-select:none;user-select:none}
+.m-wk-day .m-wk-row:first-of-type{border-top:none}
+.m-wk-row.m-ov{background:rgba(239,68,68,.05)}
+.m-wk-row.m-wk-done{opacity:.35}
+.m-wk-band{width:3px;align-self:stretch;min-height:18px;border-radius:3px;border:1px solid;flex-shrink:0}
+.m-wk-icon{width:22px;text-align:center;flex-shrink:0;font-size:13px}
+.m-wk-task-name{flex:1;font-size:14px;line-height:1.3}
 .m-wk-task-name.done{text-decoration:line-through;color:var(--muted,#999)}
-.m-wk-chk-wrap{display:flex;align-items:center;justify-content:center;width:22px;height:24px;flex-shrink:0;cursor:pointer}
-.m-wk-chk{width:16px;height:16px;accent-color:#999;cursor:pointer}
-.m-wk-chk:checked{accent-color:#aaa}
-
-/* Week add sheet */
-#mWkAddBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
-#mWkAddBackdrop.open{display:block;opacity:1}
-#mWkAddSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
-#mWkAddSheet.open{transform:translateY(0)}
-#mWkAddSheet h3{font-size:15px;font-weight:700;margin-bottom:14px;text-align:center}
-#mWkAddName{width:100%;padding:11px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;margin-bottom:10px}
-#mWkAddName:focus{border-color:var(--accent)}
-#mWkAddSheet .m-cpick-opts{z-index:102}
-#mWkAddSave{width:100%;padding:12px;border-radius:var(--rs);border:none;background:var(--accent);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer}
+.m-wk-row .m-chk-wrap{width:22px;height:22px}
+.m-wk-row .m-chk-wrap input[type=checkbox]{width:16px;height:16px}
+.m-wk-row .m-chk-wrap input[type=checkbox]::after{width:16px;height:16px}
 
 /* ── Full add sheet (today) ───────────────────────────────────────────────── */
 #mFullAddBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}

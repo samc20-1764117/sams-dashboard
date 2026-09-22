@@ -273,7 +273,6 @@ const M_CATS_ADD = ['Home', 'My work', 'Work', 'Social', 'Travel', 'Shopping', '
 let _mAddCat       = 'Home';
 let _mEditCat      = 'Home';
 let _mBlockCat     = 'Home';
-let _mWkAddCat     = 'Home';
 let _mFullAddCat   = 'Home';
 let _mAddImportant    = false;
 let _mEditImportant   = false;
@@ -315,7 +314,7 @@ function _mSyncPickerOpenClass() {
   document.getElementById('mAddBar')?.classList.toggle('picker-open', anyOpen);
 }
 function mTogglePick(which) {
-  const ids = {add: 'mAddPickOpts', edit: 'mEditPickOpts', block: 'mBlockPickOpts', wkadd: 'mWkAddPickOpts', fulladd: 'mFullAddPickOpts'};
+  const ids = {add: 'mAddPickOpts', edit: 'mEditPickOpts', block: 'mBlockPickOpts', fulladd: 'mFullAddPickOpts'};
   const myId = ids[which];
   Object.entries(ids).forEach(([k, id]) => { if (k !== which) document.getElementById(id)?.classList.remove('open'); });
   _mCloseAddPickers(myId);
@@ -329,14 +328,12 @@ function mSelectCat(which, cat) {
     add:     {dot: 'mAddPickDot',     lbl: 'mAddPickLbl',     opts: 'mAddPickOpts'},
     edit:    {dot: 'mEditPickDot',    lbl: 'mEditPickLbl',    opts: 'mEditPickOpts'},
     block:   {dot: 'mBlockPickDot',   lbl: 'mBlockPickLbl',   opts: 'mBlockPickOpts'},
-    wkadd:   {dot: 'mWkAddPickDot',   lbl: 'mWkAddPickLbl',   opts: 'mWkAddPickOpts'},
     fulladd: {dot: 'mFullAddPickDot', lbl: 'mFullAddPickLbl', opts: 'mFullAddPickOpts'},
   };
   const {dot: dotId, lbl: lblId, opts: optId} = map[which] || {};
   if (which === 'add')         _mAddCat       = cat;
   else if (which === 'edit')   _mEditCat      = cat;
   else if (which === 'block')  _mBlockCat     = cat;
-  else if (which === 'wkadd')  _mWkAddCat     = cat;
   else if (which === 'fulladd') _mFullAddCat  = cat;
   const dotEl = document.getElementById(dotId);
   const lblEl = document.getElementById(lblId);
@@ -604,18 +601,16 @@ function mInitPickers() {
   _mBuildOpts('mAddPickOpts',     'add',     M_CATS_ADD);
   _mBuildOpts('mEditPickOpts',    'edit');
   _mBuildOpts('mBlockPickOpts',   'block');
-  _mBuildOpts('mWkAddPickOpts',   'wkadd');
   _mBuildOpts('mFullAddPickOpts', 'fulladd', M_CATS_TRAVEL);
   _mBuildDayOpts();
   _mBuildDomOpts();
   _mBuildCadenceOpts();
   mSelectCat('add',     'Home');
   mSelectCat('block',   'Home');
-  mSelectCat('wkadd',   'Home');
   mSelectCat('fulladd', 'Home');
   document.addEventListener('click', e => {
     if (!e.target.closest('.m-cpick')) {
-      ['mEditPickOpts','mBlockPickOpts','mWkAddPickOpts','mFullAddPickOpts','mShopAddStoreOpts','mShopEditStoreOpts'].forEach(id => {
+      ['mEditPickOpts','mBlockPickOpts','mFullAddPickOpts','mShopAddStoreOpts','mShopEditStoreOpts'].forEach(id => {
         document.getElementById(id)?.classList.remove('open');
       });
       _mCloseAddPickers();
@@ -954,7 +949,19 @@ function mRenderToday() {
   }
   const el = document.getElementById('mTodayList');
   if (!el) return;
-  el.innerHTML = sorted.length ? sorted.map(mTaskRow).join('') : `<div class="m-empty"><div class="m-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="m-empty-txt">All done for today</div></div>`;
+  // Two distinct empty-list states, same checkmark icon for both: a day with tasks that
+  // are ALL checked off gets the celebratory "All done for today" label; a day with no
+  // tasks at all gets the same icon but no label (there's nothing to declare "done").
+  // Previously only the true-empty case showed this screen at all, and it wrongly carried
+  // the "All done" text — a fully-completed day just rendered its (all-checked) rows.
+  const emptyIcon = `<div class="m-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>`;
+  if (!sorted.length) {
+    el.innerHTML = `<div class="m-empty">${emptyIcon}<div class="m-empty-txt"></div></div>`;
+  } else if (doneCount === sorted.length) {
+    el.innerHTML = `<div class="m-empty">${emptyIcon}<div class="m-empty-txt">All done for today</div></div>`;
+  } else {
+    el.innerHTML = sorted.map(mTaskRow).join('');
+  }
   const banner = document.getElementById('mOvBanner');
   if (banner) {
     // Only makes sense while actually viewing today — swiping to a future/past day (Today
@@ -1132,13 +1139,14 @@ async function mAddTask() {
     const storeCustomEl = document.getElementById('mAddStoreCustom'); if (storeCustomEl) storeCustomEl.value = '';
     const linkEl = document.getElementById('mAddLink'); if (linkEl) linkEl.value = '';
     mCloseQuickAdd();
-    mRenderToday();
+    renderAll(); // not just mRenderToday() — this popup now also opens from Week's header "+"
     const sv = await sbReq('POST', 'shopping_list', {name: n, store, link, done: false, due_date: ds});
     if (sv && sv[0]) {
       const i = st.shopping.findIndex(x => x.id === s.id);
       if (i > -1) st.shopping[i] = sv[0];
       save();
-      mRenderToday(); // same data-shopid staleness fix as the plain-task id swap below
+      renderAll(); // same data-shopid staleness fix as the plain-task id swap below — also
+                   // keeps Week's list in sync when this add came from Week's header "+"
     }
     return;
   }
@@ -1167,7 +1175,7 @@ async function mAddTask() {
   _mAddImportant = false;
   mCloseQuickAdd();
   document.getElementById('mAddFlagBtn')?.classList.remove('flagged');
-  mRenderToday();
+  renderAll(); // not just mRenderToday() — this popup now also opens from Week's header "+"
   const sv = await sbReq('POST', 'tasks', {name: n, category: cat, due_date: ds, done: false, important});
   if (sv && sv[0]) {
     const i = st.tasks.findIndex(x => x.id === t.id);
@@ -1177,7 +1185,7 @@ async function mAddTask() {
     // in that window looked up a task that no longer existed under that id (silently found
     // nothing, so the menu never opened). The gap is normally sub-second, but real enough
     // to hit if you tap the row right after adding it.
-    mRenderToday();
+    renderAll();
   }
 }
 
@@ -2510,10 +2518,11 @@ function mShowTab(tab) {
   // vertical space for the list itself.
   const addBtn = document.getElementById('mTodayAddBtn');
   if (addBtn) addBtn.style.display = isToday ? '' : 'none';
-  // Header's shared "go to today" icon is Week-tab-only now — Month has its own
-  // dedicated Today button (mMonthTodayBtn, below), and it made no sense on Shop/More.
-  const goTodayBtn = document.getElementById('mGoTodayBtn');
-  if (goTodayBtn) goTodayBtn.style.display = (tab === 'week') ? '' : 'none';
+  // Week's own header "+" (mWeekQuickAdd) — replaced the old "go to today" calendar
+  // icon (removed, see mWeekQuickAdd) since Week's infinite-scroll list already resets
+  // to today on every tab-open, and Month has its own dedicated Today button.
+  const weekAddBtn = document.getElementById('mWeekAddBtn');
+  if (weekAddBtn) weekAddBtn.style.display = (tab === 'week') ? '' : 'none';
   // Month tab replaces the plain title/date block with its own header controls
   // (month/year dropdowns + centered Today/‹/› group) — "all in the header" redesign.
   const isMonth = tab === 'month';
@@ -3398,17 +3407,20 @@ function mWkTaskRow(t) {
   else if (t._type === 'fin-cancel') onchange = `togFinCancelDone('${t._subId}',this.checked);renderAll()`;
   else if (!t._virtual && !noCheck) onchange = `toggleTask('${t.id}',this.checked)`;
 
-  const dot = `<span style="width:8px;height:8px;border-radius:50%;background:${s.bg};border:1.5px solid ${s.d};flex-shrink:0;display:inline-block"></span>`;
+  // Left color bar (same two-tone fill+outline pairing Today's rows use) instead of the
+  // old free-floating dot on the row's trailing edge — carries the same category/overdue/
+  // important color meaning, just moved to match Today's list convention.
+  const band = `<span class="m-wk-band" style="background:${s.bg};border-color:${s.d}"></span>`;
   const chk = noCheck
-    ? `<span style="width:22px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">${t._type === 'holiday' ? '' : '\u{1F4C5}'}</span>`
-    : `<label class="m-wk-chk-wrap"><input type="checkbox" class="m-wk-chk"${t.done ? ' checked' : ''}${onchange ? ` onchange="${onchange}"` : ''}></label>`;
+    ? `<span class="m-wk-icon">${t._type === 'holiday' ? '' : '\u{1F4C5}'}</span>`
+    : `<label class="m-chk-wrap"><input type="checkbox"${t.done ? ' checked' : ''}${onchange ? ` onchange="${onchange}"` : ''}></label>`;
 
   const dragAttrs = canDrag ? ` data-tid="${t.id}" data-tname="${escHtml(t.name || '')}"` : '';
 
   return `<div class="m-wk-row${t.done ? ' m-wk-done' : ''}${ov ? ' m-ov' : ''}"${dragAttrs}>
+    ${band}
     ${chk}
-    <span class="m-wk-task-name${t.done ? ' done' : ''}" style="${ov ? 'color:#dc2626' : ''}">${escHtml(t.name || '')}</span>
-    ${dot}
+    <span class="m-wk-task-name${t.done ? ' done' : ''}">${escHtml(t.name || '')}</span>
   </div>`;
 }
 
@@ -3437,21 +3449,12 @@ function _mWkRenderWeekHtml(weekOff) {
     const isPast = !isToday && ds < today;
     const dateStr = d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
     const tasks = mGetDayTasks(ds, weekOff);
-    // Birthdays & trips have no checkbox; once their day has passed they're effectively complete,
-    // so count them as done on past days (otherwise the per-day done/total ratio reads low).
-    const doneC = tasks.filter(t => t.done || (isPast && (t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday'))).length;
 
     html += `<div class="m-wk-day${isToday ? ' is-today' : ''}${isPast ? ' is-past' : ''}" data-ds="${ds}">
       <div class="m-wk-hd">
-        <div class="m-wk-hd-left">
-          <span class="m-wk-dname">${_WK_DAYS[i]}</span>
-          <span class="m-wk-ddate">${dateStr}</span>
-          ${isToday ? '<span class="m-wk-today-dot"></span>' : ''}
-        </div>
-        <div class="m-wk-hd-right">
-          ${tasks.length ? `<span class="m-wk-cnt">${doneC}/${tasks.length}</span>` : ''}
-          <button class="m-wk-add" onclick="mWkAddTask('${ds}')">+</button>
-        </div>
+        <span class="m-wk-dname">${_WK_DAYS[i]}</span>
+        <span class="m-wk-ddate">${dateStr}</span>
+        ${isToday ? '<span class="m-wk-today-dot"></span>' : ''}
       </div>
       ${tasks.length ? tasks.map(mWkTaskRow).join('') : '<div class="m-wk-empty">\u2014</div>'}
     </div>`;
@@ -3553,68 +3556,16 @@ function mInitWeekScroll() {
   window.addEventListener('scroll', onScroll, {passive: true});
 }
 
-// ── Week: add task for specific day ──────────────────────────────────────────
-let _mWkAddDs = null;
-
-function mWkAddTask(ds) {
-  _mWkAddDs = ds;
-  const d   = new Date(ds + 'T12:00:00');
-  const lbl = d.toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'});
-  document.getElementById('mWkAddTitle').textContent = `Add — ${lbl}`;
-  document.getElementById('mWkAddName').value = '';
-  mSelectCat('wkadd', 'Home');
-  document.getElementById('mWkAddBackdrop').classList.add('open');
-  document.getElementById('mWkAddSheet').classList.add('open');
-  setTimeout(() => document.getElementById('mWkAddName').focus(), 300);
-}
-
-function mCloseWkAdd() {
-  _mWkAddDs = null;
-  document.getElementById('mWkAddBackdrop').classList.remove('open');
-  document.getElementById('mWkAddSheet').classList.remove('open');
-  document.getElementById('mWkAddPickOpts')?.classList.remove('open');
-}
-
-async function mSaveWkTask() {
-  if (!_mWkAddDs) return;
-  const n = document.getElementById('mWkAddName').value.trim();
-  if (!n) return;
-  const cat = _mWkAddCat;
-  const ds  = _mWkAddDs;
-  const t   = {id: 'l-' + Date.now(), name: n, category: cat, due_date: ds, done: false, important: false};
-  st.tasks.push(t);
-  save();
-  mCloseWkAdd();
-  // Re-render just the current day in the week list
-  const dayEl = document.querySelector(`.m-wk-day[data-ds="${ds}"]`);
-  if (dayEl) {
-    const weekOff = _mWkGetWeekOff(ds);
-    const tasks = mGetDayTasks(ds, weekOff);
-    const _isPastDay = ds < d2s(getDayDate(0));
-    const doneC = tasks.filter(t => t.done || (_isPastDay && (t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday'))).length;
-    const dateObj = new Date(ds + 'T12:00:00');
-    const dayIdx = (dateObj.getDay() + 6) % 7;
-    dayEl.innerHTML = `<div class="m-wk-hd">
-      <div class="m-wk-hd-left">
-        <span class="m-wk-dname">${_WK_DAYS[dayIdx]}</span>
-        <span class="m-wk-ddate">${dateObj.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}</span>
-        ${ds === d2s(getDayDate(0)) ? '<span class="m-wk-today-dot"></span>' : ''}
-      </div>
-      <div class="m-wk-hd-right">
-        ${tasks.length ? `<span class="m-wk-cnt">${doneC}/${tasks.length}</span>` : ''}
-        <button class="m-wk-add" onclick="mWkAddTask('${ds}')">+</button>
-      </div>
-    </div>
-    ${tasks.length ? tasks.map(mWkTaskRow).join('') : '<div class="m-wk-empty">\u2014</div>'}`;
-  } else {
-    mRenderWeek();
-  }
-  const sv = await sbReq('POST', 'tasks', {name: n, category: cat, due_date: ds, done: false});
-  if (sv && sv[0]) {
-    const i = st.tasks.findIndex(x => x.id === t.id);
-    if (i > -1) st.tasks[i] = sv[0];
-    save();
-  }
+// ── Week: quick-add ───────────────────────────────────────────────────────────
+// Week's header "+" opens the exact same full-featured quick-add popup Today's "+" uses
+// (types, travel, shopping, recurring/WR creation, etc.) instead of the old bare-bones
+// per-day name+category sheet (#mWkAddSheet, retired) — always targets today's own date
+// (mAddTask's ds computation keys off _mTodayOffset, which only means something on the
+// Today tab; force it to 0 here so a stale offset left over from swiping Today forward/
+// back doesn't silently misdate an add made from Week).
+function mWeekQuickAdd() {
+  _mTodayOffset = 0;
+  mOpenQuickAdd();
 }
 
 // ── Week drag: hold + drag row to a different day ─────────────────────────────
@@ -4212,14 +4163,6 @@ let _mMoRenderedHi = 6;
 let _mMoScrollLock = false;
 let _mMoTitleRaf = false;
 
-// Header "Today" button — visible only on the Week tab now (Month has its own
-// dedicated Today button in its header controls, see mMonthTodayBtn). Stays on Week
-// and scrolls back to today (mRenderWeek(true) resets the rendered range + re-scrolls)
-// instead of navigating away.
-function mGoToday() {
-  mRenderWeek(true);
-}
-
 function mOpenMonth() {
   _mMonthSelectedDs = d2s(getDayDate(0));
   _mRenderMonthWeeks(true);
@@ -4328,8 +4271,9 @@ function mPickYear(yr) {
   mMonthJumpToOffset((yr - now.getFullYear()) * 12 + (_mMonthDisplayedMo - now.getMonth()));
 }
 
-// "+" button in the month header — adds a task for the currently-selected day
-// (same day-scoping idea as Week's mWkAddTask(ds)), via the existing full-add sheet.
+// "+" button in the month header — adds a task for the currently-selected day,
+// via the existing full-add sheet. (Week's own "+" targets today only, via the
+// simpler quick-add popup — see mWeekQuickAdd.)
 function mMonthAddTask() {
   mOpenFullAdd();
   const dueEl = document.getElementById('mFullAddDue');
