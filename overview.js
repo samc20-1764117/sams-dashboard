@@ -3163,7 +3163,7 @@ function renderRecOv(){
   const{mon,sun}=getWkBounds(wrRecOff);
   const lbl=document.getElementById('wrRecWkLbl');
   if(lbl){
-    const _lnk=`<a href="#weekly" onclick="event.preventDefault();showPage('weekly')" class="wo-hdr-btn wr-lbl-btn" style="text-decoration:none;width:auto;padding:4px 2px;font-size:10px">`;
+    const _lnk=`<a href="#weekly" onclick="event.preventDefault();showPage('weekly')" class="wo-hdr-btn wr-lbl-btn">`;
     if(wrRecOff===0){lbl.innerHTML=_lnk+'Reset</a>';}
     else{const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});lbl.innerHTML=_lnk+fmt(mon)+' – '+fmt(sun)+'</a>';}
   }
