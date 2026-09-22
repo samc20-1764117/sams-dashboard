@@ -2933,10 +2933,21 @@ async function saveVidModal(){
       if(parent.status==='idea')data.status='idea';
       else if(parent.status!=='published'&&parent.status!=='backup')data.status=parent.status;
     }
-    // Place at bottom of new group
-    const siblings=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(data.big_video_id));
-    const maxOrder=Math.max(0,...siblings.map(c=>c.vid_order??0));
-    data.vid_order=maxOrder+1;
+    // Only re-place at the bottom of the group when the group assignment is actually
+    // CHANGING (new video, or moved to a different/new parent) — this used to run on every
+    // save regardless, so re-editing a grouped video's name/status/etc with its big_video_id
+    // unchanged still recomputed vid_order to maxOrder+1, which (since that video is itself
+    // one of the siblings being maxed over) almost always exceeds its own current order and
+    // visibly bottoms it out in In Progress/Up Next/Ideas on every edit (2026-09-22 bug
+    // report). Leaving data.vid_order unset here means Object.assign(v,data) below simply
+    // keeps the video's existing order.
+    const _existingV=(_vidMode==='edit'&&_vidEditId)?(st.videos||[]).find(x=>String(x.id)===String(_vidEditId)):null;
+    const _groupUnchanged=_existingV&&String(_existingV.big_video_id||'')===String(data.big_video_id||'');
+    if(!_groupUnchanged){
+      const siblings=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(data.big_video_id));
+      const maxOrder=Math.max(0,...siblings.map(c=>c.vid_order??0));
+      data.vid_order=maxOrder+1;
+    }
   }
   // Standalone L (no big parent) is allowed in in_progress/up_next now (2026-09-11) — no forced reset.
   // Defer the modal close one tick: the videos pop-up / sub-panels' outside-click handlers skip closing
