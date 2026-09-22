@@ -537,23 +537,26 @@ body.dark .m-tmenu-del{color:#fca5a5}
 #mWeekPage{display:flex;flex-direction:column;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;position:relative}
 #mWeekList{display:flex;flex-direction:column;padding:4px 12px 80px}
 
-/* Week divider */
-.m-wk-divider{display:flex;align-items:center;gap:10px;padding:16px 4px 8px;margin-top:10px;color:var(--text);font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
-.m-wk-divider.is-current{color:var(--accent)}
+/* Week divider — a real section break between weeks (bold rule + generous spacing),
+   not just a label, so scrolling from one week into the next reads as a clear boundary
+   rather than another day card. Normal case, not all-caps. */
+.m-wk-divider{display:flex;align-items:center;gap:8px;padding:22px 4px 10px;margin-top:18px;border-top:2px solid var(--border);color:var(--text);font-size:15px;font-weight:700}
+.m-wk-divider.is-current{color:var(--accent);border-top-color:var(--accent)}
 
 /* Day group — each day is its own bordered/tinted card (not just a hairline-separated
    run of rows) so a long week reads as clearly divided sections, matching Today's own
    move toward using color+borders for structure instead of overlaid labels/counts. */
 .m-wk-day{margin:6px 0;border-radius:var(--rs,14px);border:1px solid var(--border);background:rgba(0,0,0,.02);overflow:hidden}
 body.dark .m-wk-day{background:rgba(255,255,255,.035)}
-.m-wk-day.is-today{border-color:var(--accent);background:rgba(124,106,247,.06)}
-body.dark .m-wk-day.is-today{background:rgba(124,106,247,.12)}
+/* Today keeps only the accent BORDER, not a background tint — plain page background
+   (white in light mode) reads as more "stand out" against the other days' grey tint
+   than another wash of purple would. */
+.m-wk-day.is-today{border-color:var(--accent);background:var(--bg)}
 .m-wk-day.is-past{opacity:.55}
 .m-wk-hd{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
 .m-wk-day.is-today .m-wk-hd{border-bottom-color:rgba(124,106,247,.25)}
 .m-wk-dname{font-size:13px;font-weight:700;color:var(--text)}
 .m-wk-ddate{font-size:12px;color:var(--sub)}
-.m-wk-today-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-left:-2px}
 .m-wk-day.m-wk-drop-target{border-color:var(--accent);background:rgba(124,106,247,.1)}
 .m-wk-day.m-wk-drop-target .m-wk-row{background:rgba(124,106,247,.06)}
 .m-wk-empty{padding:12px 14px;font-size:12px;color:var(--sub)}

@@ -889,7 +889,7 @@ function mTaskRow(t) {
   const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${band}
     ${noCheck
-      ? `<span class="m-row-icon">${t._type === 'holiday' ? '' : '📅'}</span>`
+      ? `<span class="m-row-icon">${t._type === 'holiday' ? '' : t._type === 'birthday' ? '🎂' : '📅'}</span>`
       : `<label class="m-chk-wrap"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="${onchange}"></label>`
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
@@ -3412,7 +3412,7 @@ function mWkTaskRow(t) {
   // important color meaning, just moved to match Today's list convention.
   const band = `<span class="m-wk-band" style="background:${s.bg};border-color:${s.d}"></span>`;
   const chk = noCheck
-    ? `<span class="m-wk-icon">${t._type === 'holiday' ? '' : '\u{1F4C5}'}</span>`
+    ? `<span class="m-wk-icon">${t._type === 'holiday' ? '' : '\u{1F382}'}</span>`
     : `<label class="m-chk-wrap"><input type="checkbox"${t.done ? ' checked' : ''}${onchange ? ` onchange="${onchange}"` : ''}></label>`;
 
   const dragAttrs = canDrag ? ` data-tid="${t.id}" data-tname="${escHtml(t.name || '')}"` : '';
@@ -3454,7 +3454,6 @@ function _mWkRenderWeekHtml(weekOff) {
       <div class="m-wk-hd">
         <span class="m-wk-dname">${_WK_DAYS[i]}</span>
         <span class="m-wk-ddate">${dateStr}</span>
-        ${isToday ? '<span class="m-wk-today-dot"></span>' : ''}
       </div>
       ${tasks.length ? tasks.map(mWkTaskRow).join('') : '<div class="m-wk-empty">\u2014</div>'}
     </div>`;
