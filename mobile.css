@@ -554,10 +554,11 @@ body.dark .m-tmenu-del{color:#fca5a5}
 body.dark .m-wk-day{background:rgba(255,255,255,.035)}
 /* Today stands out via a real drop shadow (lifted off the page) doing most of the work —
    the border is just a light hairline-plus, not a strong outline, so the shadow reads as
-   the actual "pop." Extra top margin over the default .m-wk-day 6px gives it a little
-   breathing room under the sticky header too, especially right after scroll-to-today
-   lands it near the top of the screen. */
-.m-wk-day.is-today{margin-top:14px;border-color:rgba(26,24,37,.12);background:var(--bg);box-shadow:0 8px 22px rgba(0,0,0,.16)}
+   the actual "pop." (No extra top margin here — a margin on this element can't create
+   breathing room under the header on its own: _mWkScrollToToday always re-aligns this
+   card's post-margin top edge flush against the header, so any margin just gets scrolled
+   past. The actual gap is a GAP constant subtracted in that scroll math instead.) */
+.m-wk-day.is-today{border-color:rgba(26,24,37,.12);background:var(--bg);box-shadow:0 8px 22px rgba(0,0,0,.16)}
 body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px 24px rgba(0,0,0,.55)}
 .m-wk-day.is-past{opacity:.55}
 .m-wk-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}

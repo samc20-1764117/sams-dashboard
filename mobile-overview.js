@@ -3520,7 +3520,13 @@ function _mWkScrollToToday(attempt = 0) {
   // Offset for a sticky/fixed app header that overlaps the top (only when the doc scrolls)
   const hdr = document.getElementById('mHeader');
   const headerH = (isDoc && hdr && hdr.offsetParent !== null && getComputedStyle(hdr).position !== 'static') ? hdr.offsetHeight : 0;
-  const target = Math.max(0, sc.scrollTop + (todayEl.getBoundingClientRect().top - scTop - headerH));
+  // GAP leaves today's card sitting a little below the header instead of flush against
+  // it — a plain top margin on .m-wk-day.is-today can't do this: this scroll math always
+  // re-aligns the card's (post-margin) top edge right at the header's bottom edge, so any
+  // margin just gets scrolled past rather than becoming visible breathing room. This is
+  // the one place that actually controls it.
+  const GAP = 16;
+  const target = Math.max(0, sc.scrollTop + (todayEl.getBoundingClientRect().top - scTop - headerH) - GAP);
   _mWkScrollLock = true;
   sc.scrollTop = target;
   setTimeout(() => { _mWkScrollLock = false; }, 120);
@@ -4832,6 +4838,15 @@ async function mInit() {
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
+  // #mApp is display:none until hideLoginOverlay() just above adds .ready — the early
+  // mShowTab() call further up (restoring the last tab) ran while it was still hidden, so
+  // its own _mNavMoveHighlight(true) measured zero-size rects (a hidden ancestor collapses
+  // getBoundingClientRect() to nothing) and landed the sliding pill near Today's slot no
+  // matter which tab was actually restored — while the CONTENT and the active button's own
+  // color were both already correct (those don't depend on layout). Netted out as "Today
+  // looks selected via the pill, Week looks selected via its own color" at once. Snap
+  // (not animate) the pill to the real position now that #mApp is actually measurable.
+  _mNavMoveHighlight(false);
   await syncAll(); // renderAll() inside this re-renders whichever tab mShowTab already picked, above
   setInterval(() => { if (cfg.url && cfg.key && !document.hidden) syncAll(true); }, 30000);
 
