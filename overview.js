@@ -5383,8 +5383,16 @@ function _vidOvKeyNav(e){
           // Swap vid_order
           const tmp=bVids[idx].vid_order;bVids[idx].vid_order=bVids[swapIdx].vid_order;bVids[swapIdx].vid_order=tmp;
           bVids.forEach(v=>sbReqSilent('PATCH','videos',{vid_order:v.vid_order},`?id=eq.${v.id}`));
+          // Carry each swapped B's children along with its new vid_order — see
+          // _vidCarryChildrenOrder (only the two swapped B's actually changed order here, unlike
+          // the drag path which renumbers every B).
+          const childPrevOrders=[bVids[idx],bVids[swapIdx]].map(v=>({children:_vidCarryChildrenOrder(v.id,v.vid_order)}));
           save();_renderVidOvMenu();
-          pushUndo(()=>{prevOrders.forEach(p=>{const v=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(v){v.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord},`?id=eq.${p.id}`);}});save();_renderVidOvMenu();},'Reorder videos');
+          pushUndo(()=>{
+            prevOrders.forEach(p=>{const v=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(v){v.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord},`?id=eq.${p.id}`);}});
+            childPrevOrders.forEach(({children})=>children.forEach(p=>{const c=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(c){c.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord??null},`?id=eq.${p.id}`);}}));
+            save();_renderVidOvMenu();
+          },'Reorder videos');
         }
       }
     }
@@ -7009,6 +7017,20 @@ function _vidOvDragIndicator(e){
   _vidOvDropLine._dropIdx=bestIdx;_vidOvDropLine._dragMode=_dragMode;if(_dragMode==='child'){const dv2=_vidOvChildDrag.dataset.cvid;const dv3=(st.videos||[]).find(x=>String(x.id)===dv2);_vidOvDropLine._bigId=dv3?String(dv3.big_video_id):null;}else{_vidOvDropLine._bigId=null;}_vidOvDropLastIdx=bestIdx;
 }
 function _vidOvClearIndicator(){if(_vidOvDropLine&&_vidOvDropLine.parentNode)_vidOvDropLine.remove();_vidOvDropLastIdx=-1;}
+// Keeps a Big video's children numerically grouped with it after a same-list reorder (drag or
+// Cmd+Up/Down) moves the Big's own vid_order — children otherwise kept whatever vid_order they
+// already had, which is harmless for THIS popup's own rendering (it looks children up fresh by
+// big_video_id, not by vid_order, so they always render right after their parent regardless) but
+// left them free to collide/tie with some OTHER Big's newly-normalized vid_order, or to sort out
+// of step with their parent in a view that DOES do a flat global vid_order sort across B's and
+// L's together (the dedicated Videos page's Current tab, `_vidDashList`/videos.js). Returns the
+// {id, prevOrder} list for undo. `parentOrder` is the Big's NEW vid_order after the reorder.
+function _vidCarryChildrenOrder(parentId,parentOrder){
+  const children=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(parentId)).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  const prev=children.map(c=>({id:c.id,ord:c.vid_order}));
+  children.forEach((c,i)=>{c.vid_order=parentOrder+0.01*(i+1);sbReqSilent('PATCH','videos',{vid_order:c.vid_order},`?id=eq.${c.id}`);});
+  return prev;
+}
 function _vidOvContentDrop(event){
   event.preventDefault();
   // Child video drag reorder
@@ -7054,8 +7076,16 @@ function _vidOvContentDrop(event){
     _vidOvBDrag=null;
     if(JSON.stringify(bVids.map(v=>String(v.id)))===JSON.stringify(origIds))return; // dropped back where it started — no-op, no toast
     bVids.forEach((v,i)=>{v.vid_order=i;sbReqSilent('PATCH','videos',{vid_order:i},`?id=eq.${v.id}`);});
+    // Carry every B's children along with its new vid_order (see _vidCarryChildrenOrder) — not
+    // just the dragged one, since renumbering ALL B's to 0,1,2... can also shift where an
+    // untouched B's own children need to sit relative to it.
+    const childPrevOrders=bVids.map(v=>({parentId:String(v.id),children:_vidCarryChildrenOrder(v.id,v.vid_order)}));
     save();_renderVidOvMenu();
-    pushUndo(()=>{prevOrders.forEach(p=>{const v=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(v){v.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord},`?id=eq.${p.id}`);}});save();_renderVidOvMenu();},'Reordered video');
+    pushUndo(()=>{
+      prevOrders.forEach(p=>{const v=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(v){v.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord},`?id=eq.${p.id}`);}});
+      childPrevOrders.forEach(({children})=>children.forEach(p=>{const c=(st.videos||[]).find(x=>String(x.id)===String(p.id));if(c){c.vid_order=p.ord;sbReqSilent('PATCH','videos',{vid_order:p.ord??null},`?id=eq.${p.id}`);}}));
+      save();_renderVidOvMenu();
+    },'Reordered video');
     return;
   }
   _vidOvClearIndicator();
