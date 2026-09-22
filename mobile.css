@@ -552,11 +552,13 @@ body.dark .m-tmenu-del{color:#fca5a5}
 .m-wk-day > .m-wk-hd{border-radius:var(--rs,14px) var(--rs,14px) 0 0}
 .m-wk-day > *:last-child{border-radius:0 0 var(--rs,14px) var(--rs,14px)}
 body.dark .m-wk-day{background:rgba(255,255,255,.035)}
-/* Today stands out via a neutral border + real drop shadow (lifted off the page), not a
-   color tint — plain white/dark background reads as more "pop" against the other days'
-   grey wash than another color wash would. */
-.m-wk-day.is-today{border-color:rgba(26,24,37,.3);background:var(--bg);box-shadow:0 6px 18px rgba(0,0,0,.14)}
-body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.28);box-shadow:0 6px 20px rgba(0,0,0,.5)}
+/* Today stands out via a real drop shadow (lifted off the page) doing most of the work —
+   the border is just a light hairline-plus, not a strong outline, so the shadow reads as
+   the actual "pop." Extra top margin over the default .m-wk-day 6px gives it a little
+   breathing room under the sticky header too, especially right after scroll-to-today
+   lands it near the top of the screen. */
+.m-wk-day.is-today{margin-top:14px;border-color:rgba(26,24,37,.12);background:var(--bg);box-shadow:0 8px 22px rgba(0,0,0,.16)}
+body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px 24px rgba(0,0,0,.55)}
 .m-wk-day.is-past{opacity:.55}
 .m-wk-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
 .m-wk-dname{font-size:13px;font-weight:700;color:var(--text)}
@@ -569,6 +571,8 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.28);box-shadow:0 6px
    (.m-chk-wrap, shared CSS), just at a more compact size to fit a whole week on screen. */
 .m-wk-row{display:flex;align-items:center;gap:8px;padding:7px 14px;border-top:1px solid var(--border);-webkit-user-select:none;user-select:none}
 .m-wk-day .m-wk-row:first-of-type{border-top:none}
+/* Live-reparent drag feedback — same visual treatment Today's own .m-row-dragging uses. */
+.m-wk-row.m-wk-row-dragging{position:relative;z-index:5;opacity:.6;box-shadow:0 6px 18px rgba(0,0,0,.18);border-radius:var(--rs,10px);background:var(--bg-elevated)}
 .m-wk-row.m-ov{background:rgba(239,68,68,.05)}
 .m-wk-row.m-wk-done{opacity:.35}
 .m-wk-band{width:3px;align-self:stretch;min-height:18px;border-radius:3px;border:1px solid;flex-shrink:0}

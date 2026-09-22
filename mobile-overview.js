@@ -2518,9 +2518,10 @@ function mShowTab(tab) {
   // vertical space for the list itself.
   const addBtn = document.getElementById('mTodayAddBtn');
   if (addBtn) addBtn.style.display = isToday ? '' : 'none';
-  // Week's own header "+" (mWeekQuickAdd) — replaced the old "go to today" calendar
-  // icon (removed, see mWeekQuickAdd) since Week's infinite-scroll list already resets
-  // to today on every tab-open, and Month has its own dedicated Today button.
+  // Week's own header icons: "back to today" (sun, matches the bottom nav's Today icon)
+  // then "+" (mWeekQuickAdd), both week-only.
+  const weekTodayBtn = document.getElementById('mWeekTodayBtn');
+  if (weekTodayBtn) weekTodayBtn.style.display = (tab === 'week') ? '' : 'none';
   const weekAddBtn = document.getElementById('mWeekAddBtn');
   if (weekAddBtn) weekAddBtn.style.display = (tab === 'week') ? '' : 'none';
   // Month tab replaces the plain title/date block with its own header controls
@@ -3599,35 +3600,61 @@ function mWeekQuickAdd() {
   mOpenQuickAdd();
 }
 
-// ── Week drag: hold + drag row to a different day ─────────────────────────────
+// ── Week: back to today ───────────────────────────────────────────────────────
+// Header sun icon (left of "+") — jumps the infinite-scroll list back to the default
+// range and re-scrolls to today, same as this tab's own initial tab-open behavior
+// (mRenderWeek(true)). Useful once you've scrolled away browsing other weeks.
+function mWeekGoToday() {
+  mRenderWeek(true);
+}
+
+// ── Week drag: hold + drag row to reorder within a day, or move it to another day ────
+// Replaces the old floating-ghost-pill approach with the same live-reparent technique
+// Today's own drag-reorder uses (mInitTodayDrag/_mTodDragMove/_mTodDragEnd, above) —
+// dragging the actual row gives the same direct-manipulation feel Today has, and lets
+// ONE gesture cover both cases Week needs that Today never had to: dropping among a
+// DIFFERENT day's rows changes due_date (as before), dropping among the row's OWN day's
+// rows just reorders it (writes _dayOrder, no due_date change) — Today only ever has
+// one day's list, so it never needed the "which container did this land in" question.
 let _mWkDrag = null;
 
 function _mWkDragMove(e) {
   if (!_mWkDrag) return;
   e.preventDefault(); // block scroll while dragging
+  const list = document.getElementById('mWeekList');
+  if (!list) return;
   const touch = e.touches[0];
-  _mWkDrag.ghost.style.left = touch.clientX + 'px';
-  _mWkDrag.ghost.style.top  = (touch.clientY - 44) + 'px';
+  const {el} = _mWkDrag;
 
-  // Auto-scroll #mWeekPage when near top/bottom edges
-  const scrollEl = document.getElementById('mWeekPage');
-  if (scrollEl) {
-    const mr = scrollEl.getBoundingClientRect();
-    const EDGE = 80, SPEED = 8;
-    if (touch.clientY > mr.bottom - EDGE)      scrollEl.scrollTop += SPEED;
-    else if (touch.clientY < mr.top + EDGE)    scrollEl.scrollTop -= SPEED;
+  // Auto-scroll the actual scrolling element (page or document — see _mWkScroller) when
+  // near top/bottom edges, same threshold/speed as before.
+  const scroller = _mWkScroller();
+  const mr = scroller.getBoundingClientRect ? scroller.getBoundingClientRect() : {top: 0, bottom: window.innerHeight};
+  const EDGE = 80, SPEED = 8;
+  if (touch.clientY > mr.bottom - EDGE)      scroller.scrollTop += SPEED;
+  else if (touch.clientY < mr.top + EDGE)    scroller.scrollTop -= SPEED;
+
+  // el has pointer-events:none while we hit-test so elementFromPoint sees what's under it
+  el.style.pointerEvents = 'none';
+  const hit = document.elementFromPoint(touch.clientX, touch.clientY);
+  el.style.pointerEvents = '';
+  const targetDay = hit?.closest('.m-wk-day[data-ds]');
+  if (!targetDay || !list.contains(targetDay)) return;
+  const targetRow = hit?.closest('.m-wk-row[data-rid]');
+
+  if (targetRow && targetRow !== el && targetDay.contains(targetRow)) {
+    const rect = targetRow.getBoundingClientRect();
+    const before = touch.clientY < rect.top + rect.height / 2;
+    targetDay.insertBefore(el, before ? targetRow : targetRow.nextSibling);
+  } else if (!targetDay.contains(el)) {
+    // Hovering a day with nothing under the finger yet (empty space, or a day with no
+    // real rows) — drop at the end, but before the "—" empty placeholder if present.
+    targetDay.insertBefore(el, targetDay.querySelector('.m-wk-empty') || null);
   }
 
-  // ghost has pointer-events:none so elementFromPoint hits through it
-  const el       = document.elementFromPoint(touch.clientX, touch.clientY);
-  const dayEl    = el?.closest('.m-wk-day[data-ds]');
-  const targetDs = dayEl?.dataset.ds || null;
-
   document.querySelectorAll('.m-wk-day[data-ds]').forEach(d => {
-    d.classList.toggle('m-wk-drop-target',
-      !!targetDs && d.dataset.ds === targetDs && targetDs !== _mWkDrag.origDs);
+    d.classList.toggle('m-wk-drop-target', d === targetDay && d.dataset.ds !== _mWkDrag.origDs);
   });
-  _mWkDrag.currentTargetDs = targetDs;
 }
 
 // Single tap -> task menu, double tap -> edit — same routing as Today's own
@@ -3683,30 +3710,17 @@ function mInitWkDrag() {
 
     pressTimer = setTimeout(() => {
       pressTimer = null;
-      const tid    = rowEl.dataset.tid;
-      const tname  = rowEl.dataset.tname;
-      const dayEl  = rowEl.closest('.m-wk-day[data-ds]');
+      const dayEl = rowEl.closest('.m-wk-day[data-ds]');
       const origDs = dayEl?.dataset.ds;
       if (!origDs) return;
+      // Snapshot this day's row order BEFORE the drag starts moving anything, so drop can
+      // tell "landed back where it started" (no-op) from "actually reordered".
+      const origOrder = [...dayEl.querySelectorAll('.m-wk-row[data-rid]')].map(r => r.dataset.rid);
 
-      const ghost = document.createElement('div');
-      ghost.textContent = tname;
-      ghost.style.cssText = [
-        'position:fixed', 'pointer-events:none', 'z-index:500',
-        `background:var(--accent)`, 'color:#fff',
-        'padding:8px 16px', 'border-radius:20px',
-        'font-size:13px', 'font-weight:600',
-        'box-shadow:0 8px 28px rgba(0,0,0,.28)',
-        'max-width:240px', 'white-space:nowrap',
-        'overflow:hidden', 'text-overflow:ellipsis',
-        `left:${touchStartX}px`, `top:${touchStartY - 44}px`,
-        'transform:translateX(-50%)',
-      ].join(';');
-      document.body.appendChild(ghost);
-      rowEl.style.opacity = '0.3';
-
-      _mWkDrag = {tid, origDs, ghost, rowEl, currentTargetDs: origDs};
+      rowEl.classList.add('m-wk-row-dragging');
+      _mWkDrag = {tid: rowEl.dataset.tid, el: rowEl, origDs, origOrder};
       document.addEventListener('touchmove', _mWkDragMove, {passive: false});
+      navigator.vibrate?.(8);
     }, 480);
   }, {passive: true});
 
@@ -3718,34 +3732,65 @@ function mInitWkDrag() {
     }
   }, {passive: true});
 
-  list.addEventListener('touchend', async e => {
+  function endDrag(cancelled) {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    // Single/double-tap (menu / edit) is handled entirely by mInitWeekDblTap's own
-    // listener below, not here — a plain tap-release with no drag armed just falls
-    // through with nothing left to do in THIS listener.
     if (!_mWkDrag) return;
     document.removeEventListener('touchmove', _mWkDragMove);
-
-    const {tid, origDs, ghost, rowEl, currentTargetDs} = _mWkDrag;
+    const {tid, el, origDs, origOrder} = _mWkDrag;
     _mWkDrag = null;
-    ghost.remove();
-    rowEl.style.opacity = '';
+    el.classList.remove('m-wk-row-dragging');
     document.querySelectorAll('.m-wk-day').forEach(d => d.classList.remove('m-wk-drop-target'));
 
-    if (currentTargetDs && currentTargetDs !== origDs) {
-      const t = st.tasks.find(x => String(x.id) === String(tid));
-      if (t) {
-        const _prevDue = (t.due_date || '').split('T')[0];
-        const _newDs = currentTargetDs;
-        t.due_date = _newDs;
-        _mMoveTaskBlocks(tid, _prevDue, _newDs);
-        save();
-        mRenderWeek();
-        pushUndo(() => { const t2 = st.tasks.find(x => String(x.id) === String(tid)); if (t2) { t2.due_date = _prevDue; _mMoveTaskBlocks(tid, _newDs, _prevDue); } save(); renderAll(); sbReq('PATCH', 'tasks', {due_date: _prevDue}, `?id=eq.${tid}`); }, 'Moved task');
-        await sbReq('PATCH', 'tasks', {due_date: currentTargetDs}, `?id=eq.${tid}`);
-      }
+    if (cancelled) { mRenderWeek(); return; }
+
+    const targetDay = el.closest('.m-wk-day[data-ds]');
+    const targetDs = targetDay?.dataset.ds;
+    if (!targetDs) { mRenderWeek(); return; }
+    const newOrder = [...targetDay.querySelectorAll('.m-wk-row[data-rid]')].map(r => r.dataset.rid);
+
+    if (targetDs === origDs) {
+      // Pure reorder within the same day — same _dayOrder mechanism Today's own
+      // drag-reorder writes (mInitTodayDrag, above), so it round-trips through desktop's
+      // sort correctly too. No-op if it landed back exactly where it started.
+      if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) return;
+      const m = _dayOrder();
+      const prevOrder = m[origDs] ? [...m[origDs]] : null;
+      m[origDs] = newOrder;
+      _dayOrderSet(m);
+      mRenderWeek();
+      pushUndo(() => { const m2 = _dayOrder(); if (prevOrder) m2[origDs] = prevOrder; else delete m2[origDs]; _dayOrderSet(m2); renderAll(); }, 'Reordered day');
+      return;
     }
-  }, {passive: true});
+
+    // Moved to a different day — changes due_date (as before), and ALSO captures where it
+    // landed within the target day's order (dropping it at a specific spot should stick,
+    // same as a plain same-day reorder — otherwise it'd land there visually during the
+    // drag and then jump on the next render once the natural sort re-runs).
+    const t = st.tasks.find(x => String(x.id) === String(tid));
+    if (!t) { mRenderWeek(); return; }
+    const _prevDue = (t.due_date || '').split('T')[0];
+    t.due_date = targetDs;
+    _mMoveTaskBlocks(tid, _prevDue, targetDs);
+    const m = _dayOrder();
+    const prevTargetOrder = m[targetDs] ? [...m[targetDs]] : null;
+    m[targetDs] = newOrder;
+    _dayOrderSet(m);
+    save();
+    mRenderWeek();
+    pushUndo(() => {
+      const t2 = st.tasks.find(x => String(x.id) === String(tid));
+      if (t2) { t2.due_date = _prevDue; _mMoveTaskBlocks(tid, targetDs, _prevDue); }
+      const m2 = _dayOrder();
+      if (prevTargetOrder) m2[targetDs] = prevTargetOrder; else delete m2[targetDs];
+      _dayOrderSet(m2);
+      save(); renderAll();
+      sbReq('PATCH', 'tasks', {due_date: _prevDue}, `?id=eq.${tid}`);
+    }, 'Moved task');
+    sbReq('PATCH', 'tasks', {due_date: targetDs}, `?id=eq.${tid}`);
+  }
+
+  list.addEventListener('touchend', () => endDrag(false), {passive: true});
+  list.addEventListener('touchcancel', () => endDrag(true), {passive: true});
 }
 
 // ── Week swipe navigation ─────────────────────────────────────────────────────
@@ -4764,6 +4809,15 @@ async function mInit() {
   // Clear stale local overrides on mobile — always trust Supabase as source of truth
   if (typeof localOverrides !== 'undefined') { for (const k in localOverrides) delete localOverrides[k]; }
   _mSetDate();
+  // Restore the last-used tab NOW, synchronously off load()'s cached data — not after
+  // checkAuth()/syncAll() resolve, further down. #mTodayPage has no inline display:none
+  // in mobile.html (it's the default-visible page), so leaving this until after the two
+  // awaits below let it paint on screen for however long that network round-trip took,
+  // every single refresh, before snapping to the real last tab. Same fix already applied
+  // to the login screen (see "Boot loading" below hideLoginOverlay/showLoginOverlay) —
+  // never let the wrong screen paint while waiting on the network; restore synchronously
+  // from what's already on disk instead.
+  mShowTab(['today','tb','week','month','shop','extras','recipes'].includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today');
   mInitPickers();
   mInitTodayDblTap();
   mInitTodayDrag();
@@ -4778,8 +4832,7 @@ async function mInit() {
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
-  await syncAll();
-  mShowTab(['today','tb','week','month','shop','extras','recipes'].includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today'); // restore last tab across refresh
+  await syncAll(); // renderAll() inside this re-renders whichever tab mShowTab already picked, above
   setInterval(() => { if (cfg.url && cfg.key && !document.hidden) syncAll(true); }, 30000);
 
   // iOS suspends setInterval while the PWA is backgrounded — so reopening the app
