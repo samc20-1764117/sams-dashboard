@@ -546,15 +546,19 @@ body.dark .m-tmenu-del{color:#fca5a5}
 /* Day group — each day is its own bordered/tinted card (not just a hairline-separated
    run of rows) so a long week reads as clearly divided sections, matching Today's own
    move toward using color+borders for structure instead of overlaid labels/counts. */
-.m-wk-day{margin:6px 0;border-radius:var(--rs,14px);border:1px solid var(--border);background:rgba(0,0,0,.02);overflow:hidden}
+/* No overflow:hidden here — it would clip is-today's box-shadow below. Corner rounding
+   is applied directly to the header (top) and last child (bottom) instead. */
+.m-wk-day{margin:6px 0;border-radius:var(--rs,14px);border:1px solid var(--border);background:rgba(0,0,0,.02)}
+.m-wk-day > .m-wk-hd{border-radius:var(--rs,14px) var(--rs,14px) 0 0}
+.m-wk-day > *:last-child{border-radius:0 0 var(--rs,14px) var(--rs,14px)}
 body.dark .m-wk-day{background:rgba(255,255,255,.035)}
-/* Today keeps only the accent BORDER, not a background tint — plain page background
-   (white in light mode) reads as more "stand out" against the other days' grey tint
-   than another wash of purple would. */
-.m-wk-day.is-today{border-color:var(--accent);background:var(--bg)}
+/* Today stands out via a neutral border + real drop shadow (lifted off the page), not a
+   color tint — plain white/dark background reads as more "pop" against the other days'
+   grey wash than another color wash would. */
+.m-wk-day.is-today{border-color:rgba(26,24,37,.3);background:var(--bg);box-shadow:0 6px 18px rgba(0,0,0,.14)}
+body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.28);box-shadow:0 6px 20px rgba(0,0,0,.5)}
 .m-wk-day.is-past{opacity:.55}
-.m-wk-hd{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
-.m-wk-day.is-today .m-wk-hd{border-bottom-color:rgba(124,106,247,.25)}
+.m-wk-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
 .m-wk-dname{font-size:13px;font-weight:700;color:var(--text)}
 .m-wk-ddate{font-size:12px;color:var(--sub)}
 .m-wk-day.m-wk-drop-target{border-color:var(--accent);background:rgba(124,106,247,.1)}

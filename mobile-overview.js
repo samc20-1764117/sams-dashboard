@@ -1907,7 +1907,7 @@ async function mSaveEditTask() {
   if (due_date) _mMoveTaskBlocks(id, _prevDue, due_date.split('T')[0]);
   save();
   mCloseEdit();
-  mRenderToday();
+  renderAll(); // not just mRenderToday() — the edit sheet now also opens from Week's tap menu
   await sbReq('PATCH', 'tasks', {name, category, due_date, important}, `?id=eq.${id}`);
 }
 
@@ -1917,7 +1917,7 @@ async function mDeleteEditTask() {
   st.tasks = st.tasks.filter(x => String(x.id) !== String(id));
   save();
   mCloseEdit();
-  mRenderToday();
+  renderAll();
   await sbReq('DELETE', 'tasks', null, `?id=eq.${id}`);
 }
 
@@ -1994,7 +1994,7 @@ async function mSaveFullAdd() {
 async function mDeleteById(id) {
   st.tasks = st.tasks.filter(x => String(x.id) !== String(id));
   save();
-  mRenderToday();
+  renderAll(); // not just mRenderToday() — the task menu's Delete now also reaches here from Week
   await sbReq('DELETE', 'tasks', null, `?id=eq.${id}`);
 }
 
@@ -3345,9 +3345,13 @@ function mGetDayTasks(ds, weekOff) {
   // Subscription-cancel reminders (features.js)
   const finDay = typeof _finCancelTasksForDate === 'function' ? _finCancelTasksForDate(ds) : [];
 
+  // 'shop-cal-' prefix (not just 'shop-') matches Today's mGetTodayTasks AND desktop's own
+  // convention (features.js/overview.js) exactly — this used to be a bare 'shop-' here,
+  // a different id than the SAME item gets on Today, which silently broke manual _dayOrder
+  // matching (_mManualTieBreak indexes by exact id string) for any day with a shopping item.
   const shopItems = st.shopping
     .filter(s => !s.done && s.due_date && (s.due_date === ds || (isToday && isOv(s.due_date))))
-    .map(s => ({id: 'shop-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
+    .map(s => ({id: 'shop-cal-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
 
   // Video step tasks — only steps with blocks on this day
   const vidStepItems = _mVidStepTasksForDay(ds);
@@ -3361,7 +3365,9 @@ function mGetDayTasks(ds, weekOff) {
     if (_vdmW[String(v.id)] === ds) return true;
     if (_vidOnTBDay.has(String(v.id))) return true;
     return false;
-  }).map(v => ({id: 'vid-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: v.status === 'published', _vidId: v.id, _virtual: true, _type: 'vid'}))
+  // 'vid-ov-' prefix (not just 'vid-') — same reasoning as shopItems' 'shop-cal-' fix above,
+  // matches Today's mGetTodayTasks/desktop's own id convention exactly.
+  }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: v.status === 'published', _vidId: v.id, _virtual: true, _type: 'vid'}))
   .filter(v => !(isPast && !v.done)); // Skip undone video tasks on past days
 
   // Extras (travel, birthdays)
@@ -3395,7 +3401,7 @@ function mWkTaskRow(t) {
   const ov      = !noCheck && isOv(t.due_date) && !t.done;
   const catKey  = t._type === 'shop' ? 'shopping' : t._type === 'vid' || t._type === 'vidstep' ? 'Videos' : (t._isWrRule || t._isWrec) ? 'weekly_reset' : (t._virtual && t._recId) ? 'recurring' : (t.category || '');
   const s       = ov ? OV : (t.important && !t.done) ? IMP : gc(catKey);
-  const canDrag = !t._virtual && !t._type;
+  const canEdit = !t._virtual && !t._type; // plain real task — same test mTaskRow uses
 
   let onchange = '';
   if (t._type === 'shop')          onchange = `togShop('${t._shopId}',this.checked)`;
@@ -3415,12 +3421,38 @@ function mWkTaskRow(t) {
     ? `<span class="m-wk-icon">${t._type === 'holiday' ? '' : '\u{1F382}'}</span>`
     : `<label class="m-chk-wrap"><input type="checkbox"${t.done ? ' checked' : ''}${onchange ? ` onchange="${onchange}"` : ''}></label>`;
 
-  const dragAttrs = canDrag ? ` data-tid="${t.id}" data-tname="${escHtml(t.name || '')}"` : '';
+  // "→ Today" one-tap reschedule for overdue rows — exact port of mTaskRow's own canMv/
+  // mvArgs/mvBtn (Today only had this before; Week just showed the red tint with no way
+  // to act on it).
+  const canMv = ov && (canEdit || t._type === 'shop' || t._type === 'vidstep' || t._type === 'vid' || t._type === 'pup' || t._isWrec || t._isWrRule || (t._virtual && t._recId));
+  const mvArgs = canMv ? _mMoveToTodayArgs(t) : null;
+  const _mvIsRecurring = mvArgs && (mvArgs[1] === 'wrrule' || mvArgs[1] === 'wrec' || mvArgs[1] === 'rec');
+  const mvBtn = canMv
+    ? (_mvIsRecurring
+        ? `<button class="m-mv-today" onclick="event.stopPropagation();_mOvRowMoveClick('${mvArgs[1]}','${mvArgs[0]}','${mvArgs[2]}')">→ Today</button>`
+        : `<button class="m-mv-today" onclick="event.stopPropagation();mMoveToToday('${mvArgs[0]}','${mvArgs[1]}'${mvArgs[2] !== undefined ? `,'${mvArgs[2]}'` : ''})">→ Today</button>`)
+    : '';
 
-  return `<div class="m-wk-row${t.done ? ' m-wk-done' : ''}${ov ? ' m-ov' : ''}"${dragAttrs}>
+  // data-rid/data-rtype(+per-type extras) mirror mTaskRow's own convention exactly, so the
+  // shared tap-menu/edit system (_mShowTaskMenu/_mRowEdit — click for menu, double-click/
+  // -tap for edit, both scoped to the tapped row's actual type) works here unmodified —
+  // see mInitWeekDblTap. data-tid/data-tname (real tasks only) are unchanged from before —
+  // the existing hold-and-drag-to-a-different-day gesture (mInitWkDrag) still keys off them.
+  const rtype = canEdit ? 'task' : (t._type || (t._isWrec ? 'wrec' : t._isWrRule ? 'wrrule' : t._virtual ? 'rec' : 'other'));
+  const ruleId = t._isWrRule ? t._ruleId : t._recId;
+  const extraAttrs = [
+    canEdit ? ` data-tid="${t.id}" data-tname="${escHtml(t.name || '')}"` : '',
+    rtype === 'shop' ? ` data-shopid="${t._shopId}"` : '',
+    (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') && ruleId !== undefined ? ` data-ruleid="${ruleId}" data-wkkey="${t._wkKey || ''}"` : '',
+    rtype === 'vid' && t._vidId !== undefined ? ` data-vidid="${t._vidId}"` : '',
+    rtype === 'vidstep' && t._vidId !== undefined ? ` data-vidid="${t._vidId}" data-vidstep="${t._vidStep}" data-day="${t.due_date}"` : ''
+  ].join('');
+
+  return `<div class="m-wk-row${t.done ? ' m-wk-done' : ''}${ov ? ' m-ov' : ''}" data-rid="${t.id}" data-rtype="${rtype}"${extraAttrs}>
     ${band}
     ${chk}
     <span class="m-wk-task-name${t.done ? ' done' : ''}">${escHtml(t.name || '')}</span>
+    ${mvBtn}
   </div>`;
 }
 
@@ -3598,6 +3630,43 @@ function _mWkDragMove(e) {
   _mWkDrag.currentTargetDs = targetDs;
 }
 
+// Single tap -> task menu, double tap -> edit — same routing as Today's own
+// mInitTodayDblTap/mInitShopDblTap (both mobile-overview.js), just scoped to #mWeekList.
+// _mShowTaskMenu/_mRowEdit are generic (read el.dataset.*, no #mTodayList-specific
+// assumptions) so they work here unmodified as long as mWkTaskRow emits the same
+// data-rid/data-rtype/data-* attributes mTaskRow does — which it now does.
+// Coexists with mInitWkDrag's own 480ms hold-drag (below) exactly the way Today's two
+// listeners already coexist on #mTodayList: a real drag moves the finger past this
+// listener's own 10px tap threshold, so it silently bails out instead of also opening
+// a menu.
+let _wkTapTimer = null;
+function mInitWeekDblTap() {
+  const list = document.getElementById('mWeekList');
+  if (!list || list._dblTapInited) return;
+  list._dblTapInited = true;
+  let tapStartX = 0, tapStartY = 0;
+  list.addEventListener('touchstart', e => {
+    tapStartX = e.touches[0].clientX;
+    tapStartY = e.touches[0].clientY;
+  }, {passive: true});
+  list.addEventListener('touchend', e => {
+    const row = e.target.closest('.m-wk-row[data-rid]');
+    if (!row) return;
+    if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
+    if (e.target.closest('.m-mv-today')) return; // "→ Today" button owns its own tap
+    const ct = e.changedTouches[0];
+    if (Math.abs(ct.clientX - tapStartX) > 10 || Math.abs(ct.clientY - tapStartY) > 10) return;
+    const id = row.dataset.rid;
+    if (_isDblTap(id)) {
+      if (_wkTapTimer) { clearTimeout(_wkTapTimer); _wkTapTimer = null; }
+      _mRowEdit(row);
+      return;
+    }
+    clearTimeout(_wkTapTimer);
+    _wkTapTimer = setTimeout(() => { _wkTapTimer = null; _mShowTaskMenu(row); }, 350);
+  }, {passive: true});
+}
+
 function mInitWkDrag() {
   const list = document.getElementById('mWeekList');
   if (!list || list._wkDragInited) return;
@@ -3651,17 +3720,10 @@ function mInitWkDrag() {
 
   list.addEventListener('touchend', async e => {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    if (!_mWkDrag) {
-      // double-tap to edit
-      const rowEl = e.target.closest('.m-wk-row[data-tid]');
-      if (rowEl) {
-        const ct = e.changedTouches[0];
-        if (Math.abs(ct.clientX - touchStartX) <= 10 && Math.abs(ct.clientY - touchStartY) <= 10) {
-          if (_isDblTap(rowEl.dataset.tid)) mOpenEdit(rowEl.dataset.tid);
-        }
-      }
-      return;
-    }
+    // Single/double-tap (menu / edit) is handled entirely by mInitWeekDblTap's own
+    // listener below, not here — a plain tap-release with no drag armed just falls
+    // through with nothing left to do in THIS listener.
+    if (!_mWkDrag) return;
     document.removeEventListener('touchmove', _mWkDragMove);
 
     const {tid, origDs, ghost, rowEl, currentTargetDs} = _mWkDrag;
@@ -3869,7 +3931,7 @@ async function mDeleteShopDirect(id) {
   const s = st.shopping.find(x => String(x.id) === String(id));
   if (!s) return;
   st.shopping = st.shopping.filter(x => String(x.id) !== String(id));
-  save(); mRenderShop();
+  save(); renderAll(); // not just mRenderShop() — the task menu's Delete now also reaches here from Week
   await sbReq('DELETE', 'shopping_list', null, `?id=eq.${id}`);
 }
 
@@ -3936,7 +3998,9 @@ async function mSaveShopEdit() {
   const time = document.getElementById('mShopEditTime').value || null;
   const id = _mShopEditId;
   s.name = name; s.store = store; s.link = link; s.due_date = due_date; s.default_start_time = time;
-  save(); mCloseShopEdit(); mRenderShop(); mRenderToday();
+  // renderAll() (not mRenderShop()+mRenderToday() only) — this sheet now also opens from
+  // Week's tap menu, so Week needs to pick up the change too.
+  save(); mCloseShopEdit(); renderAll();
   const patch = {name, store, link, due_date};
   if (time !== null) patch.default_start_time = time;
   await sbReq('PATCH', 'shopping_list', patch, `?id=eq.${id}`);
@@ -3946,7 +4010,7 @@ async function mDeleteShopItem() {
   if (!_mShopEditId) return;
   const id = _mShopEditId;
   st.shopping = st.shopping.filter(x => String(x.id) !== String(id));
-  save(); mCloseShopEdit(); mRenderShop(); mRenderToday();
+  save(); mCloseShopEdit(); renderAll();
   await sbReq('DELETE', 'shopping_list', null, `?id=eq.${id}`);
 }
 
@@ -4709,6 +4773,7 @@ async function mInit() {
   mInitBlockDrag();
   mInitWeekScroll();
   mInitWkDrag();
+  mInitWeekDblTap();
   mInitMonthDrag();
   const authed = await checkAuth();
   if (!authed) return;
