@@ -198,14 +198,18 @@ Persisted to `localStorage._mLastTab`; init restores it (refresh keeps current t
                                          "+" (mToggleShopAdd) — "+" last so it sits next to reload,
                                          same spot Today's own "+" occupies
   #mMonthAddBtn (month only)          ← "+" opens full-add sheet for the selected day (mMonthAddTask)
-  #mGoTodayBtn (week only)            ← jumps to Today tab; gone from Shop/More/Month (Month has its
-                                         own dedicated Today button, see below). On Week, mGoToday()
-                                         re-runs mRenderWeek(true) to scroll back to today WITHOUT
-                                         navigating away (it used to call mShowTab('today'), which
-                                         was a bug — you're already looking at Week)
+  #mWeekTodayBtn (week only)          ← sun icon (same SVG as the bottom nav's Today icon, for
+                                         recognizable "today" meaning), mWeekGoToday() → mRenderWeek(true)
+                                         to jump/scroll back to today WITHOUT navigating away — sits to
+                                         the LEFT of #mWeekAddBtn (source order = visual left-to-right)
+  #mWeekAddBtn (week only)            ← "+" opens the SAME quick-add popup Today's "+" does
+                                         (mWeekQuickAdd() forces `_mTodayOffset=0` first so a stale
+                                         offset left over from swiping Today doesn't misdate the add,
+                                         then calls mOpenQuickAdd()) — replaced the old single
+                                         "go to today" calendar-icon button entirely (2026-09-22)
   .m-reload-btn                       ← always last, far right
 ```
-`mShowTab(tab)` toggles `#mHeaderTitleWrap` vs `#mMonthHeaderControls`/`#mMonthTodayNav`/`#mMonthAddBtn` based on `tab==='month'`, and `#mGoTodayBtn` based on `tab==='week'` — single source of truth for all of the above, see Month section for the controls themselves.
+`mShowTab(tab)` toggles `#mHeaderTitleWrap` vs `#mMonthHeaderControls`/`#mMonthTodayNav`/`#mMonthAddBtn` based on `tab==='month'`, and `#mWeekTodayBtn`/`#mWeekAddBtn` based on `tab==='week'` — single source of truth for all of the above, see Month section for the controls themselves.
 
 **All header icon buttons are unified 30px circles** (`.m-shop-hdr-icon`, `.m-reload-btn`) — same `width`/`height`/`border`/`color`. Icons are SVGs (stroke-width 2, matching each other), not text glyphs (`+`/`↻` unicode characters were tried first — different glyphs render at inconsistent visual weight/centering even at the same font-size, which is exactly the kind of mismatch a shared SVG spec avoids). The progress ring is the one exception in SHAPE (a ring, not a bordered circle) but matches the other buttons' 30px footprint exactly, per above.
 
@@ -214,6 +218,7 @@ Floating inset pill, NOT the old edge-to-edge bar: `#mNav{left:14px;right:14px;b
 - **`#mNavBackdrop`**: a SEPARATE full-bleed blur layer (`left:0;right:0;bottom:0;height:76px`, behind `#mNav`, `pointer-events:none`) spanning from the pill's top edge down to the true screen bottom — makes the whole bottom strip read as one continuous glass surface (content blurred-through beside/below the pill too), not just the pill itself floating in empty space. `76px` = `#mNav`'s `bottom:20px` + `height:56px`; keep in sync if either changes.
 - **`#mNav` itself sits flush at `bottom:20px` with plain fixed numbers — no `env(safe-area-inset-bottom)` term.** Went through several iterations (safe-area-relative, then safe-area-inflated-height) before landing here: inflating the box height by the safe-area amount to keep tap targets clear of the gesture zone stretched it into a tall rectangle with icons stranded near the top — not pill-shaped. A real Instagram screenshot (2026-09-14) confirmed its floating pill does the same — bleeds close to the true edge rather than reserving the full safe-area as dead space.
 - **`.m-nav-highlight` (the sliding pill)**: `#mNavMoveHighlight` (mobile-overview.js) computes its `translateX` from the active button's real `getBoundingClientRect()`, with `transitionDuration` SCALED to the actual distance traveled (`260ms` to `550ms`, `260 + dist*0.55`) — a fixed duration made a full end-to-end jump (Today↔More) play at 4x the speed of a one-tab hop, which made its spring-overshoot look proportionally much bigger only on the long jumps. Small icon "pop" (`.m-nav-btn.pop`, keyframe `mNavPop`) fires on the newly-active tab after the slide.
+- **Gotcha: measuring while `#mApp` is hidden gives zero rects.** `#mApp{display:none}` until `hideLoginOverlay()` adds `.ready` (see Boot loading below) — `getBoundingClientRect()` on anything inside it collapses to all-zero until then, so a `_mNavMoveHighlight()` call before that point silently lands the pill near Today's slot (x≈-6) no matter which tab is actually active, even though the active button's own `.active`-class color is unaffected (that doesn't depend on layout) — looks like "two tabs selected at once." `mInit()` re-snaps with `_mNavMoveHighlight(false)` right after `hideLoginOverlay()` to fix this up once the nav is actually measurable — needed because `mShowTab(lastTab)` (which calls `_mNavMoveHighlight` itself) now runs earlier, before that point, see Init Flow below.
 - Active-icon distinction is a bolder stroke (`stroke-width:2.5` vs `2`), not a filled variant — the icon set (Feather-style) is outline-only by design, no matching filled icons to swap to.
 - Icons: Today=sun (not a clock — that belongs to Timeblock), Week/Month=calendar pair (must share the exact same rect `y`/height — Month previously sat 1px off from Week's true center, a copy-paste bug), Shop=bag, More=2×2 grid. All five spans `y:2`→`22` on the `viewBox="0 0 24 24"` — verified via a temporary 3-line debug overlay (icon-top/icon-bottom/label-center, removed once confirmed) after "they look inconsistent" reports; keep any future icon edit within that same box.
 
@@ -226,6 +231,7 @@ Floating inset pill, NOT the old edge-to-edge bar: `#mNav{left:14px;right:14px;b
 - `mSortDayTasks(tasks, ds)` — exact port of desktop's CURRENT `sortTasksForDay` tier stack (hard tiers: travel > birthday/holiday > overdue > done, THEN manual `_dayOrder` override, else timeblock-position > important > type-priority > name). `mSortToday(tasks)` just calls this with today's `ds`. Was previously running desktop's OLD pre-2026-08-21 stack (birthday>done>travel>overdue>important>...) with no manual-order tie-break at all — fixed 2026-08-26.
   - **Pup-session task name must be JUST the skill name** (`skill.skill`), not `"{pup}: {skill}"` — desktop's own `renderToday()` uses the bare skill name, and the sort's final tiebreak is alphabetical-by-name, so a mobile-only prefix silently made mobile's order diverge from desktop's even with byte-identical sort code (found 2026-09-19, was the actual root cause of a "mobile sort doesn't match desktop" report — the algorithm was never the bug).
 - `mRenderToday()` — renders `#mTodayList` + updates `#mProgress` (the ring — see Header above) + `#mOvBanner` (see "Move All to Today banner" below).
+  - **Empty-list states** (2026-09-22): the same checkmark icon (`.m-empty-icon`) covers TWO distinct cases, told apart only by the label under it — a day with tasks that are ALL checked off gets `.m-empty-txt` = "All done for today"; a day with NO tasks at all gets the same icon with a blank label (nothing to declare "done"). Previously only the true-empty case showed this screen, and it wrongly carried the "All done" text; a fully-completed day just rendered its (all-checked) rows instead of this screen.
 - **`_dayOrder` now syncs across devices** (2026-09-21) — previously per-device localStorage only (desktop and mobile could each have a different manual order for the same day and neither ever saw the other's). Fixed by adding `day_order:'_dayOrder'` to `_KV_MAPS` (core.js, shared) — reuses the existing `client_kv` generic key→JSON sync table (same mechanism `vid_day_map`/`vid_step_day_map` already used), not a new table. Migration `015_day_order.sql` just seeds the key; `_dayOrder()`/`_dayOrderSet()` on both platforms already read/write the exact localStorage key `_kvSyncMaps` mirrors, so no other code changed. First sync after the seed can have one device's pre-existing local order silently overwrite the other's (last-pushed-wins) — expected one-time settling, not an ongoing bug.
 - `mTaskRow(t)` — generates row HTML: checkbox, name, "move to today" button (overdue only). Color priority: overdue (`OV`) > important (`IMP`, `t.important && !t.done`) > category (`gc(catKey)`) — no "not on timeblock" arrow indicator (removed, was `.m-row-arrow`/`▸`, considered visual noise).
   - **Left color band**: a 3px inset rounded bar (`position:absolute;left:6px;top:8px;bottom:8px`, thinned from 4px/7px-inset 2026-09-21 — read as slightly heavy once the row card background went away, see "Flat list, no card" below), two-tone — light fill (`s.bg`) + darker 1px outline (`s.d`), same color PAIR the old dot used, not a single flat vivid line.
@@ -242,7 +248,7 @@ Every row carries `data-rid` (its own id, ANY type — used by drag-reorder and 
 - Non-WR recurring virtual: checkbox → `togRecVirt(recId, checked, wkKey)`
 - Shopping: checkbox → `togShop(shopId, checked)`
 - Pup session: checkbox → `togPupSessionDone(sessId, checked)`
-- Travel/birthday: no checkbox (📅 icon), no swipe
+- Travel/birthday: no checkbox — 📅 icon for travel, 🎂 for birthday (changed from 📅 2026-09-22, same split on Week's rows) — no swipe
 
 ### Row gestures (redesigned 2026-09-18/19, task menu redesigned again 2026-09-21)
 - **Single tap** (`mInitTodayDblTap`, delayed by the 350ms double-tap window so a genuine single tap can be told apart from "first half of a double-tap") → `_mShowTaskMenu(el)`, routes by `data-rtype`:
@@ -408,51 +414,78 @@ let _mWeekOffset = 0;  // week offset (0=this week, -1=last, +1=next)
 ### Layout
 ```
 #mWeekPage
-  #mWeekNav          ← sticky: ‹ "This Week" ›
-  #mWeekList         ← 7 .m-wk-day divs
+  #mWeekList         ← .m-wk-divider (week label) + .m-wk-day divs
 ```
+Redesigned 2026-09-22 to match Today's own list conventions (see Today section) instead of
+its own separate style — bars/circle-checkboxes/tap-menu, not dots/native-checkboxes/no
+interaction. No more per-day header `+`/count badge (removed) or `#mWkAddSheet` (retired,
+see Header above — Week's header `+` now opens Today's own quick-add popup instead).
 
 Each `.m-wk-day` has `data-ds="YYYY-MM-DD"` and contains:
-- `.m-wk-hd` — sticky day header (name, date, today dot, count badge, + button)
-- `.m-wk-row` — one per task
+- `.m-wk-hd` — day header, name LEFT + date RIGHT (`justify-content:space-between`, e.g.
+  "Mon" / "Sep 24"), plain — no sticky positioning, no count/+ any more
+- `.m-wk-row` — one per task (or `.m-wk-travel` for a trip banner, see below)
+
+**Day-card styling**: each day is its own bordered/tinted card (`border-radius`, subtle
+`rgba(0,0,0,.02)`/dark-mode-equivalent background), not just hairline-separated rows —
+clearer section division via color/borders instead of overlaid labels. `.is-today` stands
+out via a real drop shadow doing most of the work (`box-shadow`), a light neutral border
+(NOT a purple/accent tint or background wash — tried and explicitly rejected), no today-dot
+(removed). `.is-past` is dimmed (`opacity`). **`overflow:hidden` is deliberately NOT set**
+on `.m-wk-day` — it would clip `.is-today`'s box-shadow; corner-rounding is applied directly
+to `.m-wk-hd` (top) and `.m-wk-day > *:last-child` (bottom) instead.
+
+**Week divider** (`.m-wk-divider`, "This Week"/"Last Week"/"Next Week"/date-range label) is
+a real section break between weeks — bold top rule + generous spacing, normal case (not
+all-caps, explicit request).
 
 ### Task data per day (`mGetDayTasks(ds, weekOff)`)
 - Regular `st.tasks` where `due_date === ds`
 - Overdue regular tasks shown on today's row only
 - `getRecurringWeekTasks(weekOff)` filtered by `due_date === ds`
-- Shopping items due on `ds` (overdue only on today)
-- Also includes (desktop week parity): WR pinned instances (current + past 4 wk keys), pup sessions, fin-cancel reminders, videos via `_vidDayMap`, video steps via `_vidStepDayMap`
+- Shopping items due on `ds` (overdue only on today) — id is `'shop-cal-'+id` (fixed
+  2026-09-22, was a bare `'shop-'+id` — see id-prefix gotcha below)
+- Also includes (desktop week parity): WR pinned instances (current + past 4 wk keys), pup sessions, fin-cancel reminders, videos via `_vidDayMap` (id `'vid-ov-'+id`, same fix as shopping above), video steps via `_vidStepDayMap`
 - Sorted via `mSortDayTasks(tasks, ds)` — exact port of desktop `sortTasksForDay` (birthday → done-bottom → travel → overdue → important → TB start time → type priority → alpha). Same fn used by Today & Month.
 - **Video day-maps sync**: `_vidStepDayMap`/`_vidDayMap` (localStorage) mirror through the `client_kv` table (core.js `_kvSyncMaps`, migration 007). Mobile reads them like desktop; mobile toggles write doneDays back and push on next sync.
-
-### Per-day done/total count
-- `doneC = tasks.filter(t => t.done || (isPast && (t._type==='travel'||t._type==='birthday')))`. Birthdays/trips have no checkbox, so past ones must count as done or the ratio reads low. `isPast = ds < today`. Fixed in BOTH `_mWkRenderWeekHtml` and the single-day re-render in `mSaveWkTask`.
+- **id-prefix gotcha**: `mGetDayTasks`'s synthetic ids for virtual items MUST exactly match `mGetTodayTasks`'s (Today) ids for the SAME underlying record — desktop uses `'shop-cal-'+id`/`'vid-ov-'+id` universally and both mobile lists must too. `_mManualTieBreak`'s day-order lookup (below) indexes by exact id string; a mismatched prefix (Week previously used bare `'shop-'`/`'vid-'`) silently breaks manual order matching between tabs for any day containing that item type, with no error — it just silently falls through to natural sort. If Week/Today ever look like they disagree on order again, check this first.
 
 ### Week task rows (`mWkTaskRow(t)`)
-- Regular (non-virtual): `data-tid` + `data-tname` for drag; checkbox → `toggleTask()`
-- Recurring virtual: checkbox → `togRecVirt(recId, done, wkKey)`
-- Shopping: checkbox → `togShop(shopId, done)`
-- No edit button in week view (use Today tab for edit)
+Same building blocks as Today's `mTaskRow` (see Today section) — left color band (`.m-wk-band`, not a dot), circle checkbox (`.m-chk-wrap`, shared CSS, just sized down via `.m-wk-row` scoped overrides), 🎂/📅 icon for birthday/travel, `.m-mv-today` "→ Today" button for overdue+movable rows (exact port of `canMv`/`mvArgs`/`mvBtn`, added 2026-09-22 — previously Week only showed the red tint with no way to act on it). Trips are the one exception: a full-width `.m-wk-travel` banner, no checkbox/band/menu.
+- `data-rid`/`data-rtype`(+per-type extras: `data-shopid`, `data-ruleid`+`data-wkkey`, `data-vidid`[+`data-vidstep`+`data-day`]) mirror `mTaskRow`'s convention exactly (added 2026-09-22) so the shared tap-menu/edit system below works unmodified. `data-tid`+`data-tname` (real tasks only) are what the day-to-day drag (below) keys off — unchanged from before.
+- Checkbox `onchange` routes by type same as Today: `toggleTask`/`togRecVirt`/`togShop`/`togWrRule`/`togPupSessionDone`/`togFinCancelDone`.
+
+### Tap-menu / double-tap-edit (`mInitWeekDblTap`, added 2026-09-22)
+Exact port of `mInitTodayDblTap`/`mInitShopDblTap` (see Today section), scoped to `#mWeekList`, selector `.m-wk-row[data-rid]` — single tap → `_mShowTaskMenu(row)`, double tap → `_mRowEdit(row)`, both fully generic (read `row.dataset.*`, no list-specific assumptions) so they work here unmodified now that `mWkTaskRow` emits the same attributes `mTaskRow` does. Coexists with the hold-drag below the same way Today's own two listeners already coexist on `#mTodayList` — a real drag moves the finger past this listener's own 10px tap threshold, so it silently bails out instead of also opening a menu. The OLD inline double-tap-to-edit that used to live inside `mInitWkDrag`'s own touchend handler was removed — leaving both would have double-invoked `_isDblTap` per tap (corrupting its shared timestamp state) once this generic listener also existed.
+- **Render-scope gotcha**: several actions reachable through this menu (`mDeleteById`, `mSaveEditTask`, `mDeleteEditTask`, `mSaveShopEdit`, `mDeleteShopItem`, `mDeleteShopDirect`) used to call bare `mRenderToday()`/`mRenderShop()` only — harmless while only Today/Shop could reach them, but since Week's menu can now trigger the exact same code paths, they were switched to `renderAll()` (2026-09-22) so editing/deleting from Week's menu actually refreshes what you're looking at instead of updating Today/Shop invisibly in the background. Same reasoning as the existing "Live re-render after toggle" rule below — check any NEW mobile action reachable from more than one tab for this.
 
 ### Week navigation (infinite scroll)
 - Renders weeks `_mWkRenderedLo..Hi` (default −1..+1) via `_mWkRenderWeekHtml`. `mRenderWeek(reset)`: `reset=true` ONLY on tab-open (resets range + scroll-to-today); background/sync re-renders pass no arg → preserve range + scroll position (no yank).
 - **Scroll container is not always `#mWeekPage`** — the flex layout often leaves it unbounded so the **document** scrolls. `_mWkScroller()` returns `#mWeekPage` if scrollable, else `document.scrollingElement`. ALL scroll logic (scroll-to-today, preserve, load-more, the scroll listener) must use `_mWkScroller()`, not `#mWeekPage` directly.
-- `_mWkScrollToToday()`: aligns today's `.m-wk-day` to the top (offset by sticky `#mHeader` when the doc scrolls); retries up to 25× until the scroller is actually scrollable (early calls get clamped to 0 = last week).
+- `_mWkScrollToToday()`: aligns today's `.m-wk-day` to the top (offset by sticky `#mHeader` when the doc scrolls, minus a `GAP` constant — 10px as of 2026-09-22 — so the card sits a little below the header instead of flush against it); retries up to 25× until the scroller is actually scrollable (early calls get clamped to 0 = last week). **A top margin on `.m-wk-day.is-today` can't create this breathing room on its own** — tried first, but this scroll math always re-aligns the card's (post-margin) top edge flush against the header, so any margin just gets scrolled past; `GAP` in this function is the one place that actually controls it. Tuned down from an initial 16px after "I can see the previous day's card peeking out below the header" feedback.
 - `mInitWeekScroll()`: one listener on both `#mWeekPage` and `window`; near top/bottom → `_mWkLoadMore('up'/'down')`.
+- **`mWeekGoToday()`** (header sun icon, left of "+", see Header above) — `mRenderWeek(true)` to jump back to today's default range/scroll position after browsing elsewhere. Replaced the old "go to today" calendar-icon button (2026-09-22, see Header above).
 
-### Drag-to-reschedule (between days)
-- `.m-wk-row` has `-webkit-user-select:none; user-select:none` in CSS to prevent text selection on long-press
-- `mInitWkDrag()` — event delegation on `#mWeekList` (persists through re-renders)
-- Long-press (480ms) on `.m-wk-row[data-tid]` → activates drag
-- Ghost: fixed-position pill element appended to `<body>`, follows finger at `-44px` vertical offset
-- `_mWkDragMove(e)` (added to `document` with `passive:false`): moves ghost, detects target day via `elementFromPoint`, highlights `.m-wk-drop-target`
-- Release on different day: `t.due_date = newDs` → `save()` → `mRenderWeek()` → `sbReq PATCH tasks`
-- Only regular tasks draggable — virtual/recurring/shopping are computed, not individually stored
-
-### Add task for specific day
-- `mWkAddTask(ds)` → opens `#mWkAddSheet` with title "Add — Day, Mon D"
-- `mSaveWkTask()` → `sbReq POST tasks` with `due_date: _mWkAddDs`
-- Uses `_mWkAddCat` / `'wkadd'` picker type
+### Drag: reorder within a day, or move to another day (`mInitWkDrag`, rewritten 2026-09-22)
+Replaced the old floating-ghost-pill approach (cross-day move only) with the same
+live-reparent technique Today's own drag-reorder uses (`mInitTodayDrag`/`_mTodDragMove`,
+Today section) — drags the actual row, not a floating pill, and covers a case Today never
+needed (only ever has one day's list): dropping among a DIFFERENT day's rows moves it
+there (`due_date` change), dropping among the row's OWN day's rows just reorders it.
+- `.m-wk-row[data-tid]` (real tasks only — virtual/recurring/shopping are computed, not
+  individually stored, so not draggable) → 480ms hold arms the drag, `.m-wk-row-dragging`
+  class for visual feedback (opacity/shadow, same treatment as Today's `.m-row-dragging`)
+- `_mWkDragMove(e)`: hit-tests via `elementFromPoint` (row hidden from its own hit-test via
+  a temporary `pointerEvents:none`), live-inserts the dragged row before/after whichever row
+  it's hovering, or at the end of a day with nothing under the finger yet (before the "—"
+  `.m-wk-empty` placeholder if present); auto-scrolls via `_mWkScroller()` near top/bottom edges
+- On drop: same day as it started → writes `_dayOrder()[ds]` from the final DOM order (same
+  mechanism/localStorage key Today's own drag-reorder writes — round-trips through desktop's
+  sort correctly). Different day → `due_date` changes AND `_dayOrder()[targetDs]` is ALSO
+  written from where it landed (dropping at a specific spot should stick, not just get
+  appended by natural sort on the next render). No-op (no undo toast) if dropped back exactly
+  where it started. `touchcancel` discards any live DOM reparenting via a plain `mRenderWeek()`
+  (no writes) — previously unhandled.
 
 ---
 
@@ -603,22 +636,25 @@ Real sub-page (not a sheet/popup — a popup was tried first and its backdrop co
 async function mInit() {
   load();              // load localStorage → st
   _mSetDate();         // set header date label
+  mShowTab(lastTab);   // restore last tab NOW, synchronously off cached data — see gotcha below
   mInitPickers();      // build all category/store/day/day-of-month/cadence pickers
+  mInitTodayDblTap(); mInitTodayDrag(); mInitShopDblTap();  // tap-menu/edit + drag-reorder
   mInitPTR();          // pull-to-refresh on #mMain
   mInitTBSwipe();      // day-swipe on #mTLScroll
   mInitBlockDrag();    // longpress-drag on #mTLCol
-  mInitWeekSwipe();    // week-swipe on #mWeekPage
-  mInitWkDrag();       // task drag on #mWeekList
+  mInitWeekScroll(); mInitWkDrag(); mInitWeekDblTap();      // Week's own scroll/drag/tap-menu
   mInitMonthDrag();    // longpress-drag on #mMonthWeeks → create travel task
   const authed = await checkAuth();
   if (!authed) return; // showLoginOverlay() called by core.js
   hideLoginOverlay();
-  await syncAll();     // fetch from Supabase → renderAll()
-  mShowTab(localStorage._mLastTab || 'today'); // restore last tab (validated against tab list)
+  _mNavMoveHighlight(false); // re-snap the nav pill — see gotcha below
+  await syncAll();     // fetch from Supabase → renderAll(), re-renders whichever tab mShowTab already picked
   setInterval(() => { if (cfg.url && cfg.key) syncAll(true); }, 30000);
 }
 document.addEventListener('DOMContentLoaded', mInit);
 ```
+
+**Gotcha (2026-09-22): `mShowTab` must run BEFORE `checkAuth()`/`syncAll()`, not after.** It used to run only after both awaits resolved. `#mTodayPage` has no inline `display:none` in mobile.html (it's the default-visible page) while every other tab page does, so leaving the tab restore until after that network round-trip let Today paint on screen for however long it took, every single refresh, before snapping to the real last tab. Same principle as the login-flash fix below (Boot loading) — never let the wrong screen paint while waiting on the network; restore synchronously from what's already on disk (`load()` populates `st` from localStorage synchronously, so `mShowTab`'s render dispatch has real cached data to show immediately) instead. Moving it earlier surfaced a second, subtler bug: `mShowTab`'s own `_mNavMoveHighlight(true)` call now runs while `#mApp` is still `display:none` (see "Bottom nav" above) — `getBoundingClientRect()` on anything inside a hidden ancestor collapses to zero, so the sliding pill silently landed near Today's slot regardless of which tab was actually restored, even though the tab's own content and its nav button's `.active` color (which don't depend on layout) were both already correct. Fixed by re-snapping with `_mNavMoveHighlight(false)` right after `hideLoginOverlay()`, once `#mApp` is actually measurable — don't remove this snap if `mShowTab`'s early call ever moves again.
 
 ### Foreground re-sync
 After the 30s `setInterval`, `mInit` adds `visibilitychange`/`pageshow`/`focus` listeners → `syncAll(true)` (3s dedup guard). iOS freezes `setInterval` while the PWA is backgrounded, so without this, reopening shows stale data (completed-elsewhere tasks reappear, deleted items linger). This is the mobile-side defense against stale-cache complaints — the DB is the source of truth; force a re-pull on every foreground.
