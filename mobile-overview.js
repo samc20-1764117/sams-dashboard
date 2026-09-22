@@ -789,9 +789,13 @@ function mGetTodayTasks() {
       });
   }
 
+  // Same inclusion rule regular tasks use just above (ts, line 717) — due exactly today
+  // stays visible whether done or not (so a completed item sinks to the bottom, struck
+  // through, instead of vanishing); only undone items carry forward as "overdue" onto
+  // today's list from a past day.
   const shopToday = st.shopping
-    .filter(s => !s.done && s.due_date && (s.due_date === ds || isOv(s.due_date)))
-    .map(s => ({id: 'shop-cal-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: false, _shopId: s.id, _virtual: true, _type: 'shop'}));
+    .filter(s => s.due_date && (s.due_date === ds || (_mTodayOffset === 0 && isOv(s.due_date) && !s.done)))
+    .map(s => ({id: 'shop-cal-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: !!s.done, _shopId: s.id, _virtual: true, _type: 'shop'}));
 
   const pupSessToday = (st.pupSessions || [])
     .filter(s => s.day_date === ds || (isOv(s.day_date) && !s.done))
@@ -3862,16 +3866,16 @@ function _mSetDate() {
 // row was the same shopping-orange, so it carried no information; overdue items still get
 // the tinted-background treatment (m-ov) that Today's overdue rows use.
 function mShopRow(s) {
-  const overdue = !!(s.due_date && isOv(s.due_date));
+  const overdue = !!(s.due_date && isOv(s.due_date) && !s.done);
   let dueTxt = '';
   if (s.due_date) {
     const d = new Date(s.due_date + 'T00:00:00');
     dueTxt = d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
   }
   return `<div class="m-row-outer" data-rid="${s.id}" data-rtype="shop" data-shopid="${s.id}">
-    <div class="m-row${overdue ? ' m-ov' : ''}">
-      <label class="m-chk-wrap"><input type="checkbox" onchange="togShop('${s.id}',this.checked)"></label>
-      <span class="m-row-name">${escHtml(s.name || '')}</span>
+    <div class="m-row${s.done ? ' m-done' : ''}${overdue ? ' m-ov' : ''}">
+      <label class="m-chk-wrap"><input type="checkbox" ${s.done ? 'checked' : ''} onchange="togShop('${s.id}',this.checked)"></label>
+      <span class="m-row-name${s.done ? ' done' : ''}">${escHtml(s.name || '')}</span>
       ${dueTxt ? `<span class="m-shop-due-lbl">${dueTxt}</span>` : ''}
     </div>
   </div>`;
@@ -3880,17 +3884,23 @@ function mShopRow(s) {
 function mRenderShop() {
   const list = document.getElementById('mShopList');
   if (!list) return;
-  const todo = (st.shopping || []).filter(s => !s.done);
+  const items = st.shopping || [];
 
   // Group by store
   const groups = {};
-  todo.forEach(s => {
+  items.forEach(s => {
     const k = s.store || 'Other';
     if (!groups[k]) groups[k] = [];
     groups[k].push(s);
   });
-  // Sort items within each store by shop_order
-  Object.values(groups).forEach(arr => arr.sort((a, b) => (a.shop_order ?? 9999) - (b.shop_order ?? 9999)));
+  // Not-done items first (by shop_order), done items sink to the bottom of their own
+  // store group and stay visible/struck-through instead of disappearing — matches
+  // desktop's todo/done merge (renderShopFull, features.js) instead of filtering done
+  // items out entirely.
+  Object.values(groups).forEach(arr => arr.sort((a, b) => {
+    if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+    return (a.shop_order ?? 9999) - (b.shop_order ?? 9999);
+  }));
 
   // Known stores (M_SHOP_STORES, below) group in that fixed order — HEB first, matching
   // the store picker's own order — not alphabetically (that put Costco ahead of HEB).
@@ -4110,7 +4120,13 @@ function mRenderFullList() {
   const items = (st.groceryList || []).filter(g => g.week_of === nextWkMon);
   const unchecked = items.filter(g => !g.checked);
   const checked = items.filter(g => g.checked);
-  const hebItems = (st.shopping || []).filter(s => !s.done && s.store === 'HEB').sort((a, b) => (a.shop_order ?? 9999) - (b.shop_order ?? 9999));
+  // Done items stay visible (struck through, sunk to the bottom) instead of vanishing —
+  // same fix as mRenderShop/mGetTodayTasks; checking one off here calls togShop via
+  // mToggleFullListHeb, the same shared toggle every other shopping view uses.
+  const hebItems = (st.shopping || []).filter(s => s.store === 'HEB').sort((a, b) => {
+    if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+    return (a.shop_order ?? 9999) - (b.shop_order ?? 9999);
+  });
 
   let html = `<h3 style="margin:0 0 4px">HEB List</h3><div class="m-groc-week-hdr" style="padding-top:0"><span class="m-groc-week-dates">${_mGrocDateRange(nextWkMon)}</span></div>`;
 
@@ -4132,8 +4148,8 @@ function mRenderFullList() {
     </div>`;
   }
   function hebRow(s) {
-    return `<div class="m-groc-row" data-id="${s.id}">
-      <input type="checkbox" class="m-groc-chk" onchange="mToggleFullListHeb('${s.id}',this.checked)">
+    return `<div class="m-groc-row${s.done ? ' m-groc-done' : ''}" data-id="${s.id}">
+      <input type="checkbox" class="m-groc-chk"${s.done ? ' checked' : ''} onchange="mToggleFullListHeb('${s.id}',this.checked)">
       <span class="m-groc-name">${escHtml(s.name || '')}</span>
     </div>`;
   }
