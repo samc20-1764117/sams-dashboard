@@ -16,14 +16,14 @@
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
 <title>Sam's Dashboard</title>
 <script>
-window._BUILD='20260923q';var BUILD=window._BUILD;
+window._BUILD='20260923r';var BUILD=window._BUILD;
 if(sessionStorage._mReloaded===BUILD);else{
   fetch('/version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(d.v&&d.v!==BUILD){sessionStorage._mReloaded=d.v;location.reload();}
   }).catch(function(){});
 }
 </script>
-<link rel="stylesheet" href="styles.css?v=20260923q">
+<link rel="stylesheet" href="styles.css?v=20260923r">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');var d=document.documentElement;var isDk=!!(s.cfg&&s.cfg.dark);if(isDk)d.classList.add('init-dark');
   /* Body colors mirrored from THEMES[key].body in features.js (~line 7850) — duplicated here
      since this runs before features.js loads, purely so the native title bar / PWA chrome
@@ -215,7 +215,7 @@ if(sessionStorage._mReloaded===BUILD);else{
           <button class="btn btn-ghost btn-xs" onclick="shiftWrRec(-1)">←</button>
           <button class="btn btn-ghost btn-xs" onclick="openRecMoModal()" style="white-space:nowrap">Month</button>
         </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:4px">
+        <div style="display:flex;align-items:center;justify-content:center;gap:2px">
           <span id="wrRecWkLbl" style="display:flex;align-items:center;font-size:10px;font-weight:700;color:var(--text)"></span>
           <button class="btn-plus" onclick="openWrRuleAddModal()" title="Add Weekly Reset item">+</button>
         </div>
@@ -244,12 +244,12 @@ if(sessionStorage._mReloaded===BUILD);else{
     <!-- Quick Links -->
     <div class="card" style="display:flex;flex-direction:column">
       <div class="ql-grid" style="flex:1;align-content:stretch;padding:8px;gap:6px">
-        <a class="ql-btn" href="#videos" onclick="event.preventDefault();showPage('videos')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span>Videos</a>
-        <a class="ql-btn" href="#finance" onclick="event.preventDefault();showPage('finance')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Finance</a>
-        <a class="ql-btn" href="#pups" onclick="event.preventDefault();showPage('pups')"><span class="ql-icon"><img class="ql-pic" src="./sunny_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover"><img class="ql-pic" src="./mochi_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover;margin-left:-2px"><svg class="ql-icon-fallback" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".55"><ellipse cx="8.6" cy="5.6" rx="1.9" ry="2.6"/><ellipse cx="15.4" cy="5.6" rx="1.9" ry="2.6"/><ellipse cx="3.7" cy="9.8" rx="1.6" ry="1.9"/><ellipse cx="20.3" cy="9.8" rx="1.6" ry="1.9"/><path d="M6.3,16.6 C6.3,13.8 8.7,12.3 12,12.3 C15.3,12.3 17.7,13.8 17.7,16.6 C17.7,20 14.5,22.2 12,22.2 C9.5,22.2 6.3,20 6.3,16.6 Z"/></svg></span>Pups</a>
-        <a class="ql-btn" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><span class="ql-icon"><svg width="18" height="20" viewBox="2 4 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="5" y="14" width="14" height="8" rx="1"/><line x1="12" y1="10" x2="12" y2="22"/><path d="M12 10c-2-3-5-3-5-1s3 1 5 1"/><path d="M12 10c2-3 5-3 5-1s-3 1-5 1"/></svg></span>Birthdays</a>
-        <a class="ql-btn" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></span>Ideas</a>
-        <a class="ql-btn" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3"/><path d="M18 22V15"/></svg></span>Recipes</a>
+        <a class="ql-btn" href="#videos" onclick="event.preventDefault();showPage('videos')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span><span class="ql-label">Videos</span></a>
+        <a class="ql-btn" href="#finance" onclick="event.preventDefault();showPage('finance')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span class="ql-label">Finance</span></a>
+        <a class="ql-btn" href="#pups" onclick="event.preventDefault();showPage('pups')"><span class="ql-icon"><img class="ql-pic" src="./sunny_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover"><img class="ql-pic" src="./mochi_headshot.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover;margin-left:-2px"><svg class="ql-icon-fallback" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".55"><ellipse cx="8.6" cy="5.6" rx="1.9" ry="2.6"/><ellipse cx="15.4" cy="5.6" rx="1.9" ry="2.6"/><ellipse cx="3.7" cy="9.8" rx="1.6" ry="1.9"/><ellipse cx="20.3" cy="9.8" rx="1.6" ry="1.9"/><path d="M6.3,16.6 C6.3,13.8 8.7,12.3 12,12.3 C15.3,12.3 17.7,13.8 17.7,16.6 C17.7,20 14.5,22.2 12,22.2 C9.5,22.2 6.3,20 6.3,16.6 Z"/></svg></span><span class="ql-label">Pups</span></a>
+        <a class="ql-btn" href="#birthdays" onclick="event.preventDefault();showPage('birthdays')"><span class="ql-icon"><svg width="18" height="20" viewBox="2 4 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="5" y="14" width="14" height="8" rx="1"/><line x1="12" y1="10" x2="12" y2="22"/><path d="M12 10c-2-3-5-3-5-1s3 1 5 1"/><path d="M12 10c2-3 5-3 5-1s-3 1-5 1"/></svg></span><span class="ql-label">Birthdays</span></a>
+        <a class="ql-btn" href="#ideas" onclick="event.preventDefault();showPage('ideas')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></span><span class="ql-label">Ideas</span></a>
+        <a class="ql-btn" href="#recipes" onclick="event.preventDefault();showPage('recipes')"><span class="ql-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3"/><path d="M18 22V15"/></svg></span><span class="ql-label">Recipes</span></a>
       </div>
     </div>
     </div><!-- row1-right-top -->
@@ -1057,9 +1057,9 @@ if(sessionStorage._mReloaded===BUILD);else{
 </div>
 
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260923q"></script>
-<script src="overview.js?v=20260923q"></script>
-<script src="features.js?v=20260923q"></script>
+<script src="core.js?v=20260923r"></script>
+<script src="overview.js?v=20260923r"></script>
+<script src="features.js?v=20260923r"></script>
 <script src="pup-skills.js?v=20260608b"></script>
 <script src="videos.js?v=20260917a"></script>
 

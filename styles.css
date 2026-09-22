@@ -2036,6 +2036,26 @@ body.theme-modern.dark .ql-btn{background:rgba(255,255,255,.05);box-shadow:0 1px
 body.theme-modern.dark .ql-btn:hover{background:rgba(255,255,255,.07);box-shadow:0 2px 6px rgba(0,0,0,.25),0 8px 20px rgba(0,0,0,.3)}
 body.theme-modern.dark .ql-btn{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.02)}
 body.theme-modern.dark .ql-btn:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.14)}
+/* Label text (index.html wraps each tile's text in .ql-label) reads as a caption under the
+   icon rather than icon-forward-button text — lighter weight + slightly faded vs. the base
+   theme's bold var(--muted) (2026-09-22 feedback). Wrapped in its own span (rather than styled
+   on .ql-btn directly) so this doesn't also fade/lighten the icon, which is a separate child
+   with its own opacity (.ql-icon, above) — opacity on the shared parent would have compounded
+   with it. */
+body.theme-modern .ql-label{font-weight:500;opacity:.8}
+
+/* Card-header icon buttons (.btn-plus — Shopping's +/cart, Cinema's +, Weekly Reset's + since
+   2026-09-22) get the same flat-by-default / subtle-hover-tint affordance .btn-ghost already
+   uses for ←/Month/This Week/→, instead of a permanent circle — one consistent header-icon
+   language across cards instead of some flat and some circled (2026-09-22 feedback: "remove
+   the circle around the plus", "card headers overall" + "hover affordance consistency").
+   border-radius stays the base 50%, so hover still shows a soft circular tint, just not
+   permanently visible. Scoped to Modern theme like the rest of this file — other themes keep
+   the original always-visible circle. */
+body.theme-modern .btn-plus{background:transparent;border-color:transparent;box-shadow:none;color:var(--muted)}
+body.theme-modern .btn-plus:hover{background:rgba(0,0,0,.05);border-color:transparent;color:var(--accent)}
+body.theme-modern.dark .btn-plus{background:transparent;border-color:transparent;box-shadow:none;color:var(--muted)}
+body.theme-modern.dark .btn-plus:hover{background:rgba(255,255,255,.08);border-color:transparent;color:var(--accent)}
 
 /* Hidden by default in every theme — only body.theme-modern reveals/positions it below. */
 .ti-band{display:none}
