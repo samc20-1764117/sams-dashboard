@@ -625,9 +625,11 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
    button (#mMonthTodayBtn) lives among the other circular header icons on the right
    (left of the "+"), same convention as Week's #mWeekTodayBtn, matching the "all in the
    header" redesign. */
-#mMonthHeaderControls{display:flex;align-items:center;gap:8px;position:relative}
+/* min-height matches Today/Week's own two-line header content (19px title + ~13px date
+   subtitle, ~36px total) so #mHeader (which has no fixed height of its own) renders the
+   same overall height on every tab instead of Month's single-line row leaving it short. */
+#mMonthHeaderControls{display:flex;align-items:center;gap:16px;position:relative;min-height:36px}
 .m-mo-title-btn{font-size:15px;font-weight:700;color:var(--text);font-family:inherit;cursor:pointer;height:24px;display:flex;align-items:center;gap:3px;background:none;border:none;padding:0}
-#mMonthYearBtn{font-size:13px;font-weight:600;color:var(--sub)}
 .m-mo-title-caret{font-size:13px;color:var(--sub)}
 .m-mo-hdr-drop{display:none;position:absolute;top:30px;left:0;background:var(--bg-elevated,var(--bg));border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:240px;overflow-y:auto;z-index:50;min-width:120px}
 .m-mo-hdr-drop.open{display:block}
@@ -684,6 +686,16 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
    the shorter column out to match the taller one. */
 .m-mo-detail-cols{display:flex;align-items:flex-start;gap:14px}
 .m-mo-detail-col{flex:1;min-width:0}
+/* Shrunk-down variant of Today's row size (still the same .m-row-outer/.m-row markup) —
+   this panel needs to fit more, shorter rows than a full-screen list does. Scoped to
+   #mMonthDetail only, so Today/Week's own rows (separate containers) are untouched. */
+#mMonthDetail .m-row{min-height:30px;padding:6px 8px;gap:8px}
+#mMonthDetail .m-row-name{font-size:12.5px;line-height:1.25}
+#mMonthDetail .m-row-icon{font-size:13px;width:20px}
+#mMonthDetail .m-chk-wrap{width:20px;height:20px}
+#mMonthDetail .m-chk-wrap input[type=checkbox]{width:16px;height:16px}
+#mMonthDetail .m-chk-wrap input[type=checkbox]::after{width:16px;height:16px}
+#mMonthDetail .m-mv-today{font-size:9px;padding:2px 6px}
 
 /* ── Boot loading ─────────────────────────────────────────────────────────── */
 #mBootLoading{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:var(--bg)}

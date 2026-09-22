@@ -4372,13 +4372,16 @@ function mPickYear(yr) {
   mMonthJumpToOffset((yr - now.getFullYear()) * 12 + (_mMonthDisplayedMo - now.getMonth()));
 }
 
-// "+" button in the month header — adds a task for the currently-selected day,
-// via the existing full-add sheet. (Week's own "+" targets today only, via the
-// simpler quick-add popup — see mWeekQuickAdd.)
-function mMonthAddTask() {
-  mOpenFullAdd();
-  const dueEl = document.getElementById('mFullAddDue');
-  if (dueEl) dueEl.value = _mMonthSelectedDs || d2s(getDayDate(0));
+// "+" button in the month header — same quick-add popup Today/Week use (type picker:
+// Travel/Shopping/Weekly Reset/Recurring/plain), not the heavier full-add sheet. mAddTask()
+// derives its due date from _mTodayOffset (see mWeekQuickAdd's identical trick), so this
+// sets that offset to the day-gap between today and whichever day is selected on the
+// calendar before opening it — targets the selected day instead of always today.
+function mMonthQuickAdd() {
+  const target = _mMonthSelectedDs || d2s(getDayDate(0));
+  const today = d2s(getDayDate(0));
+  _mTodayOffset = Math.round((new Date(target + 'T12:00:00') - new Date(today + 'T12:00:00')) / 86400000);
+  mOpenQuickAdd();
 }
 
 // Category key exactly matching the detail panel below (_mRenderMonthDetail), so a
