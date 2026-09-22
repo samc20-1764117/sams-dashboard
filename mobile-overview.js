@@ -2525,14 +2525,15 @@ function mShowTab(tab) {
   const weekAddBtn = document.getElementById('mWeekAddBtn');
   if (weekAddBtn) weekAddBtn.style.display = (tab === 'week') ? '' : 'none';
   // Month tab replaces the plain title/date block with its own header controls
-  // (month/year dropdowns + centered Today/‹/› group) — "all in the header" redesign.
+  // (month/year dropdowns) — "all in the header" redesign. Its own back-to-today button
+  // lives among the other circular header icons (mMonthTodayBtn, toggled below).
   const isMonth = tab === 'month';
   const titleWrap = document.getElementById('mHeaderTitleWrap');
   if (titleWrap) titleWrap.style.display = isMonth ? 'none' : '';
   const moControls = document.getElementById('mMonthHeaderControls');
   if (moControls) moControls.style.display = isMonth ? '' : 'none';
-  const moNav = document.getElementById('mMonthTodayNav');
-  if (moNav) moNav.style.display = isMonth ? '' : 'none';
+  const moTodayBtn = document.getElementById('mMonthTodayBtn');
+  if (moTodayBtn) moTodayBtn.style.display = isMonth ? '' : 'none';
   const moAddBtn = document.getElementById('mMonthAddBtn');
   if (moAddBtn) moAddBtn.style.display = isMonth ? '' : 'none';
   document.getElementById('mMonthMonthDrop')?.classList.remove('open');
@@ -4307,20 +4308,6 @@ function _mSyncMonthScrollHeight() {
 }
 window.addEventListener('resize', () => { if (_mCurTab === 'month') _mSyncMonthScrollHeight(); _mNavMoveHighlight(false); });
 
-// Jump one real month from whichever month is currently docked at the top of the scroll view
-function mMonthJump(dir) {
-  const scroller = document.getElementById('mMonthScroll');
-  const rows = scroller ? [...scroller.querySelectorAll('.m-mo-week')] : [];
-  const top = scroller ? scroller.getBoundingClientRect().top : 0;
-  const anchorRow = rows.find(r => r.getBoundingClientRect().bottom > top + 4);
-  const anchorDs = anchorRow ? anchorRow.dataset.mon : d2s(getDayDate(0));
-  const d = new Date(anchorDs + 'T12:00:00');
-  d.setDate(1);
-  d.setMonth(d.getMonth() + dir);
-  const now = new Date();
-  mMonthJumpToOffset((d.getFullYear() - now.getFullYear()) * 12 + (d.getMonth() - now.getMonth()));
-}
-
 // Jump to the month at monthOffset from the current real month, extending the rendered
 // week range if the target isn't loaded yet.
 function mMonthJumpToOffset(monthOffset) {
@@ -4409,16 +4396,6 @@ function _mMonthCatKey(t) {
     : (t.category || '');
 }
 
-// Effective color for a badge segment / detail dot: overdue (red) beats important
-// (yellow) beats category color — the same priority desktop uses on task rows
-// (features.js: `t.important&&!t.done?IMP:...`, overdue always wins over that).
-function _mMonthDotStyle(t) {
-  const noCheck = t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday';
-  if (!noCheck && isOv(t.due_date) && !t.done) return OV;
-  if (t.important && !t.done) return IMP;
-  return gc(_mMonthCatKey(t));
-}
-
 // Segment order matches the rest of the dashboard's CATS key order, with overdue/important
 // pulled out front since they're cross-cutting states, not categories.
 function _mMonthDayBadge(tasks) {
@@ -4433,11 +4410,11 @@ function _mMonthDayBadge(tasks) {
   const counts = {};
   const colorFor = {};
   items.forEach(t => {
-    // Bug fix: this MUST use the exact same isOverdue/isImportant conditions as
-    // _mMonthDotStyle (which correctly requires !t.done). The previous version checked
-    // isOv() alone for the grouping key but got its color from _mMonthDotStyle — so a
-    // done task landed in the '_overdue' bucket (wrong group) while colorFor[key] ended
-    // up being whichever task in that bucket was processed last (inconsistent color).
+    // Bug fix: the grouping key and the color MUST use the exact same isOverdue/isImportant
+    // conditions (requiring !t.done). A prior version checked isOv() alone for the grouping
+    // key but sourced the color from a separate done-unaware helper — so a done task landed
+    // in the '_overdue' bucket (wrong group) while colorFor[key] ended up being whichever
+    // task in that bucket was processed last (inconsistent color).
     const noCheck = t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday';
     const isOverdue = !noCheck && isOv(t.due_date) && !t.done;
     const isImportant = !!t.important && !t.done;
@@ -4482,15 +4459,48 @@ function _mMoWeekRowHtml(weekOff, forceLabel) {
   if (splitIdx === -1) {
     const divider = (dates[0].getDate() === 1 || forceLabel) ? monthLabel(dates[0]) : '';
     const cells = dates.map(cellHtml).join('');
-    return `${divider}<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${cells}${_mMoTravelBarsHtml(dates, 0, 6)}</div>`;
+    return `${divider}${_mMoTravelLabelsHtml(dates, 0, 6)}<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${cells}${_mMoTravelBarsHtml(dates, 0, 6)}</div>`;
   }
   let html = (dates[0].getDate() === 1 || forceLabel) ? monthLabel(dates[0]) : '';
+  html += _mMoTravelLabelsHtml(dates, 0, splitIdx - 1);
   const firstCells = dates.slice(0, splitIdx).map(cellHtml).join('') + Array(7 - splitIdx).fill(0).map(blankCell).join('');
   html += `<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${firstCells}${_mMoTravelBarsHtml(dates, 0, splitIdx - 1)}</div>`;
   html += monthLabel(dates[splitIdx]);
+  html += _mMoTravelLabelsHtml(dates, splitIdx, 6);
   const secondCells = Array(splitIdx).fill(0).map(blankCell).join('') + dates.slice(splitIdx).map(cellHtml).join('');
   html += `<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[splitIdx])}">${secondCells}${_mMoTravelBarsHtml(dates, splitIdx, 6)}</div>`;
   return html;
+}
+
+// Small text lane above each week row showing the trip name over its date span (iOS
+// Calendar-style all-day event label) — the travel bar itself (_mMoTravelBarsHtml, below)
+// carries only a title tooltip, no visible text, so multi-day trips had no on-screen name.
+// Same left/width percentage math as that bar, kept as a separate lane instead of text
+// inside the bar so it never has to fight the day numbers for legibility/z-index.
+function _mMoTravelLabelsHtml(dates, colStart, colEnd) {
+  const wkStart = d2s(dates[0]), wkEnd = d2s(dates[6]);
+  const trips = (st.travel || []).filter(tv => {
+    const s = tv.start_date ? tv.start_date.split('T')[0] : null;
+    if (!s) return false;
+    const e = tv.end_date ? tv.end_date.split('T')[0] : s;
+    return s <= wkEnd && e >= wkStart;
+  });
+  if (!trips.length) return '';
+  const ts = gc('travel');
+  const labels = trips.map(tv => {
+    const s = tv.start_date.split('T')[0];
+    const e = tv.end_date ? tv.end_date.split('T')[0] : s;
+    const startsHere = s >= wkStart, endsHere = e <= wkEnd;
+    const startIdx = startsHere ? dates.findIndex(d => d2s(d) === s) : 0;
+    const endIdx = endsHere ? dates.findIndex(d => d2s(d) === e) : 6;
+    if (endIdx < colStart || startIdx > colEnd) return '';
+    const segStart = Math.max(startIdx, colStart);
+    const segEnd = Math.min(endIdx, colEnd);
+    const left = (segStart / 7 * 100).toFixed(4);
+    const width = ((segEnd - segStart + 1) / 7 * 100).toFixed(4);
+    return `<div class="m-mo-trip-label" style="left:calc(${left}% + 2px);width:calc(${width}% - 4px);background:${ts.bg};color:${ts.t}">${escHtml(tv.name || '')}</div>`;
+  }).join('');
+  return labels ? `<div class="m-mo-trip-lane">${labels}</div>` : '';
 }
 
 // A continuous colored bar spanning each trip's date range within this week row, like
@@ -4720,6 +4730,12 @@ function mMonthSelectDay(ds) {
   requestAnimationFrame(_mSyncMonthScrollHeight);
 }
 
+// Rows reuse mTaskRow verbatim (same band+circle-checkbox markup, same data-rid/data-rtype
+// attributes) so the shared tap-menu/edit system (_mShowTaskMenu/_mRowEdit, wired up here via
+// mInitMonthDblTap) works unmodified — exact same list convention as Today/Week.
+// Fills column 1 first, only spilling into column 2 once there's enough to split evenly —
+// 1-2 tasks always render as one short column instead of an artificially-padded two-column
+// block, so a light day stays short instead of showing a bunch of blank room.
 function _mRenderMonthDetail(ds) {
   const detail = document.getElementById('mMonthDetail');
   if (!detail) return;
@@ -4734,15 +4750,44 @@ function _mRenderMonthDetail(ds) {
   if (!tasks.length) {
     html += '<div class="m-mo-detail-empty">No tasks</div>';
   } else {
-    tasks.forEach(t => {
-      const s = _mMonthDotStyle(t);
-      html += `<div class="m-mo-detail-item${t.done ? ' done' : ''}">
-        <span class="m-mo-detail-dot" style="background:${s.bg};border:1px solid ${s.d}"></span>
-        ${escHtml(t.name || '')}
-      </div>`;
-    });
+    const half = tasks.length > 2 ? Math.ceil(tasks.length / 2) : tasks.length;
+    const col1 = tasks.slice(0, half), col2 = tasks.slice(half);
+    html += col2.length
+      ? `<div class="m-mo-detail-cols"><div class="m-mo-detail-col">${col1.map(mTaskRow).join('')}</div><div class="m-mo-detail-col">${col2.map(mTaskRow).join('')}</div></div>`
+      : col1.map(mTaskRow).join('');
   }
   detail.innerHTML = html;
+}
+
+// Single tap -> task menu, double tap -> edit — same idiom as mInitTodayDblTap/
+// mInitWeekDblTap, scoped to #mMonthDetail. Delegated on the container (not per-row) since
+// _mRenderMonthDetail fully replaces its innerHTML on every day selection.
+let _moTapTimer = null;
+function mInitMonthDblTap() {
+  const detail = document.getElementById('mMonthDetail');
+  if (!detail || detail._dblTapInited) return;
+  detail._dblTapInited = true;
+  let tapStartX = 0, tapStartY = 0;
+  detail.addEventListener('touchstart', e => {
+    tapStartX = e.touches[0].clientX;
+    tapStartY = e.touches[0].clientY;
+  }, {passive: true});
+  detail.addEventListener('touchend', e => {
+    const outer = e.target.closest('.m-row-outer[data-rid]');
+    if (!outer) return;
+    if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
+    if (e.target.closest('.m-mv-today')) return; // "→ Today" button owns its own tap
+    const ct = e.changedTouches[0];
+    if (Math.abs(ct.clientX - tapStartX) > 10 || Math.abs(ct.clientY - tapStartY) > 10) return;
+    const id = outer.dataset.rid;
+    if (_isDblTap(id)) {
+      if (_moTapTimer) { clearTimeout(_moTapTimer); _moTapTimer = null; }
+      _mRowEdit(outer);
+      return;
+    }
+    clearTimeout(_moTapTimer);
+    _moTapTimer = setTimeout(() => { _moTapTimer = null; _mShowTaskMenu(outer); }, 350);
+  }, {passive: true});
 }
 
 function mMonthTapDay(ds) {
@@ -4835,6 +4880,7 @@ async function mInit() {
   mInitWkDrag();
   mInitWeekDblTap();
   mInitMonthDrag();
+  mInitMonthDblTap();
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
