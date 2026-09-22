@@ -885,7 +885,7 @@ function mTaskRow(t) {
   // Two-tone band (light fill + darker outline), same pairing the old dot indicator used
   // (s.bg/s.d), instead of one flat vivid line — and inset top/bottom so it reads as a
   // mark on this row, not a continuous stripe running through the whole list.
-  const band = `<span style="position:absolute;left:6px;top:8px;bottom:8px;width:3px;border-radius:3px;background:${s.bg};border:1px solid ${s.d}"></span>`;
+  const band = `<span class="m-row-band" style="background:${s.bg};border-color:${s.d}"></span>`;
   const inner = `<div class="m-row${t.done ? ' m-done' : ''}${ov ? ' m-ov' : ''}">
     ${band}
     ${noCheck
@@ -4697,8 +4697,12 @@ function _mUpdateMonthTitle() {
   const d = new Date(row.dataset.mon + 'T12:00:00');
   _mMonthDisplayedMo = d.getMonth();
   _mMonthDisplayedYr = d.getFullYear();
-  titleEl.innerHTML = `${d.toLocaleDateString('en-US', {month: 'long'})}<span class="m-mo-title-caret">▾</span>`;
-  if (yearEl) yearEl.innerHTML = `${d.getFullYear()}<span class="m-mo-title-caret">▾</span>`;
+  // Same thin two-stroke chevron every other picker in this app uses (.m-cpick-arr), not
+  // a filled unicode triangle — matches the system disclosure-chevron style (SF Symbols'
+  // chevron.down) instead of a heavier/rounder glyph.
+  const caret = '<span class="m-mo-title-caret"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>';
+  titleEl.innerHTML = `${d.toLocaleDateString('en-US', {month: 'long'})}${caret}`;
+  if (yearEl) yearEl.innerHTML = `${d.getFullYear()}${caret}`;
 }
 
 // Default view is the START of the current month (day 1's row), not today's own row —

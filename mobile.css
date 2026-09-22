@@ -100,6 +100,7 @@ body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
    row element has no prior state to transition FROM; :active fires on the press itself,
    before any re-render, so it's real motion regardless of render architecture). */
 .m-row{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--border);min-height:46px;background:var(--bg-elevated);position:relative;will-change:transform;transition:background-color .15s ease}
+.m-row-band{position:absolute;left:6px;top:8px;bottom:8px;width:3px;border-radius:3px;border:1px solid transparent}
 .m-row:active{background:rgba(0,0,0,.035)}
 body.dark .m-row:active{background:rgba(255,255,255,.045)}
 .m-done{opacity:.25}
@@ -630,7 +631,8 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
    same overall height on every tab instead of Month's single-line row leaving it short. */
 #mMonthHeaderControls{display:flex;align-items:center;gap:16px;position:relative;min-height:36px}
 .m-mo-title-btn{font-size:15px;font-weight:700;color:var(--text);font-family:inherit;cursor:pointer;height:24px;display:flex;align-items:center;gap:3px;background:none;border:none;padding:0}
-.m-mo-title-caret{font-size:13px;color:var(--sub)}
+.m-mo-title-caret{display:inline-flex;color:var(--sub)}
+.m-mo-title-caret svg{width:11px;height:11px}
 .m-mo-hdr-drop{display:none;position:absolute;top:30px;left:0;background:var(--bg-elevated,var(--bg));border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:240px;overflow-y:auto;z-index:50;min-width:120px}
 .m-mo-hdr-drop.open{display:block}
 .m-mo-hdr-drop-opt{padding:9px 14px;font-size:14px;color:var(--text);cursor:pointer;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -689,12 +691,13 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 /* Shrunk-down variant of Today's row size (still the same .m-row-outer/.m-row markup) —
    this panel needs to fit more, shorter rows than a full-screen list does. Scoped to
    #mMonthDetail only, so Today/Week's own rows (separate containers) are untouched. */
-#mMonthDetail .m-row{min-height:30px;padding:6px 8px;gap:8px}
+#mMonthDetail .m-row{min-height:22px;padding:4px 6px;gap:6px}
+#mMonthDetail .m-row-band{top:4px;bottom:4px}
 #mMonthDetail .m-row-name{font-size:12.5px;line-height:1.25}
-#mMonthDetail .m-row-icon{font-size:13px;width:20px}
-#mMonthDetail .m-chk-wrap{width:20px;height:20px}
-#mMonthDetail .m-chk-wrap input[type=checkbox]{width:16px;height:16px}
-#mMonthDetail .m-chk-wrap input[type=checkbox]::after{width:16px;height:16px}
+#mMonthDetail .m-row-icon{font-size:12px;width:16px}
+#mMonthDetail .m-chk-wrap{width:16px;height:16px}
+#mMonthDetail .m-chk-wrap input[type=checkbox]{width:13px;height:13px}
+#mMonthDetail .m-chk-wrap input[type=checkbox]::after{width:13px;height:13px}
 #mMonthDetail .m-mv-today{font-size:9px;padding:2px 6px}
 
 /* ── Boot loading ─────────────────────────────────────────────────────────── */
