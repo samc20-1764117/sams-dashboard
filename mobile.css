@@ -621,27 +621,17 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 
 /* ── Month tab ───────────────────────────────────────────────────────────── */
 #mMonthPage{display:flex;flex-direction:column;flex:1;min-height:0;padding:12px 8px 0}
-/* Month-tab header controls live IN #mHeader (mHeaderTitleWrap hidden in its place) —
-   month name + year are two independent dropdown triggers (top-left). Its back-to-today
-   button (#mMonthTodayBtn) lives among the other circular header icons on the right
-   (left of the "+"), same convention as Week's #mWeekTodayBtn, matching the "all in the
-   header" redesign. */
-/* min-height matches Today/Week's own two-line header content (19px title + ~13px date
+/* Month-tab header controls live IN #mHeader (mHeaderTitleWrap hidden in its place) — a
+   single "‹ year" pill (Apple Calendar's own back-to-year-view convention) that opens the
+   year-view grid below instead of two separate text dropdowns. Its back-to-today button
+   (#mMonthTodayBtn) lives among the other circular header icons on the right (left of the
+   "+"), same convention as Week's #mWeekTodayBtn, matching the "all in the header" redesign.
+   min-height matches Today/Week's own two-line header content (19px title + ~13px date
    subtitle, ~36px total) so #mHeader (which has no fixed height of its own) renders the
    same overall height on every tab instead of Month's single-line row leaving it short. */
-#mMonthHeaderControls{display:flex;align-items:center;gap:16px;position:relative;min-height:36px}
-.m-mo-title-btn{font-size:15px;font-weight:700;color:var(--text);font-family:inherit;cursor:pointer;height:24px;display:flex;align-items:center;gap:3px;background:none;border:none;padding:0}
-.m-mo-title-caret{display:inline-flex;color:var(--sub)}
-.m-mo-title-caret svg{width:11px;height:11px}
-.m-mo-hdr-drop{display:none;position:absolute;top:30px;left:0;background:var(--bg-elevated,var(--bg));border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:240px;overflow-y:auto;z-index:50;min-width:120px}
-.m-mo-hdr-drop.open{display:block}
-.m-mo-hdr-drop-opt{padding:9px 14px;font-size:14px;color:var(--text);cursor:pointer;white-space:nowrap;font-variant-numeric:tabular-nums}
-/* DM Sans' self-hosted subset doesn't carry tabular-figure OpenType data, so
-   font-variant-numeric:tabular-nums above is a no-op for digits — scoped to the year
-   list only (not the month-name list) so "2030"/"2031" etc. render the same width. */
-#mMonthYearDrop .m-mo-hdr-drop-opt{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
-.m-mo-hdr-drop-opt:active{background:rgba(124,106,247,.1)}
-.m-mo-hdr-drop-opt.is-current{color:var(--accent);font-weight:700}
+#mMonthHeaderControls{display:flex;align-items:center;position:relative;min-height:36px}
+.m-mo-year-pill{display:flex;align-items:center;gap:2px;background:var(--glass);border:none;border-radius:14px;padding:5px 12px 5px 8px;font-size:15px;font-weight:700;color:var(--text);font-family:inherit;cursor:pointer}
+.m-mo-year-pill svg{width:13px;height:13px;flex-shrink:0}
 #mMonthDayHdr{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;flex-shrink:0}
 #mMonthScroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;overscroll-behavior:contain}
 #mMonthWeeks{display:flex;flex-direction:column;padding-bottom:8px}
@@ -691,7 +681,9 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 /* Shrunk-down variant of Today's row size (still the same .m-row-outer/.m-row markup) —
    this panel needs to fit more, shorter rows than a full-screen list does. Scoped to
    #mMonthDetail only, so Today/Week's own rows (separate containers) are untouched. */
-#mMonthDetail .m-row{min-height:22px;padding:4px 6px;gap:6px}
+/* Left padding (14px) clears the band (spans 6-9px from the row's left edge) so the
+   checkbox sits in the gap between the band and the name, not flush against the band. */
+#mMonthDetail .m-row{min-height:22px;padding:4px 6px 4px 14px;gap:6px}
 #mMonthDetail .m-row-band{top:4px;bottom:4px}
 #mMonthDetail .m-row-name{font-size:12.5px;line-height:1.25}
 #mMonthDetail .m-row-icon{font-size:12px;width:16px}
@@ -699,6 +691,24 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 #mMonthDetail .m-chk-wrap input[type=checkbox]{width:13px;height:13px}
 #mMonthDetail .m-chk-wrap input[type=checkbox]::after{width:13px;height:13px}
 #mMonthDetail .m-mv-today{font-size:9px;padding:2px 6px}
+
+/* ── Year view (Apple Calendar-style grid of mini months, opened from the header's year
+   pill — see mOpenYearView/mobile-overview.js) ───────────────────────────────────── */
+#mYearBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;opacity:0;transition:opacity .22s}
+#mYearBackdrop.open{opacity:1}
+#mYearSheet{position:fixed;top:8vh;left:0;right:0;bottom:0;background:var(--bg);border-radius:18px 18px 0 0;z-index:101;flex-direction:column;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
+#mYearSheet.open{transform:translateY(0)}
+.m-yr-hdr{display:flex;align-items:center;justify-content:center;gap:18px;padding:14px 16px 10px;flex-shrink:0}
+.m-yr-title{font-size:19px;font-weight:800;color:var(--text);min-width:64px;text-align:center}
+.m-yr-nav-btn{background:var(--glass);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer}
+.m-yr-nav-btn svg{width:14px;height:14px}
+#mYearGrid{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:grid;grid-template-columns:1fr 1fr;gap:22px 14px;padding:4px 16px calc(20px + env(safe-area-inset-bottom))}
+.m-yr-month-name{font-size:15px;font-weight:800;color:var(--text);padding:0 2px 6px;cursor:pointer}
+.m-yr-days{display:grid;grid-template-columns:repeat(7,1fr)}
+.m-yr-day{font-size:11px;color:var(--text);text-align:center;padding:3px 0;border-radius:50%;cursor:pointer}
+.m-yr-day:active{background:var(--glass)}
+.m-yr-day.is-today{background:var(--accent);color:#fff;font-weight:700}
+.m-yr-day-blank{cursor:default}
 
 /* ── Boot loading ─────────────────────────────────────────────────────────── */
 #mBootLoading{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:var(--bg)}

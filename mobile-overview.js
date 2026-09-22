@@ -616,10 +616,6 @@ function mInitPickers() {
       _mCloseAddPickers();
       _mSyncPickerOpenClass();
     }
-    if (!e.target.closest('#mMonthHeaderControls')) {
-      document.getElementById('mMonthMonthDrop')?.classList.remove('open');
-      document.getElementById('mMonthYearDrop')?.classList.remove('open');
-    }
   }, true);
 }
 
@@ -2540,8 +2536,7 @@ function mShowTab(tab) {
   if (moTodayBtn) moTodayBtn.style.display = isMonth ? '' : 'none';
   const moAddBtn = document.getElementById('mMonthAddBtn');
   if (moAddBtn) moAddBtn.style.display = isMonth ? '' : 'none';
-  document.getElementById('mMonthMonthDrop')?.classList.remove('open');
-  document.getElementById('mMonthYearDrop')?.classList.remove('open');
+  mCloseYearView();
   // Date subtitle always shows, same height everywhere. Today's own swipe (offset)
   // logic owns the text on the Today tab; every other tab always shows today's real date.
   const dateLbl = document.getElementById('mDateLbl');
@@ -4349,43 +4344,75 @@ function mMonthJumpToOffset(monthOffset) {
 }
 
 // Tracks which month/year is currently docked at the top of the scroll view (set by
-// _mUpdateMonthTitle) so picking just a month (or just a year) from its own dropdown
-// keeps the OTHER value as-is, rather than resetting it.
+// _mUpdateMonthTitle) so the year-view pill always reflects wherever you've scrolled to.
 let _mMonthDisplayedMo = new Date().getMonth();
 let _mMonthDisplayedYr = new Date().getFullYear();
 const _M_MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-function mToggleMonthDrop() {
-  document.getElementById('mMonthYearDrop')?.classList.remove('open');
-  const el = document.getElementById('mMonthMonthDrop');
-  if (!el) return;
-  if (el.classList.contains('open')) { el.classList.remove('open'); return; }
-  el.innerHTML = _M_MONTH_NAMES.map((name, mi) => `<div class="m-mo-hdr-drop-opt${mi === _mMonthDisplayedMo ? ' is-current' : ''}" onclick="mPickMonth(${mi})">${name}</div>`).join('');
-  el.classList.add('open');
+// ── Year view ─────────────────────────────────────────────────────────────────
+// Apple Calendar-style grid of mini months (tap the header's year pill) — replaces the
+// old two-dropdown month-list/year-list pickers with one screen: scan the whole year at
+// once, tap any date (or a month name) to jump straight there. Colors/dots intentionally
+// left out — this is a navigation picker, not another data view.
+let _mYearViewYr = new Date().getFullYear();
+
+function _mYearMiniMonthHtml(year, mIdx) {
+  const first = new Date(year, mIdx, 1);
+  const startDow = (first.getDay() + 6) % 7; // Mon=0..Sun=6, matches the main month grid
+  const daysInMonth = new Date(year, mIdx + 1, 0).getDate();
+  const todayDs = d2s(getDayDate(0));
+  let cells = '';
+  for (let i = 0; i < startDow; i++) cells += '<span class="m-yr-day m-yr-day-blank"></span>';
+  for (let day = 1; day <= daysInMonth; day++) {
+    const ds = d2s(new Date(year, mIdx, day));
+    cells += `<span class="m-yr-day${ds === todayDs ? ' is-today' : ''}" onclick="mYearPickDate('${ds}')">${day}</span>`;
+  }
+  return `<div class="m-yr-month">
+    <div class="m-yr-month-name" onclick="mYearPickDate('${d2s(first)}')">${_M_MONTH_NAMES[mIdx]}</div>
+    <div class="m-yr-days">${cells}</div>
+  </div>`;
 }
 
-function mPickMonth(mi) {
-  document.getElementById('mMonthMonthDrop')?.classList.remove('open');
-  const now = new Date();
-  mMonthJumpToOffset((_mMonthDisplayedYr - now.getFullYear()) * 12 + (mi - now.getMonth()));
-}
-
-function mToggleYearDrop() {
-  document.getElementById('mMonthMonthDrop')?.classList.remove('open');
-  const el = document.getElementById('mMonthYearDrop');
-  if (!el) return;
-  if (el.classList.contains('open')) { el.classList.remove('open'); return; }
-  const nowYr = new Date().getFullYear();
+function _mRenderYearView(year) {
+  const title = document.getElementById('mYearSheetTitle');
+  if (title) title.textContent = year;
+  const grid = document.getElementById('mYearGrid');
+  if (!grid) return;
   let html = '';
-  for (let y = 2026; y <= Math.max(nowYr + 5, 2031); y++) html += `<div class="m-mo-hdr-drop-opt${y === _mMonthDisplayedYr ? ' is-current' : ''}" onclick="mPickYear(${y})">${y}</div>`;
-  el.innerHTML = html;
-  el.classList.add('open');
+  for (let m = 0; m < 12; m++) html += _mYearMiniMonthHtml(year, m);
+  grid.innerHTML = html;
 }
 
-function mPickYear(yr) {
-  document.getElementById('mMonthYearDrop')?.classList.remove('open');
+function mOpenYearView() {
+  _mYearViewYr = _mMonthDisplayedYr || new Date().getFullYear();
+  _mRenderYearView(_mYearViewYr);
+  document.getElementById('mYearBackdrop').style.display = 'block';
+  document.getElementById('mYearSheet').style.display = 'flex';
+  requestAnimationFrame(() => {
+    document.getElementById('mYearBackdrop').classList.add('open');
+    document.getElementById('mYearSheet').classList.add('open');
+  });
+}
+
+function mCloseYearView() {
+  const backdrop = document.getElementById('mYearBackdrop');
+  const sheet = document.getElementById('mYearSheet');
+  if (!backdrop || !sheet || !sheet.classList.contains('open')) return;
+  backdrop.classList.remove('open');
+  sheet.classList.remove('open');
+  setTimeout(() => { backdrop.style.display = 'none'; sheet.style.display = 'none'; }, 250);
+}
+
+function mYearShift(dir) {
+  _mYearViewYr += dir;
+  _mRenderYearView(_mYearViewYr);
+}
+
+function mYearPickDate(ds) {
+  mCloseYearView();
+  const d = new Date(ds + 'T12:00:00');
   const now = new Date();
-  mMonthJumpToOffset((yr - now.getFullYear()) * 12 + (_mMonthDisplayedMo - now.getMonth()));
+  mMonthJumpToOffset((d.getFullYear() - now.getFullYear()) * 12 + (d.getMonth() - now.getMonth()));
 }
 
 // "+" button in the month header — same quick-add popup Today/Week use (type picker:
@@ -4703,9 +4730,8 @@ function mInitMonthScroll() {
 // makes scrolling feel stuck/broken on a real device.
 function _mUpdateMonthTitle() {
   const scroller = document.getElementById('mMonthScroll');
-  const titleEl = document.getElementById('mMonthTitle');
-  const yearEl = document.getElementById('mMonthYearBtn');
-  if (!scroller || !titleEl) return;
+  const pillTxt = document.getElementById('mMonthYearPillTxt');
+  if (!scroller || !pillTxt) return;
   const rect = scroller.getBoundingClientRect();
   const el = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 4);
   const row = el && el.closest('.m-mo-week');
@@ -4713,12 +4739,7 @@ function _mUpdateMonthTitle() {
   const d = new Date(row.dataset.mon + 'T12:00:00');
   _mMonthDisplayedMo = d.getMonth();
   _mMonthDisplayedYr = d.getFullYear();
-  // Same thin two-stroke chevron every other picker in this app uses (.m-cpick-arr), not
-  // a filled unicode triangle — matches the system disclosure-chevron style (SF Symbols'
-  // chevron.down) instead of a heavier/rounder glyph.
-  const caret = '<span class="m-mo-title-caret"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>';
-  titleEl.innerHTML = `${d.toLocaleDateString('en-US', {month: 'long'})}${caret}`;
-  if (yearEl) yearEl.innerHTML = `${d.getFullYear()}${caret}`;
+  pillTxt.textContent = d.getFullYear();
 }
 
 // Default view is the START of the current month (day 1's row), not today's own row —
