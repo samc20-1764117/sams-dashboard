@@ -319,6 +319,7 @@ function mTogglePick(which) {
   const myId = ids[which];
   Object.entries(ids).forEach(([k, id]) => { if (k !== which) document.getElementById(id)?.classList.remove('open'); });
   _mCloseAddPickers(myId);
+  if (which === 'add') _mFitPickerOpts(myId);
   document.getElementById(myId)?.classList.toggle('open');
   _mSyncPickerOpenClass();
 }
@@ -394,6 +395,7 @@ function _mAddSyncTypeFields(cat) {
 let _mAddStore = 'HEB';
 function mToggleStorePick() {
   _mCloseAddPickers();
+  _mFitPickerOpts('mAddStoreOpts');
   document.getElementById('mAddStoreOpts')?.classList.toggle('open');
   _mSyncPickerOpenClass();
 }
@@ -421,6 +423,21 @@ const M_ADD_PICKER_IDS = ['mAddPickOpts', 'mAddStoreOpts', 'mAddDayOpts', 'mAddD
 function _mCloseAddPickers(exceptId) {
   M_ADD_PICKER_IDS.forEach(id => { if (id !== exceptId) document.getElementById(id)?.classList.remove('open'); });
 }
+// Sizes a dropdown to the space ACTUALLY available above its trigger, instead of a fixed
+// guess. Triggers lower in the form (e.g. the category picker, last field before Add) have
+// a lot of headroom and can show every option with no scroll; triggers higher up (e.g.
+// Cadence, several fields above it) have much less, and a fixed max-height taller than
+// that pushed the dropdown's top off-screen — the options were technically scrollable, but
+// unreachable above the screen edge, which is what read as "scrolling the background
+// instead of the options" (the touch was landing on whatever's behind the off-screen part).
+// Called right before opening; harmless to call before closing too.
+function _mFitPickerOpts(optsId) {
+  const opts = document.getElementById(optsId);
+  const btn = opts?.parentElement?.querySelector('.m-cpick-btn');
+  if (!opts || !btn) return;
+  const available = btn.getBoundingClientRect().top - 12;
+  opts.style.maxHeight = Math.max(120, Math.min(available, 320)) + 'px';
+}
 
 const M_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 let _mAddDay = M_DAYS[new Date().getDay()];
@@ -433,6 +450,7 @@ function _mBuildDayOpts() {
 }
 function mToggleDayPick() {
   _mCloseAddPickers();
+  _mFitPickerOpts('mAddDayOpts');
   document.getElementById('mAddDayOpts')?.classList.toggle('open');
   _mSyncPickerOpenClass();
 }
@@ -461,6 +479,7 @@ function _mBuildDomOpts() {
 }
 function mToggleDomPick() {
   _mCloseAddPickers();
+  _mFitPickerOpts('mAddDomOpts');
   document.getElementById('mAddDomOpts')?.classList.toggle('open');
   _mSyncPickerOpenClass();
 }
@@ -487,6 +506,7 @@ function _mBuildCadenceOpts() {
 }
 function mToggleCadencePick() {
   _mCloseAddPickers();
+  _mFitPickerOpts('mAddCadenceOpts');
   document.getElementById('mAddCadenceOpts')?.classList.toggle('open');
   _mSyncPickerOpenClass();
 }
@@ -528,6 +548,7 @@ function mToggleDatePick(which) {
     _mAddDateViewY = base.getFullYear();
     _mAddDateViewM = base.getMonth();
     _mRenderAddDateCal();
+    _mFitPickerOpts(f.opts);
     document.getElementById(f.opts)?.classList.add('open');
   }
   _mSyncPickerOpenClass();
