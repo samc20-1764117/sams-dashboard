@@ -1936,10 +1936,16 @@ body.dark .fin-details-pop{background:rgba(26,26,30,.97);border-color:rgba(255,2
 /* Anti-FOUC: applied before first paint via html classes set in head script */
 html.init-dark body{background:#111113!important;background-attachment:fixed!important;}
 html.init-sb #main{left:186px!important;}
-/* calc(186px + clamp(...)) — was a bare 186px (just sidebar clearance); now mirrors
-   #page-overview's own left padding too, matching the right-side fix above so the topbar
-   is inset identically to .overview-cols on both sides at every viewport width. */
-html.init-sb .ov-topbar{left:calc(186px + clamp(12px,3vw,56px))!important;}
+/* 2026-09-23, take 3 — the take-2 fix (html.init-sb .ov-topbar{left:...}) never actually
+   applied in real usage: openSB()/closeSB() (features.js) both unconditionally REMOVE
+   'init-sb' the moment the real sidebar-toggle logic runs at startup — it's a one-time
+   anti-FOUC bootstrap flag, not a persistent "sidebar is open" indicator, so this rule was
+   dead the instant the app finished loading. Confirmed via the user's own
+   showAlignGuides() readout on their real session: header L:0 (i.e. completely ignoring
+   both the sidebar AND the page padding) vs content L:40. Fixed by keying off .sidebar's
+   own 'closed' class instead — that one IS reliably toggled by openSB()/closeSB() and
+   persists for the life of the session, and :has() re-evaluates live with no JS needed. */
+body:has(.sidebar:not(.closed)) .ov-topbar{left:calc(186px + clamp(12px,3vw,56px))!important;}
 
 /* ── Overview Batch A polish — delete this block to fully revert ── */
 /* 1. category pills as rounded chips (today list) */
