@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260922e';var BUILD=window._BUILD;
+  window._BUILD='20260922f';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260922e">
+<link rel="stylesheet" href="mobile.css?v=20260922f">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -84,6 +84,9 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
       </div>
+      <button type="button" id="mMonthSearchBtn" class="m-shop-hdr-icon" onclick="mOpenMonthSearch()" aria-label="Search" title="Search" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
       <button type="button" id="mMonthTodayBtn" class="m-shop-hdr-icon" onclick="mOpenMonth()" aria-label="Back to today" title="Back to today" style="display:none">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="22" x2="12" y2="19"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="22" y1="12" x2="19" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="19.1" y1="4.9" x2="17" y2="7"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="19.1" y1="19.1" x2="17" y2="17"/></svg>
       </button>
@@ -152,6 +155,20 @@
         </button>
       </div>
       <div id="mYearGrid"></div>
+    </div>
+
+    <!-- Month search (header's search icon) — Apple Calendar-style search, scoped to
+         tasks/shopping items/trips by name; picking a result jumps the month tab there. -->
+    <div id="mSearchBackdrop" onclick="mCloseMonthSearch()" style="display:none"></div>
+    <div id="mSearchSheet" style="display:none">
+      <div class="m-search-hdr">
+        <div class="m-search-inp-wrap">
+          <svg class="m-search-inp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="mSearchInp" placeholder="Search" autocomplete="off" oninput="mRunMonthSearch(this.value)">
+        </div>
+        <button type="button" class="m-search-cancel" onclick="mCloseMonthSearch()">Cancel</button>
+      </div>
+      <div id="mSearchResults"></div>
     </div>
 
     <!-- Shop tab -->
@@ -607,7 +624,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260922e"></script>
-<script src="features.js?v=20260922e"></script>
-<script src="mobile-overview.js?v=20260922e"></script>
+<script src="core.js?v=20260922f"></script>
+<script src="features.js?v=20260922f"></script>
+<script src="mobile-overview.js?v=20260922f"></script>
 </body></html>

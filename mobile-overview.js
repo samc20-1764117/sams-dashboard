@@ -2536,7 +2536,10 @@ function mShowTab(tab) {
   if (moTodayBtn) moTodayBtn.style.display = isMonth ? '' : 'none';
   const moAddBtn = document.getElementById('mMonthAddBtn');
   if (moAddBtn) moAddBtn.style.display = isMonth ? '' : 'none';
+  const moSearchBtn = document.getElementById('mMonthSearchBtn');
+  if (moSearchBtn) moSearchBtn.style.display = isMonth ? '' : 'none';
   mCloseYearView();
+  mCloseMonthSearch();
   // Date subtitle always shows, same height everywhere. Today's own swipe (offset)
   // logic owns the text on the Today tab; every other tab always shows today's real date.
   const dateLbl = document.getElementById('mDateLbl');
@@ -4413,6 +4416,66 @@ function mYearPickDate(ds) {
   const d = new Date(ds + 'T12:00:00');
   const now = new Date();
   mMonthJumpToOffset((d.getFullYear() - now.getFullYear()) * 12 + (d.getMonth() - now.getMonth()));
+}
+
+// ── Month search ─────────────────────────────────────────────────────────────
+// Header search icon (Apple Calendar has this in both its month-list and year-view
+// headers) — scoped to tasks/shopping items/trips by name; picking a result jumps the
+// month tab to that date and selects it, same as tapping a day directly.
+function mOpenMonthSearch() {
+  document.getElementById('mSearchBackdrop').style.display = 'block';
+  document.getElementById('mSearchSheet').style.display = 'flex';
+  requestAnimationFrame(() => {
+    document.getElementById('mSearchBackdrop').classList.add('open');
+    document.getElementById('mSearchSheet').classList.add('open');
+  });
+  const inp = document.getElementById('mSearchInp');
+  if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 260); }
+  const results = document.getElementById('mSearchResults');
+  if (results) results.innerHTML = '';
+}
+
+function mCloseMonthSearch() {
+  const backdrop = document.getElementById('mSearchBackdrop');
+  const sheet = document.getElementById('mSearchSheet');
+  if (!backdrop || !sheet || !sheet.classList.contains('open')) return;
+  backdrop.classList.remove('open');
+  sheet.classList.remove('open');
+  document.getElementById('mSearchInp')?.blur();
+  setTimeout(() => { backdrop.style.display = 'none'; sheet.style.display = 'none'; }, 250);
+}
+
+function _mSearchFmtDate(ds) {
+  const d = new Date(ds + 'T12:00:00');
+  const opts = {weekday: 'short', month: 'short', day: 'numeric'};
+  if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+  return d.toLocaleDateString('en-US', opts);
+}
+
+function mRunMonthSearch(q) {
+  const results = document.getElementById('mSearchResults');
+  if (!results) return;
+  const query = (q || '').trim().toLowerCase();
+  if (!query) { results.innerHTML = ''; return; }
+  const hits = [];
+  (st.tasks || []).forEach(t => { if (t.due_date && (t.name || '').toLowerCase().includes(query)) hits.push({ds: t.due_date.split('T')[0], name: t.name, icon: '📋'}); });
+  (st.shopping || []).forEach(s => { if (s.due_date && (s.name || '').toLowerCase().includes(query)) hits.push({ds: s.due_date.split('T')[0], name: s.name, icon: '🛒'}); });
+  (st.travel || []).forEach(tv => { if (tv.start_date && (tv.name || '').toLowerCase().includes(query)) hits.push({ds: tv.start_date.split('T')[0], name: tv.name, icon: '✈️'}); });
+  hits.sort((a, b) => a.ds < b.ds ? -1 : a.ds > b.ds ? 1 : 0);
+  if (!hits.length) { results.innerHTML = '<div class="m-search-empty">No results</div>'; return; }
+  results.innerHTML = hits.slice(0, 50).map(h => `<div class="m-search-row" onclick="mSearchPickDate('${h.ds}')">
+    <span class="m-search-row-icon">${h.icon}</span>
+    <span class="m-search-row-name">${escHtml(h.name || '')}</span>
+    <span class="m-search-row-date">${_mSearchFmtDate(h.ds)}</span>
+  </div>`).join('');
+}
+
+function mSearchPickDate(ds) {
+  mCloseMonthSearch();
+  const d = new Date(ds + 'T12:00:00');
+  const now = new Date();
+  mMonthJumpToOffset((d.getFullYear() - now.getFullYear()) * 12 + (d.getMonth() - now.getMonth()));
+  mMonthSelectDay(ds);
 }
 
 // "+" button in the month header — same quick-add popup Today/Week use (type picker:
