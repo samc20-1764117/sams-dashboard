@@ -4429,8 +4429,13 @@ function mOpenMonthSearch() {
     document.getElementById('mSearchBackdrop').classList.add('open');
     document.getElementById('mSearchSheet').classList.add('open');
   });
+  // Focus synchronously, in the same tick as the tap that opened this — same reasoning as
+  // mOpenQuickAdd: iOS Safari only reliably raises the keyboard for a programmatic focus()
+  // when it happens inside the original user-gesture call stack. A setTimeout here (even a
+  // short one) falls outside that window and the field ends up focused with no keyboard,
+  // which read as needing a second tap to actually start typing.
   const inp = document.getElementById('mSearchInp');
-  if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 260); }
+  if (inp) { inp.value = ''; inp.focus(); }
   const results = document.getElementById('mSearchResults');
   if (results) results.innerHTML = '';
 }
@@ -4691,6 +4696,14 @@ function _mMoLoadMore(direction) {
 // mInitBlockDrag/mInitWkDrag (480ms long-press arms the drag; a plain tap never gets
 // this far so mMonthSelectDay's onclick still fires normally). Delegated on
 // #mMonthWeeks so it survives re-renders (weeks are re-rendered often via infinite scroll).
+//
+// Arm vs. lock are deliberately separate steps. A finger that's simply paused before
+// scrolling (an ordinary, common gesture) still passes the 480ms mark with the finger
+// stationary — if that alone blocked the scroller (as it used to, immediately at arm
+// time), the scroll that followed got hijacked into a cell-drag and visibly glitched/froze.
+// Now arming just remembers the start cell; scroll is only actually blocked once the touch
+// has moved into a genuinely DIFFERENT day cell, which is the real signal of an intentional
+// multi-day drag rather than a pause-then-scroll.
 let _mMoDrag = null;
 function mInitMonthDrag() {
   const wrap = document.getElementById('mMonthWeeks');
@@ -4708,34 +4721,42 @@ function mInitMonthDrag() {
 
     pressTimer = setTimeout(() => {
       pressTimer = null;
-      const startDs = dayEl.dataset.ds;
-      _mMoDrag = {startDs, endDs: startDs};
-      dayEl.classList.add('drag-selected');
-      const scroller = document.getElementById('mMonthScroll');
-      if (scroller) scroller.style.overflowY = 'hidden';
-      document.addEventListener('touchmove', _mMoDragMove, {passive: false});
+      _mMoDrag = {startDs: dayEl.dataset.ds, endDs: dayEl.dataset.ds, locked: false};
     }, 480);
   }, {passive: true});
 
   wrap.addEventListener('touchmove', e => {
-    if (!pressTimer) return;
-    if (Math.abs(e.touches[0].clientX - touchStartX) > 8 || Math.abs(e.touches[0].clientY - touchStartY) > 8) {
-      clearTimeout(pressTimer); pressTimer = null;
+    if (pressTimer) {
+      if (Math.abs(e.touches[0].clientX - touchStartX) > 8 || Math.abs(e.touches[0].clientY - touchStartY) > 8) {
+        clearTimeout(pressTimer); pressTimer = null;
+      }
+      return;
     }
+    if (!_mMoDrag || _mMoDrag.locked) return;
+    const t = e.touches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const dayEl = el && el.closest('.m-mo-day[data-ds]');
+    if (!dayEl || dayEl.dataset.ds === _mMoDrag.startDs) return;
+    // Crossed into a different cell — commit to drag-select now.
+    _mMoDrag.locked = true;
+    document.querySelector(`.m-mo-day[data-ds="${_mMoDrag.startDs}"]`)?.classList.add('drag-selected');
+    const scroller = document.getElementById('mMonthScroll');
+    if (scroller) scroller.style.overflowY = 'hidden';
+    document.addEventListener('touchmove', _mMoDragMove, {passive: false});
   }, {passive: true});
 
   wrap.addEventListener('touchend', () => {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; return; }
     if (!_mMoDrag) return;
     document.removeEventListener('touchmove', _mMoDragMove);
-    const {startDs, endDs} = _mMoDrag;
+    const {startDs, endDs, locked} = _mMoDrag;
     _mMoDrag = null;
     document.querySelectorAll('#mMonthWeeks .m-mo-day.drag-selected').forEach(el => el.classList.remove('drag-selected'));
     const scroller = document.getElementById('mMonthScroll');
     if (scroller) scroller.style.overflowY = '';
-    // A long-press with no movement (startDs===endDs) is just a long-press, not a drag —
-    // the plain tap's own onclick (mMonthSelectDay) already handled day selection.
-    if (startDs && endDs && startDs !== endDs) {
+    // Never locked (finger never crossed cells) — just a long-press or a pause-then-scroll,
+    // not a drag. The plain tap's own onclick (mMonthSelectDay) already handled selection.
+    if (locked && startDs && endDs && startDs !== endDs) {
       const start = startDs <= endDs ? startDs : endDs;
       const end = startDs <= endDs ? endDs : startDs;
       mOpenFullAdd();
