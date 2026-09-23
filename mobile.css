@@ -735,7 +735,11 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 .m-search-hdr{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;flex-shrink:0}
 .m-search-inp-wrap{flex:1;display:flex;align-items:center;gap:6px;background:var(--glass);border-radius:10px;padding:8px 10px}
 .m-search-inp-icon{width:15px;height:15px;color:var(--sub);flex-shrink:0}
-#mSearchInp{flex:1;min-width:0;border:none;background:none;outline:none;font-size:15px;font-family:inherit;color:var(--text)}
+/* 16px, not smaller — iOS Safari auto-zooms the whole page in on focus for any input under
+   16px (every other input in this app is already 16px for the same reason, e.g. #mNewTask).
+   That auto-zoom is what was actually breaking this: combined with the sheet's fixed
+   positioning, it visually left only the keyboard/a cropped view on screen. */
+#mSearchInp{flex:1;min-width:0;border:none;background:none;outline:none;font-size:16px;font-family:inherit;color:var(--text)}
 .m-search-cancel{background:none;border:none;color:var(--accent);font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;flex-shrink:0;padding:0}
 #mSearchResults{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px calc(20px + env(safe-area-inset-bottom))}
 .m-search-row{display:flex;align-items:center;gap:8px;padding:11px 4px;border-top:1px solid var(--border);cursor:pointer}
