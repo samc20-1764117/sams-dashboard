@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260922f';var BUILD=window._BUILD;
+  window._BUILD='20260922g';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260922f">
+<link rel="stylesheet" href="mobile.css?v=20260922g">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -218,10 +218,24 @@
   <div id="mQuickAddBackdrop" onclick="mCloseQuickAdd()"></div>
   <div id="mShopAddBackdrop" onclick="mCloseShopAdd()"></div>
   <form id="mAddBar" onsubmit="event.preventDefault();mAddTask();return false">
-    <input id="mNewTask" type="text" placeholder="Add task for today…">
+    <input id="mNewTask" type="text" placeholder="Add task…">
     <!-- Type-specific fields — shown/hidden by _mAddSyncTypeFields (mobile-overview.js) as
          the category picker below changes. Placed above the picker row (not below) so the
          form still grows upward from the same bottom-anchored point when they appear. -->
+    <!-- Plain task / Shopping only (Travel has its own Start/End dates below; Weekly Reset/
+         Recurring have "Starting date" instead) — shows and lets you change whichever date
+         this add is actually targeting, defaulting to today (or, from Month's "+", whichever
+         day is selected there — see mMonthQuickAdd). -->
+    <div id="mAddDueDateField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Due date</span>
+      <div class="m-cpick" id="mAddDueDatePick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleDatePick('dueDate')">
+          <span id="mAddDueDateLbl">Today</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts m-add-cal" id="mAddDueDateOpts"></div>
+      </div>
+    </div>
     <div id="mAddDestField" class="m-add-field" style="display:none">
       <span class="m-add-field-lbl">Destination</span>
       <input id="mAddDest" class="m-add-field-inp" type="text" placeholder="e.g. New York, NY">
@@ -624,7 +638,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260922f"></script>
-<script src="features.js?v=20260922f"></script>
-<script src="mobile-overview.js?v=20260922f"></script>
+<script src="core.js?v=20260922g"></script>
+<script src="features.js?v=20260922g"></script>
+<script src="mobile-overview.js?v=20260922g"></script>
 </body></html>

@@ -356,6 +356,13 @@ function _mAddSyncTypeFields(cat) {
   const isRec = cat === 'Recurring Task';
   const isMonthly = _mAddCadence === 'monthly';
   const _sh = (id, show) => { const el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; };
+  // Plain task / Shopping only — Travel has its own Start/End dates, Weekly Reset/Recurring
+  // have "Starting date" instead (a different concept: when the pattern begins, not a
+  // specific due date). Lets whatever date the quick-add is currently targeting (today, or
+  // the day selected on Month's calendar — see mMonthQuickAdd) be seen and changed, instead
+  // of only ever silently defaulting to today with no visible/editable field for it.
+  const showDue = !isTv && !isWr && !isRec;
+  _sh('mAddDueDateField', showDue);
   _sh('mAddDestField', isTv);
   _sh('mAddDateRow', isTv);
   _sh('mAddStartField', isTv);
@@ -381,11 +388,12 @@ function _mAddSyncTypeFields(cat) {
   // the flag rather than show a control that would silently do nothing.
   _sh('mAddFlagBtn', !isShop && !isWr && !isRec);
   const nameInp = document.getElementById('mNewTask');
-  nameInp && (nameInp.placeholder = isShop ? 'Item name…' : isTv ? 'Trip name…' : (isWr || isRec) ? 'Task name…' : 'Add task for today…');
+  nameInp && (nameInp.placeholder = isShop ? 'Item name…' : isTv ? 'Trip name…' : (isWr || isRec) ? 'Task name…' : 'Add task…');
   const btn = document.getElementById('mAddBtn');
   if (btn) btn.textContent = isTv ? 'Add Trip' : isShop ? 'Add Item' : isWr ? 'Add Weekly Reset' : isRec ? 'Add Recurring' : 'Add';
   if (isTv && !_mAddDates.tvStart) { _mAddDates.tvStart = tod(); const l = document.getElementById('mAddStartLbl'); if (l) l.textContent = _mFmtAddDate(_mAddDates.tvStart); }
   if ((isWr || isRec) && !_mAddDates.recStart) { _mAddDates.recStart = tod(); const l = document.getElementById('mAddRecStartLbl'); if (l) l.textContent = _mFmtAddDate(_mAddDates.recStart); }
+  if (showDue && !_mAddDates.dueDate) { _mAddDates.dueDate = tod(); const l = document.getElementById('mAddDueDateLbl'); if (l) l.textContent = _mFmtAddDate(_mAddDates.dueDate); }
 }
 // "Other" reveals a free-text store name field (mirrors desktop's qaStore/__custom
 // pattern, features.js) — any other store selection hides it again.
@@ -416,7 +424,7 @@ function mSelectStore(store) {
 // repeating its own hand-maintained "close all the others" list (which is how store/day
 // drifted before this refactor — new pickers kept getting added without updating the
 // others' close-lists).
-const M_ADD_PICKER_IDS = ['mAddPickOpts', 'mAddStoreOpts', 'mAddDayOpts', 'mAddDomOpts', 'mAddCadenceOpts', 'mAddTvStartOpts', 'mAddTvEndOpts', 'mAddRecStartOpts'];
+const M_ADD_PICKER_IDS = ['mAddPickOpts', 'mAddStoreOpts', 'mAddDayOpts', 'mAddDomOpts', 'mAddCadenceOpts', 'mAddTvStartOpts', 'mAddTvEndOpts', 'mAddRecStartOpts', 'mAddDueDateOpts'];
 function _mCloseAddPickers(exceptId) {
   M_ADD_PICKER_IDS.forEach(id => { if (id !== exceptId) document.getElementById(id)?.classList.remove('open'); });
 }
@@ -526,8 +534,9 @@ const M_ADD_DATE_FIELDS = {
   tvStart: {opts: 'mAddTvStartOpts', lbl: 'mAddStartLbl'},
   tvEnd: {opts: 'mAddTvEndOpts', lbl: 'mAddEndLbl'},
   recStart: {opts: 'mAddRecStartOpts', lbl: 'mAddRecStartLbl'},
+  dueDate: {opts: 'mAddDueDateOpts', lbl: 'mAddDueDateLbl'},
 };
-let _mAddDates = {tvStart: null, tvEnd: null, recStart: null}; // 'YYYY-MM-DD' or null
+let _mAddDates = {tvStart: null, tvEnd: null, recStart: null, dueDate: null}; // 'YYYY-MM-DD' or null
 let _mAddDateWhich = null;
 let _mAddDateViewY = 0, _mAddDateViewM = 0;
 function _mFmtAddDate(ds) {
@@ -1049,6 +1058,13 @@ function mCloseQuickAdd() {
   // so the iOS keyboard stayed on screen after Enter/Add even though the popup itself
   // disappeared. Explicit blur is what actually dismisses it.
   document.getElementById('mNewTask')?.blur();
+  // Always reset on close, success or cancel (unlike tvStart/tvEnd/recStart, which only
+  // reset on a successful add) — this is a "which day is this popup targeting" selector,
+  // not a draft field, so a cancelled Month add must not silently leave a future date
+  // behind for the next time Today/Week's own "+" opens this same popup.
+  _mAddDates.dueDate = null;
+  const ddl = document.getElementById('mAddDueDateLbl');
+  if (ddl) ddl.textContent = 'Today';
 }
 function mToggleQuickAdd() {
   document.getElementById('mAddBar')?.classList.contains('open') ? mCloseQuickAdd() : mOpenQuickAdd();
@@ -1114,7 +1130,10 @@ async function mAddTask() {
   const n = inp.value.trim();
   if (!n) return;
   const cat = _mAddCat;
-  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
+  // Plain task / Shopping's actual due date — the visible, editable Due Date field
+  // (mAddDueDateField) if one's been set, e.g. by mMonthQuickAdd targeting whichever day is
+  // selected on the calendar; falls back to today/the swiped Today-tab offset otherwise.
+  const ds = _mAddDates.dueDate || (_mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr());
   if (cat === 'Travel') {
     const dest = document.getElementById('mAddDest')?.value.trim() || null;
     const start = _mAddDates.tvStart || ds;
@@ -4484,15 +4503,17 @@ function mSearchPickDate(ds) {
 }
 
 // "+" button in the month header — same quick-add popup Today/Week use (type picker:
-// Travel/Shopping/Weekly Reset/Recurring/plain), not the heavier full-add sheet. mAddTask()
-// derives its due date from _mTodayOffset (see mWeekQuickAdd's identical trick), so this
-// sets that offset to the day-gap between today and whichever day is selected on the
-// calendar before opening it — targets the selected day instead of always today.
+// Travel/Shopping/Weekly Reset/Recurring/plain), not the heavier full-add sheet. Pre-fills
+// the popup's own visible Due Date field (mAddDueDateField/_mAddDates.dueDate — see
+// _mAddSyncTypeFields and mAddTask) with whichever day is selected on the calendar, so the
+// add targets that day (not always today) and the target date is shown/editable right in
+// the popup instead of being silent.
 function mMonthQuickAdd() {
   const target = _mMonthSelectedDs || d2s(getDayDate(0));
-  const today = d2s(getDayDate(0));
-  _mTodayOffset = Math.round((new Date(target + 'T12:00:00') - new Date(today + 'T12:00:00')) / 86400000);
   mOpenQuickAdd();
+  _mAddDates.dueDate = target;
+  const lbl = document.getElementById('mAddDueDateLbl');
+  if (lbl) lbl.textContent = _mFmtAddDate(target);
 }
 
 // Category key exactly matching the detail panel below (_mRenderMonthDetail), so a
