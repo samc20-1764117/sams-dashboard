@@ -25,7 +25,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 #mApp.ready{display:flex}
 
 /* ── Header ───────────────────────────────────────────────────────────────── */
-#mHeader{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 4px;padding-top:calc(4px + env(safe-area-inset-top));position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+/* min-height is a hard floor, deliberately generous enough to exceed every tab's own
+   natural content height (Today/Week's two-line title+date stack, Month's single pill,
+   Shop's icon row) — whichever tab is active, #mHeader's rendered height is THIS floor,
+   not whatever that tab's own content happens to need. Matching content heights indirectly
+   (e.g. guessing a min-height for just Month's inner wrapper) still let the border-bottom
+   divider land at a slightly different Y position per tab; pinning the outer container
+   itself is the only way to guarantee it's identical on every tab. */
+#mHeader{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 4px;padding-top:calc(4px + env(safe-area-inset-top));min-height:60px;box-sizing:border-box;position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
 #mHeader h1{font-size:19px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
 #mDateLbl{font-size:11px;color:var(--sub);margin-top:1px}
 /* Circular progress ring (Fitness/Activity-ring idiom) instead of a text-count pill —
@@ -620,7 +627,11 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 .m-recipe-browse-ing{font-size:13px;color:var(--text);padding:3px 0}
 
 /* ── Month tab ───────────────────────────────────────────────────────────── */
-#mMonthPage{display:flex;flex-direction:column;flex:1;min-height:0;padding:12px 8px 0}
+/* No text inputs live anywhere in this tab (or the year view it opens — see #mYearSheet
+   below) — blanket no-select so a long-press (e.g. arming the travel drag-select gesture)
+   never also triggers iOS's native text-selection/magnifier on the month name, day
+   numbers, etc. */
+#mMonthPage{display:flex;flex-direction:column;flex:1;min-height:0;padding:12px 8px 0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 /* Month-tab header controls live IN #mHeader (mHeaderTitleWrap hidden in its place) — a
    single "‹ year" pill (Apple Calendar's own back-to-year-view convention) that opens the
    year-view grid below instead of two separate text dropdowns. Its back-to-today button
@@ -702,7 +713,7 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
    pill — see mOpenYearView/mobile-overview.js) ───────────────────────────────────── */
 #mYearBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;opacity:0;transition:opacity .22s}
 #mYearBackdrop.open{opacity:1}
-#mYearSheet{position:fixed;top:8vh;left:0;right:0;bottom:0;background:var(--bg);border-radius:18px 18px 0 0;z-index:101;flex-direction:column;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
+#mYearSheet{position:fixed;top:8vh;left:0;right:0;bottom:0;background:var(--bg);border-radius:18px 18px 0 0;z-index:101;flex-direction:column;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #mYearSheet.open{transform:translateY(0)}
 .m-yr-hdr{display:flex;align-items:center;justify-content:center;gap:18px;padding:14px 16px 10px;flex-shrink:0}
 .m-yr-title{font-size:19px;font-weight:800;color:var(--text);min-width:64px;text-align:center}

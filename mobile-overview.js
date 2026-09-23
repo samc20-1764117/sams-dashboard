@@ -1036,6 +1036,17 @@ function _mInitQuickAddKeyboardTracking() {
   window.visualViewport._quickAddTracked = true;
   window.visualViewport.addEventListener('resize', _mQuickAddReposition);
 }
+// Which day this popup is actually targeting, freshly computed every time it opens —
+// Today's own swiped-to day, whichever day is currently docked at the top of Week's
+// scroll view, or Month's selected day. Feeds the Due Date field below (mAddDueDateField),
+// so every tab's "+" targets wherever you actually are instead of silently defaulting to
+// today regardless of what you're looking at.
+function _mQuickAddTargetDs() {
+  if (_mCurTab === 'month') return _mMonthSelectedDs || d2s(getDayDate(0));
+  if (_mCurTab === 'week') return _mWkCurrentViewDs() || d2s(getDayDate(0));
+  return _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
+}
+
 function mOpenQuickAdd() {
   _mInitQuickAddKeyboardTracking();
   document.getElementById('mAddBar')?.classList.add('open');
@@ -1050,6 +1061,10 @@ function mOpenQuickAdd() {
   // repeatedly during that animation, so this call is just the starting position; live
   // tracking takes over from there.
   _mQuickAddReposition();
+  const target = _mQuickAddTargetDs();
+  _mAddDates.dueDate = target;
+  const dueLbl = document.getElementById('mAddDueDateLbl');
+  if (dueLbl) dueLbl.textContent = _mFmtAddDate(target);
 }
 function mCloseQuickAdd() {
   document.getElementById('mAddBar')?.classList.remove('open');
@@ -3619,13 +3634,23 @@ function mInitWeekScroll() {
 // ── Week: quick-add ───────────────────────────────────────────────────────────
 // Week's header "+" opens the exact same full-featured quick-add popup Today's "+" uses
 // (types, travel, shopping, recurring/WR creation, etc.) instead of the old bare-bones
-// per-day name+category sheet (#mWkAddSheet, retired) — always targets today's own date
-// (mAddTask's ds computation keys off _mTodayOffset, which only means something on the
-// Today tab; force it to 0 here so a stale offset left over from swiping Today forward/
-// back doesn't silently misdate an add made from Week).
+// per-day name+category sheet (#mWkAddSheet, retired). mOpenQuickAdd targets whichever day
+// is currently docked at the top of Week's scroll view — see _mQuickAddTargetDs/
+// _mWkCurrentViewDs — instead of always today.
 function mWeekQuickAdd() {
-  _mTodayOffset = 0;
   mOpenQuickAdd();
+}
+
+// Hit-tests the day section currently docked at the top of Week's scroll view — same idiom
+// as Month's _mUpdateMonthTitle. #mWeekPage is the actual scrollable element (#mWeekList is
+// just its content wrapper); .m-wk-day[data-ds] marks each day section.
+function _mWkCurrentViewDs() {
+  const scroller = document.getElementById('mWeekPage');
+  if (!scroller) return null;
+  const rect = scroller.getBoundingClientRect();
+  const el = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 4);
+  const dayEl = el && el.closest('.m-wk-day[data-ds]');
+  return dayEl ? dayEl.dataset.ds : null;
 }
 
 // ── Week: back to today ───────────────────────────────────────────────────────
@@ -4441,9 +4466,30 @@ function mYearPickDate(ds) {
 // Header search icon (Apple Calendar has this in both its month-list and year-view
 // headers) — scoped to tasks/shopping items/trips by name; picking a result jumps the
 // month tab to that date and selects it, same as tapping a day directly.
+// Keeps #mSearchSheet's bottom edge pinned just above the on-screen keyboard, live, as it
+// animates open/closed — exact same idiom as the quick-add bar's _mQuickAddReposition
+// (window.visualViewport reports the SHRUNK viewport height while the keyboard is up).
+// Without this, the sheet's own bottom:0 keeps it sized against the FULL screen height, so
+// once the keyboard appeared it covered the input/results underneath it instead of the
+// layout shrinking to fit above the keyboard.
+function _mSearchReposition() {
+  const sheet = document.getElementById('mSearchSheet');
+  if (!sheet || !sheet.classList.contains('open')) return;
+  const vv = window.visualViewport;
+  const kbHeight = vv ? Math.max(0, window.innerHeight - vv.height) : 0;
+  sheet.style.bottom = kbHeight + 'px';
+}
+function _mInitSearchKeyboardTracking() {
+  if (!window.visualViewport || window.visualViewport._searchTracked) return;
+  window.visualViewport._searchTracked = true;
+  window.visualViewport.addEventListener('resize', _mSearchReposition);
+}
+
 function mOpenMonthSearch() {
+  _mInitSearchKeyboardTracking();
   document.getElementById('mSearchBackdrop').style.display = 'block';
   document.getElementById('mSearchSheet').style.display = 'flex';
+  document.getElementById('mSearchSheet').style.bottom = '0px';
   requestAnimationFrame(() => {
     document.getElementById('mSearchBackdrop').classList.add('open');
     document.getElementById('mSearchSheet').classList.add('open');
@@ -4455,6 +4501,10 @@ function mOpenMonthSearch() {
   // which read as needing a second tap to actually start typing.
   const inp = document.getElementById('mSearchInp');
   if (inp) { inp.value = ''; inp.focus(); }
+  // Keyboard animates in over the next few hundred ms — visualViewport 'resize' fires
+  // repeatedly during that animation, so this call is just the starting position; live
+  // tracking (above) takes over from there.
+  _mSearchReposition();
   const results = document.getElementById('mSearchResults');
   if (results) results.innerHTML = '';
 }
@@ -4503,17 +4553,11 @@ function mSearchPickDate(ds) {
 }
 
 // "+" button in the month header — same quick-add popup Today/Week use (type picker:
-// Travel/Shopping/Weekly Reset/Recurring/plain), not the heavier full-add sheet. Pre-fills
-// the popup's own visible Due Date field (mAddDueDateField/_mAddDates.dueDate — see
-// _mAddSyncTypeFields and mAddTask) with whichever day is selected on the calendar, so the
-// add targets that day (not always today) and the target date is shown/editable right in
-// the popup instead of being silent.
+// Travel/Shopping/Weekly Reset/Recurring/plain), not the heavier full-add sheet.
+// mOpenQuickAdd targets whichever day is selected on the calendar — see
+// _mQuickAddTargetDs — and shows/lets you change it via the popup's own Due Date field.
 function mMonthQuickAdd() {
-  const target = _mMonthSelectedDs || d2s(getDayDate(0));
   mOpenQuickAdd();
-  _mAddDates.dueDate = target;
-  const lbl = document.getElementById('mAddDueDateLbl');
-  if (lbl) lbl.textContent = _mFmtAddDate(target);
 }
 
 // Category key exactly matching the detail panel below (_mRenderMonthDetail), so a
