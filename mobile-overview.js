@@ -648,7 +648,7 @@ function _mTaskTypePri(t) {
 }
 // Manual per-day order — exact port of desktop's _dayOrder/_dayOrderSet (overview.js).
 // Same localStorage key as desktop, so the underlying data model matches exactly (only
-// the drag gesture that writes it differs — see mInitTodayDrag below).
+// the drag gesture that writes it differs — see mInitTodayGestures below).
 function _dayOrder() { try { return JSON.parse(localStorage._dayOrder || '{}'); } catch (e) { return {}; } }
 function _dayOrderSet(m) { localStorage._dayOrder = JSON.stringify(m); }
 // Exact port of desktop's _manualTieBreak/_hardTierNatural (overview.js) — once the hard
@@ -909,7 +909,7 @@ function mTaskRow(t) {
   // desktop's .ti[id^="ti-"] full-list capture) and lets hold-drag reorder ANY row.
   // data-tid: canEdit rows only — real tasks, used for edit routing and mDeleteById.
   // data-rtype/data-shopid: which edit/menu surface (if any) a plain tap should route to
-  // — mInitTodayDblTap/_mShowTaskMenu read these instead of re-deriving type from the id
+  // — mInitTodayGestures/_mShowTaskMenu read these instead of re-deriving type from the id
   // string, since a virtual task's full object doesn't persist anywhere after render.
   const rtype = canEdit ? 'task' : (t._type || (t._isWrec ? 'wrec' : t._isWrRule ? 'wrrule' : t._virtual ? 'rec' : 'other'));
   const ruleId = t._isWrRule ? t._ruleId : t._recId;
@@ -2032,56 +2032,7 @@ async function mDeleteById(id) {
   await sbReq('DELETE', 'tasks', null, `?id=eq.${id}`);
 }
 
-// ── Double-tap to edit ────────────────────────────────────────────────────────
-let _dtap = {t: 0, id: null};
-function _isDblTap(id) {
-  const now = Date.now();
-  const dbl = now - _dtap.t < 350 && _dtap.id === id;
-  _dtap = {t: now, id};
-  return dbl;
-}
-
-// Single tap -> task menu, double tap -> edit, hold-then-drag -> reorder (mInitTodayDrag,
-// above). A single tap can't be told apart from "the first half of a double-tap" until
-// the double-tap window has actually passed without a second tap arriving, so a
-// confirmed single tap is deliberately delayed by that same window before it does
-// anything.
-let _todTapTimer = null;
-function mInitTodayDblTap() {
-  const list = document.getElementById('mTodayList');
-  if (!list || list._dblTapInited) return;
-  list._dblTapInited = true;
-  let tapStartX = 0, tapStartY = 0;
-  list.addEventListener('touchstart', e => {
-    tapStartX = e.touches[0].clientX;
-    tapStartY = e.touches[0].clientY;
-  }, {passive: true});
-  list.addEventListener('touchend', e => {
-    // data-rid (every row) — routing to the right edit surface (or none) happens by
-    // rtype below, same reasoning as the drag scope above.
-    const outer = e.target.closest('.m-row-outer[data-rid]');
-    if (!outer) return;
-    if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
-    // "→ Today" button owns its own tap too — it already calls stopPropagation() in its
-    // onclick, but that's on the (later-firing) synthesized click event, which can't retro-
-    // actively stop THIS touchend, a separate event this listener reads directly. Without
-    // this check, tapping the button both moved the task AND opened the task menu/edit
-    // sheet underneath it.
-    if (e.target.closest('.m-mv-today')) return;
-    const ct = e.changedTouches[0];
-    if (Math.abs(ct.clientX - tapStartX) > 10 || Math.abs(ct.clientY - tapStartY) > 10) return;
-    const id = outer.dataset.rid;
-    if (_isDblTap(id)) {
-      if (_todTapTimer) { clearTimeout(_todTapTimer); _todTapTimer = null; }
-      _mRowEdit(outer);
-      return;
-    }
-    clearTimeout(_todTapTimer);
-    _todTapTimer = setTimeout(() => { _todTapTimer = null; _mShowTaskMenu(outer); }, 350);
-  }, {passive: true});
-}
-
-// Routes double-tap-edit to whichever surface this row's type actually has. Plain tasks
+// Routes tap-to-edit to whichever surface this row's type actually has. Plain tasks
 // and shopping items have real mobile edit sheets; other virtual types (recurring/WR/
 // pup/video/etc.) don't yet, so this silently no-ops for those rather than opening the
 // wrong thing or erroring.
@@ -2091,24 +2042,29 @@ function _mRowEdit(outer) {
   else if (rtype === 'shop') mOpenShopEdit(outer.dataset.shopid);
   else if (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') mOpenRecEdit(outer);
   // 'vid' has no edit surface (only Remove from Today, via the quick-actions menu) —
-  // double-tap intentionally no-ops for it.
+  // a tap intentionally no-ops for it.
 }
 
-// ── Today list drag-to-reorder ──────────────────────────────────────────────────
-// Hold + drag a task row up/down to set a manual sort order for today — touch port of
-// desktop's `_todDragRowId`/`_dropReorderToday` (core.js/overview.js, native HTML5 drag,
-// not usable on iOS Safari). Every row is grabbable (`.m-row-outer[data-rid]`, set on
-// all row types), and the order captured on drop
-// covers EVERY row (`data-rid`, set on all row types in mTaskRow) so a dragged task's
-// position relative to virtual/recurring/shopping rows is preserved exactly — matches
-// desktop's `.ti[id^="ti-"]` full-list capture. Unlike desktop's placeholder-divider
-// approach, the dragged row is live-reparented in the DOM as the finger moves, so at
-// drop time the DOM order already IS the new order — no separate placeholder math needed.
-let _mTodDrag = null;
-function mInitTodayDrag() {
+// ── Today: unified row gestures — tap=edit, hold+release=menu, hold+drag=reorder ──────
+// Standard iOS list convention: tap is the primary action (open/edit), long-press reveals
+// a context menu — double-tap isn't a list gesture on this platform at all, and the old
+// tap-then-wait-350ms/double-tap-to-edit scheme it replaces was a workaround built only
+// because double-tap needs that delay to rule out "second tap coming." Tap now acts the
+// instant you lift your finger, and holding no longer has to wait for a release to know
+// you meant to hold — it's confirmed live via a haptic tick.
+//
+// Arm vs. drag are still two steps of ONE gesture (same idiom used for Month's day-cell
+// drag — see mInitMonthDrag): the 480ms hold only ARMS; nothing blocks scroll or starts
+// moving the row until the touch actually crosses the movement threshold afterward. Hold
+// + release in place -> menu. Hold + move -> drag-reorder (same live-reparent mechanics
+// as before, untouched: touch port of desktop's `_todDragRowId`/`_dropReorderToday`,
+// core.js/overview.js).
+let _mTodDrag = null;   // set only once a real drag is confirmed — {el, origOrder}
+let _mTodPress = null;  // transient arm/tap state — {outer, armed}
+function mInitTodayGestures() {
   const list = document.getElementById('mTodayList');
-  if (!list || list._todDragInited) return;
-  list._todDragInited = true;
+  if (!list || list._gestureInited) return;
+  list._gestureInited = true;
 
   let pressTimer = null;
   let touchStartX = 0, touchStartY = 0;
@@ -2119,32 +2075,53 @@ function mInitTodayDrag() {
     // capture below which already covers every row.
     const outer = e.target.closest('.m-row-outer[data-rid]');
     if (!outer) return;
+    if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
+    // "→ Today" button owns its own tap too — it already calls stopPropagation() in its
+    // onclick, but that's on the (later-firing) synthesized click event, which can't retro-
+    // actively stop THIS touchstart, a separate event this listener reads directly. Without
+    // this check, tapping the button both moved the task AND opened the edit/menu
+    // underneath it.
+    if (e.target.closest('.m-mv-today')) return;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
+    _mTodPress = {outer, armed: false};
     pressTimer = setTimeout(() => {
       pressTimer = null;
-      outer.classList.add('m-row-dragging');
-      _mTodDrag = {el: outer, origOrder: [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid)};
-      document.addEventListener('touchmove', _mTodDragMove, {passive: false});
-      navigator.vibrate?.(8);
+      if (_mTodPress) { _mTodPress.armed = true; navigator.vibrate?.(8); }
     }, 480);
   }, {passive: true});
 
   list.addEventListener('touchmove', e => {
-    if (!pressTimer) return;
-    if (Math.abs(e.touches[0].clientX - touchStartX) > 8 || Math.abs(e.touches[0].clientY - touchStartY) > 8) {
-      clearTimeout(pressTimer); pressTimer = null;
+    if (!_mTodPress || _mTodDrag) return; // once dragging, _mTodDragMove (below) owns movement
+    if (Math.abs(e.touches[0].clientX - touchStartX) <= 8 && Math.abs(e.touches[0].clientY - touchStartY) <= 8) return;
+    if (!_mTodPress.armed) {
+      // Moved before the hold threshold fired — a scroll, not our gesture.
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      _mTodPress = null;
+      return;
     }
+    // Armed and now actually moving — commit to drag-reorder.
+    const outer = _mTodPress.outer;
+    _mTodPress = null;
+    outer.classList.add('m-row-dragging');
+    _mTodDrag = {el: outer, origOrder: [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid)};
+    document.addEventListener('touchmove', _mTodDragMove, {passive: false});
   }, {passive: true});
 
   list.addEventListener('touchend', () => {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    if (_mTodDrag) _mTodDragEnd();
-  });
+    if (_mTodDrag) { _mTodDragEnd(); return; }
+    const press = _mTodPress;
+    _mTodPress = null;
+    if (!press) return;
+    if (press.armed) _mShowTaskMenu(press.outer);
+    else _mRowEdit(press.outer);
+  }, {passive: true});
   list.addEventListener('touchcancel', () => {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    _mTodPress = null;
     if (_mTodDrag) _mTodDragEnd(true);
-  });
+  }, {passive: true});
 }
 
 function _mTodDragMove(e) {
@@ -2173,7 +2150,7 @@ function _mTodDragEnd(cancelled) {
   const list = document.getElementById('mTodayList');
   const newOrder = [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid);
   // Dropped back exactly where it started — no-op, no toast. The task menu is owned by
-  // a plain single tap (mInitTodayDblTap below), not a stalled drag attempt.
+  // a plain tap (mInitTodayGestures, above), not a stalled drag attempt.
   if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) return;
 
   const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
@@ -2260,7 +2237,7 @@ function mCloseTaskMenu() {
 function mTaskMenuEdit() {
   const el = _mTaskMenuEl;
   mCloseTaskMenu();
-  if (el) _mRowEdit(el); // reuses the same per-type routing as double-tap
+  if (el) _mRowEdit(el); // reuses the same per-type routing a plain tap uses
 }
 function mTaskMenuDelete() {
   const id = _mTaskMenuId, type = _mTaskMenuType, el = _mTaskMenuEl;
@@ -3472,10 +3449,11 @@ function mWkTaskRow(t) {
     : '';
 
   // data-rid/data-rtype(+per-type extras) mirror mTaskRow's own convention exactly, so the
-  // shared tap-menu/edit system (_mShowTaskMenu/_mRowEdit — click for menu, double-click/
-  // -tap for edit, both scoped to the tapped row's actual type) works here unmodified —
-  // see mInitWeekDblTap. data-tid/data-tname (real tasks only) are unchanged from before —
-  // the existing hold-and-drag-to-a-different-day gesture (mInitWkDrag) still keys off them.
+  // shared tap-menu/edit system (_mShowTaskMenu/_mRowEdit — tap to edit, hold+release for
+  // menu, both scoped to the tapped row's actual type) works here unmodified — see
+  // mInitWeekGestures. data-tid/data-tname (real tasks only) are unchanged from before —
+  // the existing hold-and-drag-to-a-different-day gesture (mInitWeekGestures) still keys
+  // off them.
   const rtype = canEdit ? 'task' : (t._type || (t._isWrec ? 'wrec' : t._isWrRule ? 'wrrule' : t._virtual ? 'rec' : 'other'));
   const ruleId = t._isWrRule ? t._ruleId : t._recId;
   const extraAttrs = [
@@ -3662,13 +3640,14 @@ function mWeekGoToday() {
 }
 
 // ── Week drag: hold + drag row to reorder within a day, or move it to another day ────
-// Replaces the old floating-ghost-pill approach with the same live-reparent technique
-// Today's own drag-reorder uses (mInitTodayDrag/_mTodDragMove/_mTodDragEnd, above) —
-// dragging the actual row gives the same direct-manipulation feel Today has, and lets
-// ONE gesture cover both cases Week needs that Today never had to: dropping among a
-// DIFFERENT day's rows changes due_date (as before), dropping among the row's OWN day's
-// rows just reorders it (writes _dayOrder, no due_date change) — Today only ever has
-// one day's list, so it never needed the "which container did this land in" question.
+// Same live-reparent technique Today's own drag-reorder uses (mInitTodayGestures/
+// _mTodDragMove/_mTodDragEnd, above) — dragging the actual row gives the same
+// direct-manipulation feel Today has, and lets ONE gesture cover both cases Week needs
+// that Today never had to: dropping among a DIFFERENT day's rows changes due_date (as
+// before), dropping among the row's OWN day's rows just reorders it (writes _dayOrder, no
+// due_date change) — Today only ever has one day's list, so it never needed the "which
+// container did this land in" question. Declared here (not inside mInitWeekGestures,
+// below) since _mWkDragMove needs it at module scope.
 let _mWkDrag = null;
 
 function _mWkDragMove(e) {
@@ -3710,83 +3689,62 @@ function _mWkDragMove(e) {
   });
 }
 
-// Single tap -> task menu, double tap -> edit — same routing as Today's own
-// mInitTodayDblTap/mInitShopDblTap (both mobile-overview.js), just scoped to #mWeekList.
+// ── Week: unified row gestures — tap=edit, hold+release=menu, hold+drag=reorder/move ──
+// Same convention as Today's mInitTodayGestures (see its own comment for the reasoning).
 // _mShowTaskMenu/_mRowEdit are generic (read el.dataset.*, no #mTodayList-specific
 // assumptions) so they work here unmodified as long as mWkTaskRow emits the same
-// data-rid/data-rtype/data-* attributes mTaskRow does — which it now does.
-// Coexists with mInitWkDrag's own 480ms hold-drag (below) exactly the way Today's two
-// listeners already coexist on #mTodayList: a real drag moves the finger past this
-// listener's own 10px tap threshold, so it silently bails out instead of also opening
-// a menu.
-let _wkTapTimer = null;
-function mInitWeekDblTap() {
+// data-rid/data-rtype/data-* attributes mTaskRow does — which it does.
+//
+// Drag only arms for real tasks (data-tid) — shopping/recurring/WR/video rows have no
+// due_date of their own to move and aren't part of the _dayOrder reorder either, matching
+// what the drag logic below actually assumes (an st.tasks lookup by tid). Tap/menu still
+// works for those rows regardless; only the drag branch is tid-gated.
+let _mWkPress = null;  // transient arm/tap state — {outer, armed}
+function mInitWeekGestures() {
   const list = document.getElementById('mWeekList');
-  if (!list || list._dblTapInited) return;
-  list._dblTapInited = true;
-  let tapStartX = 0, tapStartY = 0;
+  if (!list || list._gestureInited) return;
+  list._gestureInited = true;
+
+  let pressTimer = null;
+  let touchStartX = 0, touchStartY = 0;
+
   list.addEventListener('touchstart', e => {
-    tapStartX = e.touches[0].clientX;
-    tapStartY = e.touches[0].clientY;
-  }, {passive: true});
-  list.addEventListener('touchend', e => {
     const row = e.target.closest('.m-wk-row[data-rid]');
     if (!row) return;
     if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
     if (e.target.closest('.m-mv-today')) return; // "→ Today" button owns its own tap
-    const ct = e.changedTouches[0];
-    if (Math.abs(ct.clientX - tapStartX) > 10 || Math.abs(ct.clientY - tapStartY) > 10) return;
-    const id = row.dataset.rid;
-    if (_isDblTap(id)) {
-      if (_wkTapTimer) { clearTimeout(_wkTapTimer); _wkTapTimer = null; }
-      _mRowEdit(row);
-      return;
-    }
-    clearTimeout(_wkTapTimer);
-    _wkTapTimer = setTimeout(() => { _wkTapTimer = null; _mShowTaskMenu(row); }, 350);
-  }, {passive: true});
-}
-
-function mInitWkDrag() {
-  const list = document.getElementById('mWeekList');
-  if (!list || list._wkDragInited) return;
-  list._wkDragInited = true;
-
-  let pressTimer  = null;
-  let touchStartX = 0, touchStartY = 0;
-
-  list.addEventListener('touchstart', e => {
-    const rowEl = e.target.closest('.m-wk-row[data-tid]');
-    if (!rowEl) return;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
-
+    _mWkPress = {outer: row, armed: false};
     pressTimer = setTimeout(() => {
       pressTimer = null;
-      const dayEl = rowEl.closest('.m-wk-day[data-ds]');
-      const origDs = dayEl?.dataset.ds;
-      if (!origDs) return;
-      // Snapshot this day's row order BEFORE the drag starts moving anything, so drop can
-      // tell "landed back where it started" (no-op) from "actually reordered".
-      const origOrder = [...dayEl.querySelectorAll('.m-wk-row[data-rid]')].map(r => r.dataset.rid);
-
-      rowEl.classList.add('m-wk-row-dragging');
-      _mWkDrag = {tid: rowEl.dataset.tid, el: rowEl, origDs, origOrder};
-      document.addEventListener('touchmove', _mWkDragMove, {passive: false});
-      navigator.vibrate?.(8);
+      if (_mWkPress) { _mWkPress.armed = true; navigator.vibrate?.(8); }
     }, 480);
   }, {passive: true});
 
   list.addEventListener('touchmove', e => {
-    if (!pressTimer) return;
-    if (Math.abs(e.touches[0].clientX - touchStartX) > 8 ||
-        Math.abs(e.touches[0].clientY - touchStartY) > 8) {
-      clearTimeout(pressTimer); pressTimer = null;
+    if (!_mWkPress || _mWkDrag) return; // once dragging, _mWkDragMove owns movement
+    if (Math.abs(e.touches[0].clientX - touchStartX) <= 8 && Math.abs(e.touches[0].clientY - touchStartY) <= 8) return;
+    if (!_mWkPress.armed) {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      _mWkPress = null;
+      return;
     }
+    const rowEl = _mWkPress.outer;
+    _mWkPress = null;
+    if (!rowEl.dataset.tid) return; // not draggable (see comment above) — stays a no-op
+    const dayEl = rowEl.closest('.m-wk-day[data-ds]');
+    const origDs = dayEl?.dataset.ds;
+    if (!origDs) return;
+    // Snapshot this day's row order BEFORE the drag starts moving anything, so drop can
+    // tell "landed back where it started" (no-op) from "actually reordered".
+    const origOrder = [...dayEl.querySelectorAll('.m-wk-row[data-rid]')].map(r => r.dataset.rid);
+    rowEl.classList.add('m-wk-row-dragging');
+    _mWkDrag = {tid: rowEl.dataset.tid, el: rowEl, origDs, origOrder};
+    document.addEventListener('touchmove', _mWkDragMove, {passive: false});
   }, {passive: true});
 
   function endDrag(cancelled) {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     if (!_mWkDrag) return;
     document.removeEventListener('touchmove', _mWkDragMove);
     const {tid, el, origDs, origOrder} = _mWkDrag;
@@ -3803,8 +3761,8 @@ function mInitWkDrag() {
 
     if (targetDs === origDs) {
       // Pure reorder within the same day — same _dayOrder mechanism Today's own
-      // drag-reorder writes (mInitTodayDrag, above), so it round-trips through desktop's
-      // sort correctly too. No-op if it landed back exactly where it started.
+      // drag-reorder writes (mInitTodayGestures, above), so it round-trips through
+      // desktop's sort correctly too. No-op if it landed back exactly where it started.
       if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) return;
       const m = _dayOrder();
       const prevOrder = m[origDs] ? [...m[origDs]] : null;
@@ -3842,8 +3800,20 @@ function mInitWkDrag() {
     sbReq('PATCH', 'tasks', {due_date: targetDs}, `?id=eq.${tid}`);
   }
 
-  list.addEventListener('touchend', () => endDrag(false), {passive: true});
-  list.addEventListener('touchcancel', () => endDrag(true), {passive: true});
+  list.addEventListener('touchend', () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    if (_mWkDrag) { endDrag(false); return; }
+    const press = _mWkPress;
+    _mWkPress = null;
+    if (!press) return;
+    if (press.armed) _mShowTaskMenu(press.outer);
+    else _mRowEdit(press.outer);
+  }, {passive: true});
+  list.addEventListener('touchcancel', () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    _mWkPress = null;
+    endDrag(true);
+  }, {passive: true});
 }
 
 // ── Week swipe navigation ─────────────────────────────────────────────────────
@@ -3974,36 +3944,49 @@ function mRenderShop() {
   });
 }
 
-// Single tap -> task menu (Edit/Delete, via _mShowTaskMenu's existing 'shop' rtype
-// branch), double tap -> edit sheet directly. Exact port of mInitTodayDblTap, scoped to
-// #mShopList — reuses _mShowTaskMenu/_mRowEdit as-is since both already handle rtype
-// 'shop' generically (built for when shop rows show up on the Today list).
-let _shopTapTimer = null;
-function mInitShopDblTap() {
-  const list = document.getElementById('mShopList');
-  if (!list || list._dblTapInited) return;
-  list._dblTapInited = true;
-  let tapStartX = 0, tapStartY = 0;
-  list.addEventListener('touchstart', e => {
-    tapStartX = e.touches[0].clientX;
-    tapStartY = e.touches[0].clientY;
-  }, {passive: true});
-  list.addEventListener('touchend', e => {
+// ── Shared tap=edit / hold+release=menu wiring ────────────────────────────────────
+// For lists with no drag-reorder of their own (Shop, Month's day-detail panel). Today
+// and Week have their own richer versions (mInitTodayGestures/mInitWeekGestures, above)
+// since they also need to arm/branch into an existing hold+drag reorder-or-move gesture;
+// see those for the interaction-model reasoning (tap=edit, hold+release=menu — standard
+// iOS list convention, no double-tap).
+function _mInitTapHoldMenu(containerId, excludeSelectors) {
+  const el = document.getElementById(containerId);
+  if (!el || el._gestureInited) return;
+  el._gestureInited = true;
+  let pressTimer = null, touchStartX = 0, touchStartY = 0, press = null;
+
+  el.addEventListener('touchstart', e => {
     const outer = e.target.closest('.m-row-outer[data-rid]');
     if (!outer) return;
-    if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
-    const ct = e.changedTouches[0];
-    if (Math.abs(ct.clientX - tapStartX) > 10 || Math.abs(ct.clientY - tapStartY) > 10) return;
-    const id = outer.dataset.rid;
-    if (_isDblTap(id)) {
-      if (_shopTapTimer) { clearTimeout(_shopTapTimer); _shopTapTimer = null; }
-      _mRowEdit(outer);
-      return;
+    if (excludeSelectors.some(sel => e.target.closest(sel))) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    press = {outer, armed: false};
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      if (press) { press.armed = true; navigator.vibrate?.(8); }
+    }, 480);
+  }, {passive: true});
+
+  el.addEventListener('touchmove', e => {
+    if (!press) return;
+    if (Math.abs(e.touches[0].clientX - touchStartX) > 8 || Math.abs(e.touches[0].clientY - touchStartY) > 8) {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      press = null;
     }
-    clearTimeout(_shopTapTimer);
-    _shopTapTimer = setTimeout(() => { _shopTapTimer = null; _mShowTaskMenu(outer); }, 350);
+  }, {passive: true});
+
+  el.addEventListener('touchend', () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    const p = press;
+    press = null;
+    if (!p) return;
+    if (p.armed) _mShowTaskMenu(p.outer);
+    else _mRowEdit(p.outer);
   }, {passive: true});
 }
+function mInitShopGestures() { _mInitTapHoldMenu('mShopList', ['.m-chk-wrap']); }
 
 // Add shop item — store/link handling mirrors Today's own Shopping-type add branch
 // (mAddTask's `cat === 'Shopping'` case) exactly: _mShopAddStore picker, 'Other' hands off
@@ -4758,7 +4741,7 @@ function _mMoLoadMore(direction) {
 }
 
 // Long-press-drag across day cells → create a multi-day travel task. Same idiom as
-// mInitBlockDrag/mInitWkDrag (480ms long-press arms the drag; a plain tap never gets
+// mInitBlockDrag/mInitWeekGestures (480ms long-press arms the drag; a plain tap never gets
 // this far so mMonthSelectDay's onclick still fires normally). Delegated on
 // #mMonthWeeks so it survives re-renders (weeks are re-rendered often via infinite scroll).
 //
@@ -4925,7 +4908,7 @@ function mMonthSelectDay(ds) {
 
 // Rows reuse mTaskRow verbatim (same band+circle-checkbox markup, same data-rid/data-rtype
 // attributes) so the shared tap-menu/edit system (_mShowTaskMenu/_mRowEdit, wired up here via
-// mInitMonthDblTap) works unmodified — exact same list convention as Today/Week.
+// mInitMonthGestures) works unmodified — exact same list convention as Today/Week.
 // Fills column 1 first, only spilling into column 2 once there's enough to split evenly —
 // 1-2 tasks always render as one short column instead of an artificially-padded two-column
 // block, so a light day stays short instead of showing a bunch of blank room.
@@ -4952,36 +4935,11 @@ function _mRenderMonthDetail(ds) {
   detail.innerHTML = html;
 }
 
-// Single tap -> task menu, double tap -> edit — same idiom as mInitTodayDblTap/
-// mInitWeekDblTap, scoped to #mMonthDetail. Delegated on the container (not per-row) since
-// _mRenderMonthDetail fully replaces its innerHTML on every day selection.
-let _moTapTimer = null;
-function mInitMonthDblTap() {
-  const detail = document.getElementById('mMonthDetail');
-  if (!detail || detail._dblTapInited) return;
-  detail._dblTapInited = true;
-  let tapStartX = 0, tapStartY = 0;
-  detail.addEventListener('touchstart', e => {
-    tapStartX = e.touches[0].clientX;
-    tapStartY = e.touches[0].clientY;
-  }, {passive: true});
-  detail.addEventListener('touchend', e => {
-    const outer = e.target.closest('.m-row-outer[data-rid]');
-    if (!outer) return;
-    if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
-    if (e.target.closest('.m-mv-today')) return; // "→ Today" button owns its own tap
-    const ct = e.changedTouches[0];
-    if (Math.abs(ct.clientX - tapStartX) > 10 || Math.abs(ct.clientY - tapStartY) > 10) return;
-    const id = outer.dataset.rid;
-    if (_isDblTap(id)) {
-      if (_moTapTimer) { clearTimeout(_moTapTimer); _moTapTimer = null; }
-      _mRowEdit(outer);
-      return;
-    }
-    clearTimeout(_moTapTimer);
-    _moTapTimer = setTimeout(() => { _moTapTimer = null; _mShowTaskMenu(outer); }, 350);
-  }, {passive: true});
-}
+// Tap=edit, hold+release=menu — _mInitTapHoldMenu (defined near mInitShopGestures, above)
+// delegates on the container itself (not per-row), which is what makes this safe to call
+// once at boot even though _mRenderMonthDetail fully replaces #mMonthDetail's innerHTML on
+// every day selection.
+function mInitMonthGestures() { _mInitTapHoldMenu('mMonthDetail', ['.m-chk-wrap', '.m-mv-today']); }
 
 function mMonthTapDay(ds) {
   if (_mCurTab !== 'week') mShowTab('week');
@@ -5063,17 +5021,15 @@ async function mInit() {
   // from what's already on disk instead.
   mShowTab(['today','tb','week','month','shop','extras','recipes'].includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today');
   mInitPickers();
-  mInitTodayDblTap();
-  mInitTodayDrag();
-  mInitShopDblTap();
+  mInitTodayGestures();
+  mInitShopGestures();
   mInitPTR();
   mInitTBSwipe();
   mInitBlockDrag();
   mInitWeekScroll();
-  mInitWkDrag();
-  mInitWeekDblTap();
+  mInitWeekGestures();
   mInitMonthDrag();
-  mInitMonthDblTap();
+  mInitMonthGestures();
   const authed = await checkAuth();
   if (!authed) return;
   hideLoginOverlay();
