@@ -2045,20 +2045,24 @@ function _mRowEdit(outer) {
   // a tap intentionally no-ops for it.
 }
 
-// ── Today: unified row gestures — tap=edit, hold+release=menu, hold+drag=reorder ──────
+// ── Today: unified row gestures — tap=edit, hold=menu (shows live, not on release),
+// hold+drag=reorder ────────────────────────────────────────────────────────────────
 // Standard iOS list convention: tap is the primary action (open/edit), long-press reveals
 // a context menu — double-tap isn't a list gesture on this platform at all, and the old
 // tap-then-wait-350ms/double-tap-to-edit scheme it replaces was a workaround built only
 // because double-tap needs that delay to rule out "second tap coming." Tap now acts the
-// instant you lift your finger, and holding no longer has to wait for a release to know
-// you meant to hold — it's confirmed live via a haptic tick.
+// instant you lift your finger. The menu opens the MOMENT a hold is recognized (confirmed
+// by a haptic tick), while you're still pressing — not after you release — matching
+// iOS's own long-press-menu feel (you see it appear as you're pressing down).
 //
-// Arm vs. drag are still two steps of ONE gesture (same idiom used for Month's day-cell
-// drag — see mInitMonthDrag): the 480ms hold only ARMS; nothing blocks scroll or starts
-// moving the row until the touch actually crosses the movement threshold afterward. Hold
-// + release in place -> menu. Hold + move -> drag-reorder (same live-reparent mechanics
-// as before, untouched: touch port of desktop's `_todDragRowId`/`_dropReorderToday`,
-// core.js/overview.js).
+// Dragging is still reachable from the same hold: if the finger keeps moving after the
+// menu's already open, that's read as "actually wanted to drag, not open the menu" — the
+// menu closes and the row picks up into a live-reparent drag right from that same
+// movement (touch port of desktop's `_todDragRowId`/`_dropReorderToday`, core.js/
+// overview.js). The list's own touchmove listener is registered non-passive so the very
+// touchmove that starts the drag can also preventDefault immediately — a separate,
+// later-attached document listener (the previous approach) missed that first event, which
+// is what let the page visibly scroll for a frame before the drag "caught up."
 let _mTodDrag = null;   // set only once a real drag is confirmed — {el, origOrder}
 let _mTodPress = null;  // transient arm/tap state — {outer, armed}
 function mInitTodayGestures() {
@@ -2087,12 +2091,16 @@ function mInitTodayGestures() {
     _mTodPress = {outer, armed: false};
     pressTimer = setTimeout(() => {
       pressTimer = null;
-      if (_mTodPress) { _mTodPress.armed = true; navigator.vibrate?.(8); }
+      if (!_mTodPress) return;
+      _mTodPress.armed = true;
+      navigator.vibrate?.(8);
+      _mShowTaskMenu(_mTodPress.outer);
     }, 480);
   }, {passive: true});
 
   list.addEventListener('touchmove', e => {
-    if (!_mTodPress || _mTodDrag) return; // once dragging, _mTodDragMove (below) owns movement
+    if (_mTodDrag) { _mTodDragMove(e); return; } // already dragging — _mTodDragMove preventDefaults itself
+    if (!_mTodPress) return;
     if (Math.abs(e.touches[0].clientX - touchStartX) <= 8 && Math.abs(e.touches[0].clientY - touchStartY) <= 8) return;
     if (!_mTodPress.armed) {
       // Moved before the hold threshold fired — a scroll, not our gesture.
@@ -2100,22 +2108,25 @@ function mInitTodayGestures() {
       _mTodPress = null;
       return;
     }
-    // Armed and now actually moving — commit to drag-reorder.
+    // Menu is already open (armed) but the finger kept moving — close it and hand off to
+    // drag-reorder, processing this SAME event immediately (not just future ones) so the
+    // row starts tracking the finger right away instead of jumping on the next move.
     const outer = _mTodPress.outer;
     _mTodPress = null;
+    mCloseTaskMenu();
     outer.classList.add('m-row-dragging');
     _mTodDrag = {el: outer, origOrder: [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid)};
-    document.addEventListener('touchmove', _mTodDragMove, {passive: false});
-  }, {passive: true});
+    _mTodDragMove(e);
+  }, {passive: false});
 
   list.addEventListener('touchend', () => {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     if (_mTodDrag) { _mTodDragEnd(); return; }
     const press = _mTodPress;
     _mTodPress = null;
-    if (!press) return;
-    if (press.armed) _mShowTaskMenu(press.outer);
-    else _mRowEdit(press.outer);
+    // Armed-but-never-dragged: the menu is already open from the hold itself — nothing
+    // more to do on release, it stays open until a menu option is tapped or dismissed.
+    if (press && !press.armed) _mRowEdit(press.outer);
   }, {passive: true});
   list.addEventListener('touchcancel', () => {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
@@ -2570,7 +2581,12 @@ function mShowTab(tab) {
   else if (tab === 'month') { mOpenMonth(); }
   else if (tab === 'shop') { mRenderShop(); }
   else if (tab === 'recipes') { _mRenderRecipesBrowse(); }
-  else if (tab === 'today') { _mTodayOffset = 0; _mSetDate(); }
+  // _mSetDate only touches the date subtitle text — mRenderToday is what actually
+  // computes the progress ring (gated on _mCurTab==='today', set just above) and the list
+  // itself. Without it, switching TO Today left the ring showing whatever it last computed
+  // (often empty, e.g. before the very first render), only fixed by an unrelated re-render
+  // (a toggle, a background sync, or a manual pull-to-refresh) happening to run afterward.
+  else if (tab === 'today') { _mTodayOffset = 0; _mSetDate(); mRenderToday(); }
 
   // Neither Today nor Shop reserves list padding for its add bar any more — both are
   // on-demand popups now, not permanently docked bars, so there's nothing to clear space
@@ -3689,11 +3705,14 @@ function _mWkDragMove(e) {
   });
 }
 
-// ── Week: unified row gestures — tap=edit, hold+release=menu, hold+drag=reorder/move ──
-// Same convention as Today's mInitTodayGestures (see its own comment for the reasoning).
-// _mShowTaskMenu/_mRowEdit are generic (read el.dataset.*, no #mTodayList-specific
-// assumptions) so they work here unmodified as long as mWkTaskRow emits the same
-// data-rid/data-rtype/data-* attributes mTaskRow does — which it does.
+// ── Week: unified row gestures — tap=edit, hold=menu (shows live, not on release),
+// hold+drag=reorder/move ─────────────────────────────────────────────────────────────
+// Same convention as Today's mInitTodayGestures (see its own comment for the reasoning —
+// menu opens the moment the hold is recognized, while still pressing; further movement
+// after that closes the menu and hands off to drag instead). _mShowTaskMenu/_mRowEdit are
+// generic (read el.dataset.*, no #mTodayList-specific assumptions) so they work here
+// unmodified as long as mWkTaskRow emits the same data-rid/data-rtype/data-* attributes
+// mTaskRow does — which it does.
 //
 // Drag only arms for real tasks (data-tid) — shopping/recurring/WR/video rows have no
 // due_date of their own to move and aren't part of the _dayOrder reorder either, matching
@@ -3718,21 +3737,33 @@ function mInitWeekGestures() {
     _mWkPress = {outer: row, armed: false};
     pressTimer = setTimeout(() => {
       pressTimer = null;
-      if (_mWkPress) { _mWkPress.armed = true; navigator.vibrate?.(8); }
+      if (!_mWkPress) return;
+      _mWkPress.armed = true;
+      navigator.vibrate?.(8);
+      _mShowTaskMenu(_mWkPress.outer);
     }, 480);
   }, {passive: true});
 
+  // Registered non-passive (not the old separate document-level listener) so the SAME
+  // touchmove event that starts a drag can also preventDefault immediately — the old
+  // approach attached its blocking listener a tick late, missing that first event, which
+  // is what let the page visibly scroll for a frame before the drag "caught up."
   list.addEventListener('touchmove', e => {
-    if (!_mWkPress || _mWkDrag) return; // once dragging, _mWkDragMove owns movement
+    if (_mWkDrag) { _mWkDragMove(e); return; } // _mWkDragMove preventDefaults itself
+    if (!_mWkPress) return;
     if (Math.abs(e.touches[0].clientX - touchStartX) <= 8 && Math.abs(e.touches[0].clientY - touchStartY) <= 8) return;
     if (!_mWkPress.armed) {
       if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
       _mWkPress = null;
       return;
     }
+    // Menu is already open — moving further means "actually wanted to drag": close it and
+    // hand off, processing this SAME event immediately so the row starts tracking the
+    // finger right away instead of jumping on the next move.
     const rowEl = _mWkPress.outer;
     _mWkPress = null;
-    if (!rowEl.dataset.tid) return; // not draggable (see comment above) — stays a no-op
+    if (!rowEl.dataset.tid) return; // not draggable (see comment above) — leave menu closed, no-op
+    mCloseTaskMenu();
     const dayEl = rowEl.closest('.m-wk-day[data-ds]');
     const origDs = dayEl?.dataset.ds;
     if (!origDs) return;
@@ -3741,8 +3772,8 @@ function mInitWeekGestures() {
     const origOrder = [...dayEl.querySelectorAll('.m-wk-row[data-rid]')].map(r => r.dataset.rid);
     rowEl.classList.add('m-wk-row-dragging');
     _mWkDrag = {tid: rowEl.dataset.tid, el: rowEl, origDs, origOrder};
-    document.addEventListener('touchmove', _mWkDragMove, {passive: false});
-  }, {passive: true});
+    _mWkDragMove(e);
+  }, {passive: false});
 
   function endDrag(cancelled) {
     if (!_mWkDrag) return;
@@ -3805,9 +3836,9 @@ function mInitWeekGestures() {
     if (_mWkDrag) { endDrag(false); return; }
     const press = _mWkPress;
     _mWkPress = null;
-    if (!press) return;
-    if (press.armed) _mShowTaskMenu(press.outer);
-    else _mRowEdit(press.outer);
+    // Armed-but-never-dragged: the menu is already open from the hold itself — nothing
+    // more to do on release, it stays open until a menu option is tapped or dismissed.
+    if (press && !press.armed) _mRowEdit(press.outer);
   }, {passive: true});
   list.addEventListener('touchcancel', () => {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
@@ -3944,12 +3975,12 @@ function mRenderShop() {
   });
 }
 
-// ── Shared tap=edit / hold+release=menu wiring ────────────────────────────────────
+// ── Shared tap=edit / hold=menu (shows live, not on release) wiring ─────────────────
 // For lists with no drag-reorder of their own (Shop, Month's day-detail panel). Today
 // and Week have their own richer versions (mInitTodayGestures/mInitWeekGestures, above)
 // since they also need to arm/branch into an existing hold+drag reorder-or-move gesture;
-// see those for the interaction-model reasoning (tap=edit, hold+release=menu — standard
-// iOS list convention, no double-tap).
+// see those for the interaction-model reasoning (tap=edit, hold shows the menu live while
+// still pressing — standard iOS list convention, no double-tap).
 function _mInitTapHoldMenu(containerId, excludeSelectors) {
   const el = document.getElementById(containerId);
   if (!el || el._gestureInited) return;
@@ -3965,7 +3996,10 @@ function _mInitTapHoldMenu(containerId, excludeSelectors) {
     press = {outer, armed: false};
     pressTimer = setTimeout(() => {
       pressTimer = null;
-      if (press) { press.armed = true; navigator.vibrate?.(8); }
+      if (!press) return;
+      press.armed = true;
+      navigator.vibrate?.(8);
+      _mShowTaskMenu(press.outer);
     }, 480);
   }, {passive: true});
 
@@ -3973,7 +4007,7 @@ function _mInitTapHoldMenu(containerId, excludeSelectors) {
     if (!press) return;
     if (Math.abs(e.touches[0].clientX - touchStartX) > 8 || Math.abs(e.touches[0].clientY - touchStartY) > 8) {
       if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-      press = null;
+      press = null; // menu (if already open) just stays open — no drag to hand off to here
     }
   }, {passive: true});
 
@@ -3981,9 +4015,7 @@ function _mInitTapHoldMenu(containerId, excludeSelectors) {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     const p = press;
     press = null;
-    if (!p) return;
-    if (p.armed) _mShowTaskMenu(p.outer);
-    else _mRowEdit(p.outer);
+    if (p && !p.armed) _mRowEdit(p.outer);
   }, {passive: true});
 }
 function mInitShopGestures() { _mInitTapHoldMenu('mShopList', ['.m-chk-wrap']); }
