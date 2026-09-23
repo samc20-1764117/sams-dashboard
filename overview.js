@@ -6779,51 +6779,79 @@ function _vidOvNestCommit(targetBigId,refChildId,insertBefore){
   if(!draggedId||String(draggedId)===String(targetBigId)||String(draggedId)===String(refChildId))return;
   const target=(st.videos||[]).find(x=>String(x.id)===String(targetBigId));
   if(!target||target.video_type!=='B'||target.is_deleted)return;
-  const dragged=(st.videos||[]).find(x=>String(x.id)===String(draggedId));
-  if(!dragged||dragged.is_deleted)return;
-  // No-op guard: dropped back onto its own parent's own row (append-to-end path only — a
-  // between-siblings drop should still be free to actually move it within the group).
-  if(refChildId==null&&dragged.video_type==='L'&&String(dragged.big_video_id)===String(targetBigId))return;
+  // Multi-select-aware (2026-09-23, same _vidOvDragBatchIds pattern _vidOvUpNextDrop/_vidOvAllDrop
+  // already used) — this nest-onto-a-different-Big drop never got that treatment when it was
+  // built, so dragging several selected Small videos onto a different Big silently moved only
+  // the single one the drag gesture happened to start from ("multi select and actions" bug report).
+  const ids=_vidOvDragBatchIds(draggedId).filter(id=>String(id)!==String(targetBigId)&&String(id)!==String(refChildId));
+  if(!ids.length)return;
+  // No-op guard: a single item dropped back onto its own parent's own row (append-to-end path
+  // only — a between-siblings drop should still be free to actually move it within the group).
+  // Not worth extending to a multi-item batch: re-affirming an already-correct member's position
+  // alongside genuinely-moving siblings is harmless, just a redundant PATCH for that one.
+  if(refChildId==null&&ids.length===1){
+    const only=(st.videos||[]).find(x=>String(x.id)===String(ids[0]));
+    if(only&&only.video_type==='L'&&String(only.big_video_id)===String(targetBigId))return;
+  }
   // Clear same-container reorder-drag state so a stale _vidOvBDrag/_vidOvChildDrag from this same
   // gesture can't also fire the container's own reorder branch on a later event.
   _vidOvBDrag=null;_vidOvChildDrag=null;_vidOvClearIndicator();
 
-  const prevType=dragged.video_type,prevBig=dragged.big_video_id,prevStatus=dragged.status,prevOrder=dragged.vid_order;
-  const orphanUndo=[];
-  if(prevType==='B'){
-    (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(dragged.id)).forEach(c=>{
-      orphanUndo.push({id:c.id,prevBig:c.big_video_id});
-      c.big_video_id=null;
-      sbReqSilent('PATCH','videos',{big_video_id:null},`?id=eq.${c.id}`);
-    });
-  }
-  const siblings=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(targetBigId)&&String(c.id)!==String(dragged.id)).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  const movingSet=new Set(ids.map(String));
+  const siblings=(st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(targetBigId)&&!movingSet.has(String(c.id))).sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
   siblings.forEach((s,i)=>{if(s.vid_order==null)s.vid_order=i;});
-  let newOrder;
   const refIdx=refChildId!=null?siblings.findIndex(s=>String(s.id)===String(refChildId)):-1;
+  // baseOrder/step span the target slot (append-to-end, or the gap between two specific
+  // siblings) so the WHOLE batch lands consecutively there — vid_order[i] = baseOrder+step*(i+1)
+  // in every branch, keeping one formula regardless of how many are moving.
+  let baseOrder,step;
   if(refIdx<0){
-    newOrder=(Math.max(0,...siblings.map(s=>s.vid_order??0)))+1;
+    baseOrder=Math.max(0,...siblings.map(s=>s.vid_order??0));step=1;
   }else if(insertBefore){
     const prevSib=siblings[refIdx-1];
-    newOrder=prevSib?(prevSib.vid_order+siblings[refIdx].vid_order)/2:siblings[refIdx].vid_order-1;
+    const lo=prevSib?prevSib.vid_order:siblings[refIdx].vid_order-(ids.length+1);
+    baseOrder=lo;step=(siblings[refIdx].vid_order-lo)/(ids.length+1);
   }else{
     const nextSib=siblings[refIdx+1];
-    newOrder=nextSib?(siblings[refIdx].vid_order+nextSib.vid_order)/2:siblings[refIdx].vid_order+1;
+    const hi=nextSib?nextSib.vid_order:siblings[refIdx].vid_order+(ids.length+1);
+    baseOrder=siblings[refIdx].vid_order;step=(hi-baseOrder)/(ids.length+1);
   }
-  dragged.video_type='L';
-  dragged.big_video_id=parseInt(targetBigId)||targetBigId;
-  if(dragged.status!==target.status&&dragged.status!=='published')dragged.status=target.status;
-  dragged.vid_order=newOrder;
+
+  // Process in the batch's own existing relative vid_order (not selection-set insertion order),
+  // so a multi-select nest doesn't scramble the videos relative to each other.
+  const orderedDragged=ids.map(id=>(st.videos||[]).find(x=>String(x.id)===String(id))).filter(v=>v&&!v.is_deleted)
+    .sort((a,b)=>(a.vid_order??9999)-(b.vid_order??9999));
+  const undos=[];
+  orderedDragged.forEach((dragged,i)=>{
+    const prevType=dragged.video_type,prevBig=dragged.big_video_id,prevStatus=dragged.status,prevOrder=dragged.vid_order;
+    const orphanUndo=[];
+    if(prevType==='B'){
+      (st.videos||[]).filter(c=>!c.is_deleted&&String(c.big_video_id)===String(dragged.id)).forEach(c=>{
+        orphanUndo.push({id:c.id,prevBig:c.big_video_id});
+        c.big_video_id=null;
+        sbReqSilent('PATCH','videos',{big_video_id:null},`?id=eq.${c.id}`);
+      });
+    }
+    dragged.video_type='L';
+    dragged.big_video_id=parseInt(targetBigId)||targetBigId;
+    if(dragged.status!==target.status&&dragged.status!=='published')dragged.status=target.status;
+    dragged.vid_order=baseOrder+step*(i+1);
+    sbReqSilent('PATCH','videos',{video_type:'L',big_video_id:dragged.big_video_id,status:dragged.status,vid_order:dragged.vid_order},`?id=eq.${dragged.id}`);
+    undos.push({id:dragged.id,prevType,prevBig,prevStatus,prevOrder,orphanUndo});
+  });
+  if(!undos.length)return;
 
   save();_renderVidOvMenu();if(_vidOvAllOpen)_vidOvRenderAll();renderAll();
-  sbReqSilent('PATCH','videos',{video_type:'L',big_video_id:dragged.big_video_id,status:dragged.status,vid_order:dragged.vid_order},`?id=eq.${dragged.id}`);
 
-  const label=prevType==='B'?'Converted to small video':'Assigned to big video';
+  const label=undos.length>1?`Moved ${undos.length} videos`:(undos[0].prevType==='B'?'Converted to small video':'Assigned to big video');
   pushUndo(()=>{
-    dragged.video_type=prevType;dragged.big_video_id=prevBig;dragged.status=prevStatus;dragged.vid_order=prevOrder;
-    orphanUndo.forEach(o=>{const c=(st.videos||[]).find(x=>String(x.id)===String(o.id));if(c){c.big_video_id=o.prevBig;sbReqSilent('PATCH','videos',{big_video_id:o.prevBig},`?id=eq.${o.id}`);}});
+    undos.forEach(u=>{
+      const v=(st.videos||[]).find(x=>String(x.id)===String(u.id));if(!v)return;
+      v.video_type=u.prevType;v.big_video_id=u.prevBig;v.status=u.prevStatus;v.vid_order=u.prevOrder;
+      u.orphanUndo.forEach(o=>{const c=(st.videos||[]).find(x=>String(x.id)===String(o.id));if(c){c.big_video_id=o.prevBig;sbReqSilent('PATCH','videos',{big_video_id:o.prevBig},`?id=eq.${o.id}`);}});
+      sbReqSilent('PATCH','videos',{video_type:u.prevType,big_video_id:u.prevBig??null,status:u.prevStatus,vid_order:u.prevOrder??null},`?id=eq.${v.id}`);
+    });
     save();_renderVidOvMenu();if(_vidOvAllOpen)_vidOvRenderAll();renderAll();
-    sbReqSilent('PATCH','videos',{video_type:prevType,big_video_id:prevBig??null,status:prevStatus,vid_order:prevOrder??null},`?id=eq.${dragged.id}`);
   },label);
 }
 // ── Analytics panel ─────────────────────────────────────────────────────────
