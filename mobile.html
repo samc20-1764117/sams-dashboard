@@ -15,7 +15,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260925a';var BUILD=window._BUILD;
+  window._BUILD='20260925b';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -28,7 +28,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260925a">
+<link rel="stylesheet" href="mobile.css?v=20260925b">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -530,8 +530,11 @@
   <button id="mFullAddSave" onclick="mSaveFullAdd()">Add Task</button>
 </div>
 
-<!-- Task quick-actions menu (Today list) — icon-only row, positioned next to the tapped
-     row by _mShowTaskMenu/_mPositionTaskMenu (mobile-overview.js), not a bottom sheet. -->
+<!-- Task quick-actions menu (Today/Week/Month) — icon-only row, positioned next to the
+     tapped row by _mShowTaskMenu/_mPositionTaskMenu (mobile-overview.js), not a bottom
+     sheet. Recurring/WR rows show Edit + the 5 Skip/Move buttons below instead of
+     Duplicate/Flag/Delete (toggled by _mShowTaskMenu) — same popup, same convention,
+     instead of their own separate full-width text-labeled sheet. -->
 <div id="mTaskMenuBackdrop" onclick="mCloseTaskMenu()"></div>
 <div id="mTaskMenuSheet">
   <button type="button" class="m-tmenu-btn" id="mTaskMenuEditBtn" onclick="mTaskMenuEdit()" title="Edit" aria-label="Edit">
@@ -546,22 +549,21 @@
   <button type="button" class="m-tmenu-btn m-tmenu-del" id="mTaskMenuDelBtn" onclick="mTaskMenuDelete()" title="Delete" aria-label="Delete">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
   </button>
-</div>
-
-<!-- Recurring/WR quick-actions sheet (Today list, current-week rows — distinct from
-     #mWrScopeSheet below, which is only for a genuine PAST-week miss). Order matches
-     desktop's own WR context menu content, flattened to one column and reordered by
-     actual usage frequency: skip this week is the single most common action, all-future
-     shifts next-most, then the narrower this-occurrence-only shifts, Edit last. -->
-<div id="mWrActionsBackdrop" onclick="mCloseWrActions()"></div>
-<div id="mWrActionsSheet">
-  <h3 id="mWrActionsTitle"></h3>
-  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsSkip()">⊘&nbsp;&nbsp;Skip this week</button>
-  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsAllFuture(1)">↻&nbsp;&nbsp;Move all future → next week</button>
-  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsAllFuture(-1)">↻&nbsp;&nbsp;Move all future → prev week</button>
-  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsThisWeek(1)">⊞&nbsp;&nbsp;This one → next week</button>
-  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsThisWeek(-1)">⊞&nbsp;&nbsp;This one → prev week</button>
-  <button type="button" class="m-wr-scope-opt" onclick="mWrActionsEdit()">✏️&nbsp;&nbsp;Edit</button>
+  <button type="button" class="m-tmenu-btn" id="mTaskMenuSkipBtn" onclick="mWrActionsSkip()" title="Skip this week" aria-label="Skip this week" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg>
+  </button>
+  <button type="button" class="m-tmenu-btn" id="mTaskMenuAllNextBtn" onclick="mWrActionsAllFuture(1)" title="Move all future to next week" aria-label="Move all future to next week" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 6 12 12 6 18"/><polyline points="12 6 18 12 12 18"/></svg>
+  </button>
+  <button type="button" class="m-tmenu-btn" id="mTaskMenuAllPrevBtn" onclick="mWrActionsAllFuture(-1)" title="Move all future to previous week" aria-label="Move all future to previous week" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 6 12 12 18 18"/><polyline points="12 6 6 12 12 18"/></svg>
+  </button>
+  <button type="button" class="m-tmenu-btn" id="mTaskMenuThisNextBtn" onclick="mWrActionsThisWeek(1)" title="Move this one to next week" aria-label="Move this one to next week" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+  </button>
+  <button type="button" class="m-tmenu-btn" id="mTaskMenuThisPrevBtn" onclick="mWrActionsThisWeek(-1)" title="Move this one to previous week" aria-label="Move this one to previous week" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>
+  </button>
 </div>
 
 <!-- Past-week recurring/WR "move to today" scope sheet -->
@@ -638,7 +640,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260925a"></script>
-<script src="features.js?v=20260925a"></script>
-<script src="mobile-overview.js?v=20260925a"></script>
+<script src="core.js?v=20260925b"></script>
+<script src="features.js?v=20260925b"></script>
+<script src="mobile-overview.js?v=20260925b"></script>
 </body></html>

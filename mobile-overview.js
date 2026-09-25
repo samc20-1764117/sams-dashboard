@@ -1387,34 +1387,15 @@ function mSaveRecEdit() {
   }, 'Edited recurring task');
 }
 
-// ── Recurring/WR quick-actions sheet (#mWrActionsSheet) ────────────────────────────
-// Skip this week / Move all future ±1 week / Move this occurrence only ±1 week / Edit —
-// mirrors desktop's WR right-click context menu (showWrRuleCtx, overview.js) content,
-// flattened into one column and reordered by actual usage frequency (skip is the most
-// common action, all-future shifts next-most). All the underlying state changes
-// (_dateOverrides, starting_date, wr_recurring_overrides rows) are identical to desktop's
-// via the _mWrShiftThisWeek/_mWrShiftAllFuture ports above, so a change made here shows
-// up on desktop on its next sync — this is not mobile-only local state.
-let _mWrActionsRtype = null, _mWrActionsRuleId = null, _mWrActionsWkKey = null, _mWrActionsEl = null;
-function _mShowWrActions(el) {
-  const rtype = el.dataset.rtype;
-  const ruleId = el.dataset.ruleid;
-  const wkKey = el.dataset.wkkey;
-  if (!ruleId) return;
-  const r = (rtype === 'wrrule' ? st.wrRules : st.recurring).find(x => String(x.id) === String(ruleId));
-  if (!r) return;
-  _mWrActionsRtype = rtype;
-  _mWrActionsRuleId = ruleId;
-  _mWrActionsWkKey = wkKey;
-  _mWrActionsEl = el;
-  document.getElementById('mWrActionsTitle').textContent = r.name || '';
-  document.getElementById('mWrActionsBackdrop').classList.add('open');
-  document.getElementById('mWrActionsSheet').classList.add('open');
-}
-function mCloseWrActions() {
-  document.getElementById('mWrActionsBackdrop').classList.remove('open');
-  document.getElementById('mWrActionsSheet').classList.remove('open');
-}
+// ── Recurring/WR quick-actions — icon buttons in the SAME popup the regular task menu
+// uses (#mTaskMenuSheet/_mShowTaskMenu), not a separate full-width text-labeled sheet —
+// same anchored-next-to-the-row convention as every other row type gets. Skip this week /
+// Move all future ±1 week / Move this occurrence only ±1 week / Edit — mirrors desktop's
+// WR right-click context menu (showWrRuleCtx, overview.js) content. All the underlying
+// state changes (_dateOverrides, starting_date, wr_recurring_overrides rows) are identical
+// to desktop's via the _mWrShiftThisWeek/_mWrShiftAllFuture ports above, so a change made
+// here shows up on desktop on its next sync — this is not mobile-only local state.
+let _mWrActionsRtype = null, _mWrActionsRuleId = null, _mWrActionsWkKey = null;
 // "Skip this week" — ports skipWRec/skipRecVirtThisWk's (features.js) block-cleanup
 // behavior for the wrec/rec case, but keys the cleanup off dsToWkKey(b.ds)===wkKey (the
 // row's OWN week) instead of desktop's isInWk(b.ds, wkOff) (a "currently viewed week"
@@ -1423,7 +1404,7 @@ function mCloseWrActions() {
 // does this correctly.
 function mWrActionsSkip() {
   const rtype = _mWrActionsRtype, ruleId = _mWrActionsRuleId, wkKey = _mWrActionsWkKey;
-  mCloseWrActions();
+  mCloseTaskMenu();
   if (!wkKey) return;
   if (rtype === 'wrrule') {
     _mWriteWrOverride(ruleId, wkKey, {override_type: 'skip'}, {undoLabel: 'Skipped WR task this week'});
@@ -1448,23 +1429,18 @@ function mWrActionsSkip() {
 }
 function mWrActionsAllFuture(delta) {
   const rtype = _mWrActionsRtype, ruleId = _mWrActionsRuleId, wkKey = _mWrActionsWkKey;
-  mCloseWrActions();
+  mCloseTaskMenu();
   if (!wkKey) return;
   _mWrShiftAllFuture(rtype, ruleId, wkKey, delta * 7);
 }
 function mWrActionsThisWeek(delta) {
   const rtype = _mWrActionsRtype, ruleId = _mWrActionsRuleId, wkKey = _mWrActionsWkKey;
-  mCloseWrActions();
+  mCloseTaskMenu();
   if (!wkKey) return;
   // delta here is a direction (1 or -1) from the button; _mWrShiftThisWeek (like desktop's
   // _wrShiftAnchorOne) wants an actual day offset, so scale to a full week same as
   // mWrActionsAllFuture does.
   _mWrShiftThisWeek(rtype, ruleId, wkKey, delta * 7);
-}
-function mWrActionsEdit() {
-  const el = _mWrActionsEl;
-  mCloseWrActions();
-  if (el) mOpenRecEdit(el);
 }
 
 // When a task moves to a new day, carry its undone schedule blocks along (they're
@@ -2187,50 +2163,80 @@ function _mTodDragEnd(cancelled) {
 // quicker than opening the full edit sheet just to flag something). Scoped to real
 // tasks only, same as the drag-reorder/swipe-delete gestures that trigger it.
 let _mTaskMenuId = null;
-// rtype-aware: plain tasks get the full menu (Edit/Duplicate/Flag/Delete), shopping
-// items get the subset that applies to them (Edit/Delete — no "important"/duplicate
-// concept for a shopping item), everything else (recurring/WR/pup/video/etc.) has no
-// mobile edit surface yet, so the menu doesn't open for those rows at all rather than
-// showing actions that don't work.
+// rtype-aware: plain tasks get the full menu (Edit/Duplicate/Flag/Delete), shopping items
+// get the subset that applies to them (Edit/Delete — no "important"/duplicate concept for
+// a shopping item), recurring/WR rows get Edit + their own Skip/Move actions (see the
+// mWrActions* block above), everything else (pup/video/etc.) has no mobile edit surface
+// yet, so the menu doesn't open for those rows at all rather than showing actions that
+// don't work.
 let _mTaskMenuType = null;
 // _mTaskMenuEl (the actual row) is stored alongside id/type so Edit can just reuse
 // _mRowEdit's existing per-type routing (below) instead of duplicating it here.
 let _mTaskMenuEl = null;
+const M_WR_BTN_IDS = ['mTaskMenuSkipBtn', 'mTaskMenuAllNextBtn', 'mTaskMenuAllPrevBtn', 'mTaskMenuThisNextBtn', 'mTaskMenuThisPrevBtn'];
 function _mShowTaskMenu(el) {
   const rtype = el.dataset.rtype;
-  // Recurring/WR rows get their own dedicated actions sheet (Skip/Move this-week/Move
-  // all-future/Edit) — different action set entirely from the generic task menu below.
-  if (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') { _mShowWrActions(el); return; }
-  if (!['task', 'shop', 'vid', 'vidstep'].includes(rtype)) return;
-  const id = rtype === 'shop' ? el.dataset.shopid
-    : (rtype === 'vid' || rtype === 'vidstep') ? el.dataset.vidid
-    : el.dataset.tid;
-  let t;
-  if (rtype === 'shop') t = st.shopping.find(x => String(x.id) === String(id));
-  else if (rtype === 'vid' || rtype === 'vidstep') t = (st.videos || []).find(x => String(x.id) === String(id));
-  else t = st.tasks.find(x => String(x.id) === String(id));
-  if (!t) return;
-  _mTaskMenuEl = el;
-  _mTaskMenuId = id;
-  _mTaskMenuType = rtype;
   const editBtn = document.getElementById('mTaskMenuEditBtn');
   const dupBtn = document.getElementById('mTaskMenuDupBtn');
   const flagBtn = document.getElementById('mTaskMenuFlagBtn');
   const delBtn = document.getElementById('mTaskMenuDelBtn');
-  const hasEdit = rtype === 'task' || rtype === 'shop';
-  const hasDelete = rtype === 'task' || rtype === 'shop' || rtype === 'vid' || rtype === 'vidstep';
-  editBtn.style.display = hasEdit ? '' : 'none';
-  dupBtn.style.display = rtype === 'task' ? '' : 'none';
-  flagBtn.style.display = rtype === 'task' ? '' : 'none';
-  delBtn.style.display = hasDelete ? '' : 'none';
-  // vid/vidstep's delete icon is functionally "remove from today" (see mTaskMenuDelete),
-  // but shown as a plain delete icon like every other type — title/aria-label carry the
-  // real meaning for anyone who needs it, the icon itself stays visually consistent.
-  const delLabel = (rtype === 'vid' || rtype === 'vidstep') ? 'Remove from Today' : 'Delete';
-  delBtn.title = delLabel;
-  delBtn.setAttribute('aria-label', delLabel);
-  if (rtype === 'task') flagBtn.classList.toggle('flagged', !!t.important);
+  const isWr = rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec';
+
+  if (isWr) {
+    // Recurring/WR rows: Edit + Skip/Move actions (mWrActionsSkip/AllFuture/ThisWeek,
+    // above) in the SAME anchored popup every other row type uses, not a separate
+    // full-width text-labeled sheet.
+    const ruleId = el.dataset.ruleid;
+    if (!ruleId) return;
+    const r = (rtype === 'wrrule' ? st.wrRules : st.recurring).find(x => String(x.id) === String(ruleId));
+    if (!r) return;
+    _mWrActionsRtype = rtype;
+    _mWrActionsRuleId = ruleId;
+    _mWrActionsWkKey = el.dataset.wkkey;
+    _mTaskMenuEl = el; // Edit routes through mTaskMenuEdit -> _mRowEdit, same as every other rtype
+    _mTaskMenuType = rtype;
+    editBtn.style.display = '';
+    dupBtn.style.display = 'none';
+    flagBtn.style.display = 'none';
+    delBtn.style.display = 'none';
+    M_WR_BTN_IDS.forEach(id => { const b = document.getElementById(id); if (b) b.style.display = ''; });
+  } else {
+    if (!['task', 'shop', 'vid', 'vidstep'].includes(rtype)) return;
+    const id = rtype === 'shop' ? el.dataset.shopid
+      : (rtype === 'vid' || rtype === 'vidstep') ? el.dataset.vidid
+      : el.dataset.tid;
+    let t;
+    if (rtype === 'shop') t = st.shopping.find(x => String(x.id) === String(id));
+    else if (rtype === 'vid' || rtype === 'vidstep') t = (st.videos || []).find(x => String(x.id) === String(id));
+    else t = st.tasks.find(x => String(x.id) === String(id));
+    if (!t) return;
+    _mTaskMenuEl = el;
+    _mTaskMenuId = id;
+    _mTaskMenuType = rtype;
+    const hasEdit = rtype === 'task' || rtype === 'shop';
+    const hasDelete = rtype === 'task' || rtype === 'shop' || rtype === 'vid' || rtype === 'vidstep';
+    editBtn.style.display = hasEdit ? '' : 'none';
+    dupBtn.style.display = rtype === 'task' ? '' : 'none';
+    flagBtn.style.display = rtype === 'task' ? '' : 'none';
+    delBtn.style.display = hasDelete ? '' : 'none';
+    M_WR_BTN_IDS.forEach(id => { const b = document.getElementById(id); if (b) b.style.display = 'none'; });
+    // vid/vidstep's delete icon is functionally "remove from today" (see mTaskMenuDelete),
+    // but shown as a plain delete icon like every other type — title/aria-label carry the
+    // real meaning for anyone who needs it, the icon itself stays visually consistent.
+    const delLabel = (rtype === 'vid' || rtype === 'vidstep') ? 'Remove from Today' : 'Delete';
+    delBtn.title = delLabel;
+    delBtn.setAttribute('aria-label', delLabel);
+    if (rtype === 'task') flagBtn.classList.toggle('flagged', !!t.important);
+  }
+
   const sheet = document.getElementById('mTaskMenuSheet');
+  // :last-child can't tell which button is last while some sibling AFTER it is
+  // display:none — tag whichever button is actually last-visible directly instead (see
+  // .m-tmenu-btn-last, mobile.css) so the trailing border-right lands on the right one.
+  const btns = [...sheet.querySelectorAll('.m-tmenu-btn')];
+  btns.forEach(b => b.classList.remove('m-tmenu-btn-last'));
+  const visible = btns.filter(b => b.style.display !== 'none');
+  if (visible.length) visible[visible.length - 1].classList.add('m-tmenu-btn-last');
   document.getElementById('mTaskMenuBackdrop').classList.add('open');
   _mPositionTaskMenu(el, sheet);
   sheet.classList.add('open');

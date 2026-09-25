@@ -65,7 +65,14 @@ body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
    #mNav (bottom:20px, height:56px ≈ 76px total) instead of landing flush against/under it
    with no further room to scroll — same reasoning as #mShopList/#mWeekList's own
    padding-bottom, just missed here originally. */
-#mTodayList{padding-bottom:96px}
+/* Broad user-select:none (not just .m-row-outer's own) — a hold anywhere in the list,
+   including the gaps/padding between rows, was letting iOS's native long-press-to-select
+   text win the gesture and paint a page-wide selection highlight instead of our own
+   tap/hold handling ever getting a clean signal (this is also what was making drag-reorder
+   unreliable — the native selection-drag was competing with our custom touchmove logic
+   for the same finger movement). Same fix applied to #mWeekList/#mShopList/#mMonthDetail
+   below. */
+#mTodayList{padding-bottom:96px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 
 /* ── Section (flat content list) ──────────────────────────────────────────── */
 /* Was a solid floating card + shadow — now that --bg and --bg-elevated are both plain
@@ -344,7 +351,7 @@ body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.
    the margin (32px total). 96px bottom clears the floating nav (20px bottom + 56px height
    = 76px footprint, plus a small buffer) so the last row can actually scroll clear of it
    instead of stopping short, same idea as #mWeekList's own static padding-bottom below. */
-#mShopList{padding:0 0 96px}
+#mShopList{padding:0 0 96px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #mShopHeaderBtns{display:flex;align-items:center;gap:10px}
 .m-shop-hdr-icon{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--sub);font-size:17px;font-weight:600;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .m-shop-hdr-icon:active{background:var(--glass)}
@@ -429,28 +436,24 @@ body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.
 /* Past-week recurring/WR move-to-today scope sheet — same slide-up/backdrop idiom as
    #mEditSheet, but touch-friendly full-width option rows instead of desktop's
    cursor-positioned #wrScopePicker popup. */
-/* Recurring/WR quick-actions sheet — kept as a full text-labeled slide-up sheet (more
-   options than the plain-task menu, worth spelling out); same idiom as #mWrScopeSheet. */
-#mWrActionsBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
-#mWrActionsBackdrop.open{display:block;opacity:1}
-/* user-select:none — opened via a hold gesture (_mShowWrActions, mobile-overview.js),
-   which without this reads as a long-press-to-select-text on its own text-labeled buttons
-   once the sheet is showing (the hold that opened it doesn't end just because the sheet
-   appeared — the finger's still down, still "holding" whatever text is now on screen). */
-#mWrActionsSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-#mWrActionsSheet.open{transform:translateY(0)}
-#mWrActionsSheet h3{font-size:15px;font-weight:700;margin-bottom:14px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* Plain-task quick-actions menu — anchored NEXT TO the tapped row (position set by
+/* Quick-actions menu — anchored NEXT TO the tapped row (position set by
    _mPositionTaskMenu, mobile-overview.js) as a compact icon-only row, not a full-width
-   bottom sheet with text labels — recurring/WR rows keep the text-labeled #mWrActionsSheet
-   above (more options, worth spelling out). Backdrop is a transparent tap-to-dismiss
-   catcher, not a dimmer — this is a lightweight contextual popup, not a modal. */
+   bottom sheet. Recurring/WR rows use this SAME popup (Edit + Skip/Move buttons, toggled
+   by _mShowTaskMenu) rather than their own separate text-labeled sheet. Backdrop is a
+   transparent tap-to-dismiss catcher, not a dimmer — this is a lightweight contextual
+   popup, not a modal. user-select:none — opened via a hold gesture, which without this
+   reads as a long-press-to-select-text on the row/buttons underneath (the hold that opened
+   it doesn't end just because the menu appeared — the finger's still down). */
 #mTaskMenuBackdrop{position:fixed;inset:0;background:transparent;z-index:100;display:none}
 #mTaskMenuBackdrop.open{display:block}
 #mTaskMenuSheet{position:fixed;display:flex;background:var(--bg-elevated);border:1px solid var(--border);border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.16),0 2px 10px rgba(0,0,0,.08);z-index:101;opacity:0;transform:scale(.92);transition:opacity .15s ease,transform .15s ease;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #mTaskMenuSheet.open{opacity:1;transform:scale(1);pointer-events:auto}
 .m-tmenu-btn{width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:none;border:none;border-right:1px solid var(--border);color:var(--text);cursor:pointer}
-.m-tmenu-btn:last-child{border-right:none}
+/* Not :last-child — with 9 buttons now sharing this sheet and only some visible per
+   rtype (display:none, toggled by _mShowTaskMenu), the last DOM child is often a HIDDEN
+   button, not the last visible one; _mShowTaskMenu tags whichever button is actually
+   last-visible with this class instead. */
+.m-tmenu-btn.m-tmenu-btn-last{border-right:none}
 .m-tmenu-btn svg{width:16px;height:16px}
 .m-tmenu-btn:active{background:var(--glass)}
 /* Flagged state fills the flag shape solid amber (not just an outline color change) —
@@ -465,7 +468,7 @@ body.dark .m-tmenu-flag.flagged{color:#fbbf24}
 body.dark .m-tmenu-del{color:#fca5a5}
 #mWrScopeBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
 #mWrScopeBackdrop.open{display:block;opacity:1}
-#mWrScopeSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
+#mWrScopeSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #mWrScopeSheet.open{transform:translateY(0)}
 #mWrScopeSheet h3{font-size:13px;font-weight:600;color:var(--sub);margin-bottom:14px;text-align:center}
 .m-wr-scope-opt{width:100%;display:block;text-align:left;padding:13px 16px;margin-bottom:8px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:14px;font-weight:600;font-family:inherit;color:var(--text);cursor:pointer}
@@ -553,7 +556,7 @@ body.dark .m-tmenu-del{color:#fca5a5}
 
 /* ── Week view ────────────────────────────────────────────────────────────── */
 #mWeekPage{display:flex;flex-direction:column;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;position:relative}
-#mWeekList{display:flex;flex-direction:column;padding:4px 12px 80px}
+#mWeekList{display:flex;flex-direction:column;padding:4px 12px 80px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 
 /* Week divider — a real section break between weeks (bold rule + generous spacing),
    not just a label, so scrolling from one week into the next reads as a clear boundary
@@ -696,7 +699,7 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 .m-mo-dot{width:5px;height:5px;border-radius:50%}
 /* Day detail panel — elevated (white/light-surface) card so it reads as visually
    distinct from the scrolling calendar above it. */
-#mMonthDetail{flex-shrink:0;max-height:26vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg-elevated);border-radius:14px 14px 0 0;box-shadow:0 -4px 14px rgba(0,0,0,.07);margin:4px -8px 0;padding:12px 16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+#mMonthDetail{flex-shrink:0;max-height:26vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg-elevated);border-radius:14px 14px 0 0;box-shadow:0 -4px 14px rgba(0,0,0,.07);margin:4px -8px 0;padding:12px 16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .m-mo-detail-hd{font-size:13px;font-weight:700;color:var(--text);padding:0 2px 8px}
 .m-mo-detail-empty{font-size:12px;color:var(--sub);padding:8px 4px}
 /* Rows are mTaskRow's own .m-row-outer/.m-row markup (band + circle checkbox), same as
