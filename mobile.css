@@ -16,11 +16,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* No bottom reservation here any more (was 84px) — for content to actually scroll BEHIND
    the floating glass nav (blurred through it) instead of stopping dead short of it, #mMain
    must be allowed to grow into that space. Each tab now owns its OWN bottom clearance
-   instead, at the level that actually needs it: Today/Shop reserve none at all — their add
-   bars are on-demand floating popups (opacity/pointer-events via .open), not docked content,
-   so there's nothing to clear space for; Week via #mWeekList's static padding-bottom; Month
-   via _mSyncMonthScrollHeight()'s direct viewport measurement (never depended on this); tb
-   via #mTLInner's padding-bottom. */
+   instead, at the level that actually needs it: Shop via #mShopList's static
+   padding-bottom, Today via #mTodayList's (their on-demand floating add-bar popups need no
+   clearance of their own, but the always-present floating #mNav still does — its last row
+   was landing flush against/under the nav with nothing left to scroll it clear of); Week
+   via #mWeekList's static padding-bottom; Month via _mSyncMonthScrollHeight()'s direct
+   viewport measurement (never depended on this); tb via #mTLInner's padding-bottom. */
 #mApp{display:none;flex-direction:column;height:100dvh}
 #mApp.ready{display:flex}
 
@@ -60,6 +61,11 @@ body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
 
 /* ── Main scroll area ─────────────────────────────────────────────────────── */
 #mMain{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-height:0}
+/* Extra bottom clearance so the LAST task can actually scroll clear of the floating glass
+   #mNav (bottom:20px, height:56px ≈ 76px total) instead of landing flush against/under it
+   with no further room to scroll — same reasoning as #mShopList/#mWeekList's own
+   padding-bottom, just missed here originally. */
+#mTodayList{padding-bottom:96px}
 
 /* ── Section (flat content list) ──────────────────────────────────────────── */
 /* Was a solid floating card + shadow — now that --bg and --bg-elevated are both plain
@@ -427,7 +433,11 @@ body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.
    options than the plain-task menu, worth spelling out); same idiom as #mWrScopeSheet. */
 #mWrActionsBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;display:none;opacity:0;transition:opacity .22s}
 #mWrActionsBackdrop.open{display:block;opacity:1}
-#mWrActionsSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1)}
+/* user-select:none — opened via a hold gesture (_mShowWrActions, mobile-overview.js),
+   which without this reads as a long-press-to-select-text on its own text-labeled buttons
+   once the sheet is showing (the hold that opened it doesn't end just because the sheet
+   appeared — the finger's still down, still "holding" whatever text is now on screen). */
+#mWrActionsSheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-radius:18px 18px 0 0;padding:20px 16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));z-index:101;transform:translateY(100%);transition:transform .25s cubic-bezier(.32,1,.23,1);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #mWrActionsSheet.open{transform:translateY(0)}
 #mWrActionsSheet h3{font-size:15px;font-weight:700;margin-bottom:14px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Plain-task quick-actions menu — anchored NEXT TO the tapped row (position set by
@@ -437,7 +447,7 @@ body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.
    catcher, not a dimmer — this is a lightweight contextual popup, not a modal. */
 #mTaskMenuBackdrop{position:fixed;inset:0;background:transparent;z-index:100;display:none}
 #mTaskMenuBackdrop.open{display:block}
-#mTaskMenuSheet{position:fixed;display:flex;background:var(--bg-elevated);border:1px solid var(--border);border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.16),0 2px 10px rgba(0,0,0,.08);z-index:101;opacity:0;transform:scale(.92);transition:opacity .15s ease,transform .15s ease;pointer-events:none}
+#mTaskMenuSheet{position:fixed;display:flex;background:var(--bg-elevated);border:1px solid var(--border);border-radius:11px;box-shadow:0 8px 24px rgba(0,0,0,.16),0 2px 10px rgba(0,0,0,.08);z-index:101;opacity:0;transform:scale(.92);transition:opacity .15s ease,transform .15s ease;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 #mTaskMenuSheet.open{opacity:1;transform:scale(1);pointer-events:auto}
 .m-tmenu-btn{width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:none;border:none;border-right:1px solid var(--border);color:var(--text);cursor:pointer}
 .m-tmenu-btn:last-child{border-right:none}

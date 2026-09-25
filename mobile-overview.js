@@ -539,7 +539,15 @@ const M_ADD_DATE_FIELDS = {
 let _mAddDates = {tvStart: null, tvEnd: null, recStart: null, dueDate: null}; // 'YYYY-MM-DD' or null
 let _mAddDateWhich = null;
 let _mAddDateViewY = 0, _mAddDateViewM = 0;
+// "Today"/"Tomorrow" for those two specific days (matches how every other relative-date
+// label in this app already reads, e.g. the day header), the actual date for anything
+// else — reads faster at a glance than a bare date for the two days you're overwhelmingly
+// most likely to be picking (today's own due date, or push-to-tomorrow).
 function _mFmtAddDate(ds) {
+  const today = tod();
+  if (ds === today) return 'Today';
+  const tmrw = d2s(new Date(new Date(today + 'T12:00').getTime() + 86400000));
+  if (ds === tmrw) return 'Tomorrow';
   return new Date(ds + 'T12:00').toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
 }
 function mToggleDatePick(which) {
