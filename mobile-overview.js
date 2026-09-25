@@ -2173,7 +2173,11 @@ let _mTaskMenuType = null;
 // _mTaskMenuEl (the actual row) is stored alongside id/type so Edit can just reuse
 // _mRowEdit's existing per-type routing (below) instead of duplicating it here.
 let _mTaskMenuEl = null;
-const M_WR_BTN_IDS = ['mTaskMenuSkipBtn', 'mTaskMenuAllNextBtn', 'mTaskMenuAllPrevBtn', 'mTaskMenuThisNextBtn', 'mTaskMenuThisPrevBtn'];
+// Skip, all-future (forward only), this-one (forward only), Edit — simplified from the
+// original 5-button set (which also had backward/"prev week" variants for both moves):
+// pushing forward is overwhelmingly the common case, and dropping the backward pair keeps
+// this popup the same size as the regular 4-button task menu.
+const M_WR_BTN_IDS = ['mTaskMenuSkipBtn', 'mTaskMenuAllNextBtn', 'mTaskMenuThisNextBtn', 'mTaskMenuWrEditBtn'];
 function _mShowTaskMenu(el) {
   const rtype = el.dataset.rtype;
   const editBtn = document.getElementById('mTaskMenuEditBtn');
@@ -2183,9 +2187,10 @@ function _mShowTaskMenu(el) {
   const isWr = rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec';
 
   if (isWr) {
-    // Recurring/WR rows: Edit + Skip/Move actions (mWrActionsSkip/AllFuture/ThisWeek,
-    // above) in the SAME anchored popup every other row type uses, not a separate
-    // full-width text-labeled sheet.
+    // Recurring/WR rows: Skip/Move actions (mWrActionsSkip/AllFuture/ThisWeek, above) +
+    // Edit, in the SAME anchored popup every other row type uses, not a separate
+    // full-width text-labeled sheet. Uses mTaskMenuWrEditBtn (not mTaskMenuEditBtn) so
+    // Edit can sit LAST in this set instead of first.
     const ruleId = el.dataset.ruleid;
     if (!ruleId) return;
     const r = (rtype === 'wrrule' ? st.wrRules : st.recurring).find(x => String(x.id) === String(ruleId));
@@ -2195,7 +2200,7 @@ function _mShowTaskMenu(el) {
     _mWrActionsWkKey = el.dataset.wkkey;
     _mTaskMenuEl = el; // Edit routes through mTaskMenuEdit -> _mRowEdit, same as every other rtype
     _mTaskMenuType = rtype;
-    editBtn.style.display = '';
+    editBtn.style.display = 'none';
     dupBtn.style.display = 'none';
     flagBtn.style.display = 'none';
     delBtn.style.display = 'none';
