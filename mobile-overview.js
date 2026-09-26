@@ -81,6 +81,18 @@ document.addEventListener('touchstart', e => {
 ['touchend', 'touchmove', 'touchcancel'].forEach(ev => document.addEventListener(ev, () => {
   if (_mReloadLP) { clearTimeout(_mReloadLP); _mReloadLP = null; }
 }, {passive: true}));
+// Belt-and-suspenders against iOS's native text-selection highlight winning a hold gesture
+// anyway — user-select:none/-webkit-touch-callout:none/-webkit-user-drag:none (on the list
+// containers, mobile.css) are the preventive fix, but in practice a long-enough hold could
+// still win a selection in WKWebView despite all three. This reactively clears ANY document
+// selection the instant one forms, app-wide — cheap, and safe: it only touches the page's
+// visible text-selection highlight (window.getSelection()), never an <input>/<textarea>'s
+// own cursor or selected text (a completely separate API), so normal typing/editing fields
+// are unaffected.
+document.addEventListener('selectionchange', () => {
+  const sel = window.getSelection?.();
+  if (sel && sel.toString()) sel.removeAllRanges();
+});
 function selTask() {}
 function showCtx() {}
 function showWrRuleCtx() {}
@@ -2077,8 +2089,15 @@ function mInitTodayGestures() {
       pressTimer = null;
       if (!_mTodPress) return;
       _mTodPress.armed = true;
+      // navigator.vibrate is a no-op on iOS Safari/WKWebView (never implemented — not a
+      // bug here, an Apple/WebKit platform limitation with no workaround from a web page).
+      // .m-row-bump is the substitute: a quick, felt "pop" standing in for the haptic tick
+      // most native apps pair with a recognized long-press.
       navigator.vibrate?.(8);
-      _mShowTaskMenu(_mTodPress.outer);
+      const outer = _mTodPress.outer;
+      outer.classList.add('m-row-bump');
+      setTimeout(() => outer.classList.remove('m-row-bump'), 220);
+      _mShowTaskMenu(outer);
     }, 480);
   }, {passive: true});
 
@@ -2119,6 +2138,35 @@ function mInitTodayGestures() {
   }, {passive: true});
 }
 
+// FLIP reflow (First-Last-Invert-Play): measures the affected rows' positions BEFORE a
+// reorder, runs the DOM mutation, then animates each displaced row from its old spot into
+// its new one instead of the list just snapping — this is what actually reads as "making
+// room" for the drop, matching how iOS's own reorder (Home Screen, Reminders, Mail) always
+// animates the reflow rather than cutting instantly. `containers` scopes the (cheap)
+// measurement to only the row groups that could possibly be affected — the whole list for
+// Today, just the origin+target day for Week (which can have many more rows rendered
+// across multiple weeks). `dragEl` itself is excluded — its own position already tracks
+// the drop target directly, not this animation.
+function _mFlipReflow(containers, dragEl, mutate) {
+  const rows = containers.filter(Boolean)
+    .flatMap(c => [...c.querySelectorAll('.m-row-outer[data-rid], .m-wk-row[data-rid]')])
+    .filter(r => r !== dragEl);
+  const first = new Map(rows.map(r => [r, r.getBoundingClientRect()]));
+  mutate();
+  rows.forEach(r => {
+    const f = first.get(r);
+    const l = r.getBoundingClientRect();
+    const dy = f.top - l.top;
+    if (Math.abs(dy) < 1) return;
+    r.style.transition = 'none';
+    r.style.transform = `translateY(${dy}px)`;
+    requestAnimationFrame(() => {
+      r.style.transition = 'transform .18s cubic-bezier(.2,.8,.2,1)';
+      r.style.transform = '';
+    });
+  });
+}
+
 function _mTodDragMove(e) {
   if (!_mTodDrag) return;
   e.preventDefault();
@@ -2132,7 +2180,9 @@ function _mTodDragMove(e) {
   if (!target || target === el || !list.contains(target)) return;
   const rect = target.getBoundingClientRect();
   const before = touch.clientY < rect.top + rect.height / 2;
-  list.insertBefore(el, before ? target : target.nextSibling);
+  const dest = before ? target : target.nextSibling;
+  if (el.nextSibling === dest) return; // already sitting there — nothing to reflow
+  _mFlipReflow([list], el, () => list.insertBefore(el, dest));
 }
 
 function _mTodDragEnd(cancelled) {
@@ -3708,15 +3758,21 @@ function _mWkDragMove(e) {
   const targetDay = hit?.closest('.m-wk-day[data-ds]');
   if (!targetDay || !list.contains(targetDay)) return;
   const targetRow = hit?.closest('.m-wk-row[data-rid]');
+  // Only the origin day (before this move) and the target day can have any rows actually
+  // shift position — scoping _mFlipReflow's measurement to just those two (not the whole
+  // week list, which can span many rendered weeks) keeps it cheap enough to run on every
+  // touchmove.
+  const origDay = el.closest('.m-wk-day[data-ds]');
 
   if (targetRow && targetRow !== el && targetDay.contains(targetRow)) {
     const rect = targetRow.getBoundingClientRect();
     const before = touch.clientY < rect.top + rect.height / 2;
-    targetDay.insertBefore(el, before ? targetRow : targetRow.nextSibling);
+    const dest = before ? targetRow : targetRow.nextSibling;
+    if (el.nextSibling !== dest) _mFlipReflow([origDay, targetDay], el, () => targetDay.insertBefore(el, dest));
   } else if (!targetDay.contains(el)) {
     // Hovering a day with nothing under the finger yet (empty space, or a day with no
     // real rows) — drop at the end, but before the "—" empty placeholder if present.
-    targetDay.insertBefore(el, targetDay.querySelector('.m-wk-empty') || null);
+    _mFlipReflow([origDay, targetDay], el, () => targetDay.insertBefore(el, targetDay.querySelector('.m-wk-empty') || null));
   }
 
   document.querySelectorAll('.m-wk-day[data-ds]').forEach(d => {
@@ -3758,8 +3814,13 @@ function mInitWeekGestures() {
       pressTimer = null;
       if (!_mWkPress) return;
       _mWkPress.armed = true;
+      // See mInitTodayGestures's own comment — navigator.vibrate is a no-op on iOS,
+      // .m-row-bump is the visual stand-in.
       navigator.vibrate?.(8);
-      _mShowTaskMenu(_mWkPress.outer);
+      const outer = _mWkPress.outer;
+      outer.classList.add('m-row-bump');
+      setTimeout(() => outer.classList.remove('m-row-bump'), 220);
+      _mShowTaskMenu(outer);
     }, 480);
   }, {passive: true});
 
@@ -4017,8 +4078,15 @@ function _mInitTapHoldMenu(containerId, excludeSelectors) {
       pressTimer = null;
       if (!press) return;
       press.armed = true;
+      // See mInitTodayGestures's own comment — navigator.vibrate is a no-op on iOS,
+      // .m-row-bump is the visual stand-in. outer captured locally, not read back off
+      // `press` in the removal timeout below — a new touch could reassign `press` (the
+      // enclosing closure's own variable) before that timeout fires.
       navigator.vibrate?.(8);
-      _mShowTaskMenu(press.outer);
+      const outer = press.outer;
+      outer.classList.add('m-row-bump');
+      setTimeout(() => outer.classList.remove('m-row-bump'), 220);
+      _mShowTaskMenu(outer);
     }, 480);
   }, {passive: true});
 

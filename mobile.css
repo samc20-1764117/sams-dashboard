@@ -113,8 +113,25 @@ body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
    links/images support), a completely different mechanism from text SELECTION and not
    covered by user-select/touch-callout at all. */
 .m-row-outer,.m-row-outer *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
-.m-row-outer.m-row-dragging{opacity:.6;z-index:5}
-.m-row-outer.m-row-dragging .m-row{box-shadow:0 6px 18px rgba(0,0,0,.18);border-radius:var(--rs)}
+/* "Lift" treatment — scale up slightly + a stronger shadow + a touch of transparency,
+   matching how iOS's own reorderable lists (Reminders, Mail, Home Screen) visually pick an
+   item up off the list rather than just tinting it. transition is on the OUTER element so
+   the lift itself animates in/out when the class is toggled; the siblings' own "make room"
+   motion is handled separately by _mFlipReflow (mobile-overview.js), not by this rule. */
+.m-row-outer.m-row-dragging{opacity:.94;z-index:5;transition:transform .12s ease}
+.m-row-outer.m-row-dragging .m-row{box-shadow:0 10px 26px rgba(0,0,0,.22);border-radius:var(--rs);transform:scale(1.025)}
+/* Visual stand-in for haptic feedback on a recognized hold — navigator.vibrate is a no-op
+   on iOS Safari/WKWebView (an Apple/WebKit platform limitation, not fixable from a web
+   page), so this quick scale "pop" is what actually gets felt. Applied to whichever row
+   just armed (Today/Week/Shop/Month — see mInitTodayGestures/mInitWeekGestures/
+   _mInitTapHoldMenu, mobile-overview.js), toggled briefly via JS, not tied to any
+   drag/menu state of its own. */
+@keyframes m-row-bump{0%{transform:scale(1)}40%{transform:scale(1.035)}100%{transform:scale(1)}}
+/* Scoped to the actual VISIBLE row (.m-row for Today/Shop/Month's outer-wrapper structure,
+   .m-wk-row directly for Week, which has no separate wrapper) — not a bare .m-row-bump
+   rule, which would double up with the nested one below and compound the scale. */
+.m-row-outer.m-row-bump .m-row{animation:m-row-bump .22s ease}
+.m-wk-row.m-row-bump{animation:m-row-bump .22s ease}
 
 /* ── Task rows ────────────────────────────────────────────────────────────── */
 /* Taller (was 40px/9px padding) for more breathing room at the same 17px text size —
@@ -590,7 +607,7 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 .m-wk-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
 .m-wk-dname{font-size:13px;font-weight:700;color:var(--text)}
 .m-wk-ddate{font-size:12px;color:var(--sub)}
-.m-wk-day.m-wk-drop-target{border-color:var(--accent);background:rgba(124,106,247,.1)}
+.m-wk-day.m-wk-drop-target{border-color:var(--accent);border-width:2px;background:rgba(124,106,247,.1);transition:border-color .12s ease,background-color .12s ease}
 .m-wk-day.m-wk-drop-target .m-wk-row{background:rgba(124,106,247,.06)}
 .m-wk-empty{padding:12px 14px;font-size:12px;color:var(--sub)}
 
@@ -599,7 +616,9 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 .m-wk-row{display:flex;align-items:center;gap:8px;padding:7px 14px;border-top:1px solid var(--border);-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
 .m-wk-day .m-wk-row:first-of-type{border-top:none}
 /* Live-reparent drag feedback — same visual treatment Today's own .m-row-dragging uses. */
-.m-wk-row.m-wk-row-dragging{position:relative;z-index:5;opacity:.6;box-shadow:0 6px 18px rgba(0,0,0,.18);border-radius:var(--rs,10px);background:var(--bg-elevated)}
+/* Same "lift" treatment as Today's .m-row-outer.m-row-dragging (see its own comment) — a
+   deliberately closer match than before (was opacity:.6, a much flatter/duller look). */
+.m-wk-row.m-wk-row-dragging{position:relative;z-index:5;opacity:.94;box-shadow:0 10px 26px rgba(0,0,0,.22);border-radius:var(--rs,10px);background:var(--bg-elevated);transform:scale(1.025);transition:transform .12s ease}
 .m-wk-row.m-ov{background:rgba(239,68,68,.05)}
 .m-wk-row.m-wk-done{opacity:.35}
 .m-wk-band{width:3px;align-self:stretch;min-height:18px;border-radius:3px;border:1px solid;flex-shrink:0}
