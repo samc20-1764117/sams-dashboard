@@ -93,6 +93,14 @@ document.addEventListener('selectionchange', () => {
   const sel = window.getSelection?.();
   if (sel && sel.toString()) sel.removeAllRanges();
 });
+// The Copy/Translate/Share popup on a long hold is a DIFFERENT mechanism from the
+// selection highlight above — it's iOS Safari's native callout menu, which fires a real
+// `contextmenu` event (the same event a desktop right-click fires) once a hold is
+// recognized as a selection attempt. -webkit-touch-callout:none is the documented CSS
+// knob for it but isn't reliably honored in WKWebView for a long-enough hold in practice;
+// intercepting the event that actually presents the menu is the dependable fix, and
+// doesn't touch scrolling/tapping/dragging at all — those aren't contextmenu events.
+document.addEventListener('contextmenu', e => e.preventDefault());
 function selTask() {}
 function showCtx() {}
 function showWrRuleCtx() {}
@@ -1419,7 +1427,7 @@ function mWrActionsSkip() {
   mCloseTaskMenu();
   if (!wkKey) return;
   if (rtype === 'wrrule') {
-    _mWriteWrOverride(ruleId, wkKey, {override_type: 'skip'}, {undoLabel: 'Skipped WR task this week'});
+    _mWriteWrOverride(ruleId, wkKey, {override_type: 'skip'}, {undoLabel: 'Skipped this week'});
     return;
   }
   const r = st.recurring.find(x => String(x.id) === String(ruleId));
@@ -1437,7 +1445,7 @@ function mWrActionsSkip() {
     linkedBlocks.forEach(b => { st.blocks.push(b); sbSaveBlock(b); });
     save(); renderAll();
     sbReq('PATCH', 'wr_recurring_rules', {date_overrides: r._dateOverrides}, recQs(ruleId));
-  }, 'Skipped recurring task this week');
+  }, 'Skipped this week');
 }
 function mWrActionsAllFuture(delta) {
   const rtype = _mWrActionsRtype, ruleId = _mWrActionsRuleId, wkKey = _mWrActionsWkKey;
@@ -1654,7 +1662,7 @@ function _mWrShiftThisWeek(rtype, ruleId, wkKey, delta) {
       if (prevTarget !== undefined) r._dateOverrides[targetWkKey] = prevTarget; else delete r._dateOverrides[targetWkKey];
       save(); renderAll();
       sbReq('PATCH', 'wr_recurring_rules', {date_overrides: r._dateOverrides}, recQs(ruleId));
-    }, 'Moved recurring task');
+    }, 'Moved this task to ' + (delta > 0 ? 'next' : 'prev') + ' week');
     return;
   }
   const rule = st.wrRules.find(r => String(r.id) === String(ruleId));
@@ -1696,7 +1704,7 @@ function _mWrShiftThisWeek(rtype, ruleId, wkKey, delta) {
     if (_prevOv) { const ov = st.wrOverrides.find(o => String(o.rule_id) === String(ruleId) && o.wk_key === srcWkKey); if (ov) Object.assign(ov, _prevOv); sbReqSilent('PATCH', 'wr_recurring_overrides', _prevOv, `?id=eq.${ov ? ov.id : _prevOv.id}`); }
     else { const id = _ovRealId || st.wrOverrides.find(o => String(o.rule_id) === String(ruleId) && o.wk_key === srcWkKey)?.id; st.wrOverrides = st.wrOverrides.filter(o => String(o.rule_id) !== String(ruleId) || o.wk_key !== srcWkKey); if (id) sbReqSilent('DELETE', 'wr_recurring_overrides', null, `?id=eq.${id}`); }
     save(); renderAll();
-  }, 'Moved WR task to ' + (delta > 0 ? 'next' : 'prev') + ' week');
+  }, 'Moved this task to ' + (delta > 0 ? 'next' : 'prev') + ' week');
 }
 
 // Port of desktop's _wrCtxShiftScheduleOne (overview.js, the WR right-click menu's "All
@@ -1727,7 +1735,9 @@ function _mWrShiftAllFuture(rtype, ruleId, wkKey, delta) {
   }
   sbReq('PATCH', 'wr_recurring_rules', {starting_date: rule.starting_date, date_overrides: rule._dateOverrides}, isRec ? recQs(ruleId) : `?id=eq.${ruleId}`);
   save(); renderAll();
-  showToast('Schedule moved ' + (delta > 0 ? '1 week later' : '1 week earlier'), '#10b981', 1600);
+  // Just the one undo-toast (dropped the separate immediate showToast that used to fire
+  // right before it — same info, redundant second popup) with a label specific enough to
+  // stand alone: which scope (all future) and which direction (next/prev week).
   pushUndo(() => {
     rule.starting_date = prevStart;
     if (_addedSnap) rule._dateOverrides.__priorScheds__.pop();
@@ -1735,7 +1745,7 @@ function _mWrShiftAllFuture(rtype, ruleId, wkKey, delta) {
     _removedOvs.forEach(o => { st.wrOverrides.push(o); sbReqSilent('POST', 'wr_recurring_overrides', {rule_id: o.rule_id, wk_key: o.wk_key, override_type: o.override_type, moved_to_wk_key: o.moved_to_wk_key || null, done: o.done || null, custom_name: o.custom_name || null, custom_notes: o.custom_notes || null}, ''); });
     sbReq('PATCH', 'wr_recurring_rules', {starting_date: prevStart, date_overrides: rule._dateOverrides}, isRec ? recQs(ruleId) : `?id=eq.${ruleId}`);
     save(); renderAll();
-  }, 'Shifted schedule');
+  }, 'Moved all future to ' + (delta > 0 ? 'next' : 'prev') + ' week');
 }
 
 // Port of desktop's writeWrOverride (overview.js) — identical logic, renders via renderAll().
@@ -3907,7 +3917,7 @@ function mInitWeekGestures() {
       _dayOrderSet(m2);
       save(); renderAll();
       sbReq('PATCH', 'tasks', {due_date: _prevDue}, `?id=eq.${tid}`);
-    }, 'Moved task');
+    }, 'Moved to ' + _mFmtAddDate(targetDs));
     sbReq('PATCH', 'tasks', {due_date: targetDs}, `?id=eq.${tid}`);
   }
 
