@@ -1002,12 +1002,15 @@ function _dlblOvArrow(dayLetter,onclickJs){
   // letting the click fire normally instead. draggable="false" here is a harmless secondary signal.
   return`<span class="dlbl ov" draggable="false" style="display:inline-flex;align-items:center;gap:2px;right:24px;cursor:pointer" title="Move to today" onmousedown="event.stopPropagation()" onclick="event.stopPropagation();${onclickJs}">${dayLetter}<span class="dlbl-arrow">→</span></span>`;
 }
-// "due last week" / "due N weeks ago" — accurate regardless of exactly how far back wkKey is
-// (WR week-misses are always exactly 1 week back, but a non-WR miss from getOvRecurring's 4-week
-// lookback might not be).
+// "due earlier this week" / "due last week" / "due N weeks ago" — accurate regardless of exactly
+// how far back wkKey is (WR week-misses are always exactly 1 week back, but a non-WR miss from
+// getOvRecurring's 4-week lookback might not be). n===0 (2026-09-26 addition) covers a miss whose
+// OWN date is in the past but still falls in the CURRENT calendar week — e.g. "due yesterday"
+// when today hasn't crossed into a new week yet — now that _ovRowMoveClick shows this same
+// scope prompt for that case too instead of silently skipping it.
 function _weeksAgoLabel(wkKey){
   const n=Math.round((new Date(getWkKey(0)+'T12:00')-new Date(wkKey+'T12:00'))/(7*86400000));
-  return n===1?'due last week':`due ${n} weeks ago`;
+  return n<=0?'due earlier this week':n===1?'due last week':`due ${n} weeks ago`;
 }
 // Shared 4-way scope prompt for a recurring/WR occurrence overdue from a past week — used by both
 // the per-row arrow and the bulk "Move to today" sequential queue, so they can never disagree on
@@ -1032,43 +1035,35 @@ function _wrecScopePrompt(e,name,wkKey,onSkip,onThis,onAll){
 function _ovRowMoveClick(e,kind,id,wkKey){
   e.stopPropagation();e.preventDefault();
   const curWk=getWkKey(0);
-  const pastWeek=wkKey&&wkKey!==curWk;
+  wkKey=wkKey||curWk;
+  // Always show the scope menu (2026-09-26 fix — was gated on `wkKey!==curWk` a.k.a. "past
+  // week", which silently skipped straight to a this-occurrence-only move whenever the miss
+  // happened to fall in the SAME calendar week as today, e.g. "due yesterday" when today is
+  // still within that week's Mon-Sun span. This arrow only ever renders on a row that's already
+  // confirmed overdue (`ov && t.due_date`, the only call site below), so every click here is a
+  // genuine past-due miss regardless of which calendar week it lands in — there's no "trivial,
+  // no schedule question" case to shortcut, same as dragging the chip onto today already always
+  // asks. Reported: "pup meds" due yesterday only offered a silent move via the arrow, no "move
+  // all future" option, even though dragging it to today showed that choice.
   if(kind==='wrrule'){
     const rule=st.wrRules.find(r=>String(r.id)===String(id));if(!rule)return;
-    if(pastWeek){
-      _wrecScopePrompt(e,rule.name,wkKey,
-        ()=>writeWrOverride(id,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task'}),
-        ()=>wrMoveToThisWeek(id,wkKey,false),
-        ()=>wrMoveToThisWeek(id,wkKey,true,false));
-    } else {
-      if(!rule._dateOverrides)rule._dateOverrides={};
-      const prev=rule._dateOverrides[wkKey];const today=tod();
-      rule._dateOverrides[wkKey]=today;
-      save();renderAll();
-      sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rule._dateOverrides},`?id=eq.${id}`);
-      pushUndo(()=>{if(prev!==undefined)rule._dateOverrides[wkKey]=prev;else delete rule._dateOverrides[wkKey];save();renderAll();sbReqSilent('PATCH','wr_recurring_rules',{date_overrides:rule._dateOverrides},`?id=eq.${id}`);},'Moved to today');
-    }
+    _wrecScopePrompt(e,rule.name,wkKey,
+      ()=>writeWrOverride(id,wkKey,{override_type:'skip'},{undoLabel:'Skipped WR task'}),
+      ()=>wrMoveToThisWeek(id,wkKey,false),
+      ()=>wrMoveToThisWeek(id,wkKey,true,false));
   } else if(kind==='wrec'){
     const rec=st.recurring.find(x=>String(x.id)===String(id));if(!rec)return;
-    if(pastWeek){
-      _wrecScopePrompt(e,rec.name,wkKey,
-        ()=>_recSkipPastWeek(rec,wkKey),
-        ()=>_recMoveThisOccToToday(rec,wkKey),
-        ()=>_recMoveAllFuture(rec,wkKey,tod(),null,true));
-    } else {
-      _recMoveThisOccToToday(rec,wkKey||curWk);
-    }
+    _wrecScopePrompt(e,rec.name,wkKey,
+      ()=>_recSkipPastWeek(rec,wkKey),
+      ()=>_recMoveThisOccToToday(rec,wkKey),
+      ()=>_recMoveAllFuture(rec,wkKey,tod(),null,true));
   } else {
     const rec=st.recurring.find(x=>String(x.id)===String(id));if(!rec)return;
-    if(pastWeek){
-      _wrScopePrompt(e,rec.name,wkKey,
-        ()=>_recSkipPastWeek(rec,wkKey),
-        ()=>_recMoveThisOccToToday(rec,wkKey),
-        ()=>_recMoveAllFuture(rec,wkKey,tod(),null,true),
-        ()=>_recMoveAllFuture(rec,wkKey,tod(),null,false));
-    } else {
-      _recMoveThisOccToToday(rec,wkKey||curWk);
-    }
+    _wrScopePrompt(e,rec.name,wkKey,
+      ()=>_recSkipPastWeek(rec,wkKey),
+      ()=>_recMoveThisOccToToday(rec,wkKey),
+      ()=>_recMoveAllFuture(rec,wkKey,tod(),null,true),
+      ()=>_recMoveAllFuture(rec,wkKey,tod(),null,false));
   }
 }
 function _taskMoveToToday(taskId){
