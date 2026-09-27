@@ -5190,8 +5190,14 @@ async function mInit() {
   // until the timer thaws. Force an immediate re-sync whenever the app returns to foreground.
   let _mLastFgSync = 0;
   const _mForegroundSync = () => {
-    if (!cfg.url || !cfg.key) return;
     if (document.visibilityState !== 'visible') return;
+    // Today/Month icons: iOS usually just resumes the suspended webview instead of
+    // reloading the page when you tap the icon again, so the ?tab= restore above
+    // never re-runs — whatever tab you'd drifted to before backgrounding is still
+    // showing. Snap back every time this app comes back to foreground, not just on
+    // first load, so these two icons always land where their name says.
+    if (_mValidTabs.includes(_mTabParam) && _mCurTab !== _mTabParam) mShowTab(_mTabParam);
+    if (!cfg.url || !cfg.key) return;
     const now = Date.now();
     if (now - _mLastFgSync < 3000) return; // dedup visibilitychange+pageshow double-fire
     _mLastFgSync = now;
