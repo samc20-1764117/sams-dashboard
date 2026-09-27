@@ -5158,7 +5158,7 @@ async function mInit() {
   // overriding last-tab restore; launched with no param (the Dashboard icon), same
   // last-tab behavior as always.
   const _mValidTabs = ['today', 'tb', 'week', 'month', 'shop', 'extras', 'recipes'];
-  const _mTabParam = new URLSearchParams(location.search).get('tab');
+  const _mTabParam = window._mForceTab || new URLSearchParams(location.search).get('tab');
   mShowTab(_mValidTabs.includes(_mTabParam) ? _mTabParam : (_mValidTabs.includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today'));
   mInitPickers();
   mInitTodayGestures();

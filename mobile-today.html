@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Today">
+<meta name="theme-color" content="#ffffff">
+<!-- Stops iOS Safari's Data Detectors from auto-recognizing phone numbers/dates/addresses/
+     emails/URLs inside plain task-name text and silently turning them into tappable links —
+     each of those has its OWN native long-press menu ("Call"/"Copy Link"/etc.), entirely
+     separate from (and not covered by) the text-selection/callout-menu/user-drag fixes
+     elsewhere in this app, since it's a distinct OS-level text-recognition feature. -->
+<meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no">
+<link rel="manifest" href="mobile-today-manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-today-180.png">
+<title>Today</title>
+<script>
+// Dedicated static entry point for the Today home-screen icon — a plain file copy
+// of mobile.html with only the tags below made static instead of dynamic. Earlier
+// attempts swapped these via JS (client-side) and then via a Cloudflare Pages
+// Function (server-side, which caused a redirect loop and a real outage — see git
+// history). A separate static file sidesteps the whole question of exactly when
+// iOS reads the manifest/icon for "Add to Home Screen": there's nothing to race,
+// these tags are just correct from the first byte. window._mForceTab tells
+// mobile-overview.js's init to always land on Today, every launch, regardless of
+// localStorage's last-used tab.
+window._mForceTab = 'today';
+</script>
+<script>
+// Inline cache-buster: if the served HTML is stale, force a FRESH network fetch by
+// navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
+// served straight back out of the iOS PWA app-shell cache and never update).
+(function(){
+  window._BUILD='20260927h';var BUILD=window._BUILD;
+  try{
+    var qs=new URLSearchParams(location.search);
+    fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+      if(!d.v||d.v===BUILD)return;        // already fresh
+      if(qs.get('b')===d.v)return;        // already tried this version this navigation — stop, no loop
+      qs.set('b',d.v);
+      location.replace(location.pathname+'?'+qs.toString());
+    }).catch(function(){});
+  }catch(e){}
+})();
+</script>
+<link rel="stylesheet" href="fonts/dmsans.css?v=1">
+<link rel="stylesheet" href="mobile.css?v=20260927h">
+<script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
+</head>
+<body>
+
+<!-- Boot loading — covers the async checkAuth() gap (core.js) on every load, so an
+     already-signed-in session never flashes the login form first (#mLogin/#mApp both
+     default to display:none until checkAuth() resolves one way or the other; see
+     hideLoginOverlay/showLoginOverlay in mobile-overview.js, which both hide this).
+     Visible by default (unlike #mLogin/#mApp) since it's the one state that's always
+     correct to show first. -->
+<div id="mBootLoading"><div class="m-boot-spinner"></div></div>
+
+<!-- Login -->
+<div id="mLogin">
+  <form class="card" onsubmit="event.preventDefault();mDoLogin();return false">
+    <h2>Sam's Dashboard</h2>
+    <input id="mEmail" type="email" placeholder="Email" autocomplete="email">
+    <input id="mPass" type="password" placeholder="Password" autocomplete="current-password">
+    <div id="mLoginErr"></div>
+    <button type="submit">Sign in</button>
+  </form>
+  <div class="m-build-stamp" style="text-align:center;font-size:10px;color:#999;margin-top:8px"></div>
+</div>
+
+<!-- App -->
+<div id="mApp">
+  <div id="mHeader">
+    <div id="mHeaderTitleWrap">
+      <h1 id="mHeaderTitle">Today</h1>
+      <div id="mDateLbl"></div>
+    </div>
+    <div id="mMonthHeaderControls" style="display:none">
+      <button type="button" id="mMonthYearPill" class="m-mo-year-pill" onclick="mOpenYearView()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span id="mMonthYearPillTxt"></span>
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;min-height:30px">
+      <div id="mProgress" class="m-prog-ring" style="display:none">
+        <svg width="30" height="30" viewBox="0 0 30 30">
+          <circle class="m-prog-ring-bg" cx="15" cy="15" r="13.5" fill="none" stroke-width="3"></circle>
+          <circle id="mProgressFg" class="m-prog-ring-fg" cx="15" cy="15" r="13.5" fill="none" stroke-width="3" stroke-dasharray="84.82" stroke-dashoffset="84.82"></circle>
+        </svg>
+        <span id="mProgressTxt" class="m-prog-ring-txt"></span>
+      </div>
+      <button id="mTodayAddBtn" class="m-shop-hdr-icon" onclick="mToggleQuickAdd()" aria-label="Add task" title="Add task" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <div id="mShopHeaderBtns" style="display:none">
+        <button class="m-shop-hdr-icon" onclick="mOpenMeals()" title="Meals">🍽</button>
+        <button class="m-shop-hdr-heb" onclick="mOpenFullList()" title="HEB List">HEB</button>
+        <button id="mShopHdrAddBtn" class="m-shop-hdr-icon" onclick="mToggleShopAdd()" aria-label="Add item" title="Add item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+      <button type="button" id="mMonthSearchBtn" class="m-shop-hdr-icon" onclick="mOpenMonthSearch()" aria-label="Search" title="Search" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button type="button" id="mMonthTodayBtn" class="m-shop-hdr-icon" onclick="mOpenMonth()" aria-label="Back to today" title="Back to today" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="22" x2="12" y2="19"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="22" y1="12" x2="19" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="19.1" y1="4.9" x2="17" y2="7"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="19.1" y1="19.1" x2="17" y2="17"/></svg>
+      </button>
+      <button id="mMonthAddBtn" class="m-shop-hdr-icon" onclick="mMonthQuickAdd()" title="Add task" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <button id="mWeekTodayBtn" class="m-shop-hdr-icon" onclick="mWeekGoToday()" aria-label="Back to today" title="Back to today" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="22" x2="12" y2="19"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="22" y1="12" x2="19" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="19.1" y1="4.9" x2="17" y2="7"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="19.1" y1="19.1" x2="17" y2="17"/></svg>
+      </button>
+      <button id="mWeekAddBtn" class="m-shop-hdr-icon" onclick="mWeekQuickAdd()" aria-label="Add task" title="Add task" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <button class="m-reload-btn" onclick="mReloadTap()" title="Reload app (hold to undo)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
+    </div>
+  </div>
+  <div id="mPTR"><div class="m-ptr-spinner"></div><span id="mPTRLbl">Pull to refresh</span></div>
+  <div id="mMain">
+
+    <!-- Today tab -->
+    <div id="mTodayPage">
+      <button type="button" id="mOvBanner" class="m-ov-banner" style="display:none" onclick="mMoveAllOverdueToToday()"></button>
+      <div id="mTodaySection" class="m-section">
+        <div id="mTodayList"></div>
+      </div>
+    </div>
+
+    <!-- Timeblock tab -->
+    <div id="mTBPage" style="display:none">
+      <div id="mUnassignedBar"></div>
+      <div id="mTLScroll">
+        <div id="mTLInner">
+          <div id="mTLLabels"></div>
+          <div id="mTLCol"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Week tab -->
+    <div id="mWeekPage" style="display:none">
+      <div id="mWeekList"></div>
+    </div>
+
+    <!-- Month tab (continuous scroll across months) -->
+    <div id="mMonthPage" style="display:none">
+      <div id="mMonthDayHdr">
+        <div class="m-mo-hdr">M</div><div class="m-mo-hdr">T</div><div class="m-mo-hdr">W</div><div class="m-mo-hdr">T</div><div class="m-mo-hdr">F</div><div class="m-mo-hdr">S</div><div class="m-mo-hdr">S</div>
+      </div>
+      <div id="mMonthScroll"><div id="mMonthWeeks"></div></div>
+      <div id="mMonthDetail"></div>
+    </div>
+
+    <!-- Year view (tap the header's year pill) — Apple Calendar-style grid of mini months;
+         tap a date (or a month name) to jump the month tab there. Simpler than a text
+         month-list + a separate text year-list, matches Apple's own year-grid navigation. -->
+    <div id="mYearBackdrop" onclick="mCloseYearView()" style="display:none"></div>
+    <div id="mYearSheet" style="display:none">
+      <div class="m-yr-hdr">
+        <button type="button" class="m-yr-nav-btn" onclick="mYearShift(-1)" aria-label="Previous year">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span id="mYearSheetTitle" class="m-yr-title"></span>
+        <button type="button" class="m-yr-nav-btn" onclick="mYearShift(1)" aria-label="Next year">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div id="mYearGrid"></div>
+    </div>
+
+    <!-- Month search (header's search icon) — Apple Calendar-style search, scoped to
+         tasks/shopping items/trips by name; picking a result jumps the month tab there. -->
+    <div id="mSearchBackdrop" onclick="mCloseMonthSearch()" style="display:none"></div>
+    <div id="mSearchSheet" style="display:none">
+      <div class="m-search-hdr">
+        <div class="m-search-inp-wrap">
+          <svg class="m-search-inp-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="mSearchInp" placeholder="Search" autocomplete="off" oninput="mRunMonthSearch(this.value)">
+        </div>
+        <button type="button" class="m-search-cancel" onclick="mCloseMonthSearch()">Cancel</button>
+      </div>
+      <div id="mSearchResults"></div>
+    </div>
+
+    <!-- Shop tab -->
+    <div id="mShopPage" style="display:none">
+      <div id="mShopList"></div>
+    </div>
+
+    <!-- Extras tab (placeholder for task-type shortcuts) -->
+    <div id="mExtrasPage" style="display:none">
+      <div class="m-extras-btns">
+        <button class="m-extras-btn" onclick="mShowTab('tb')">
+          <span class="m-extras-btn-icon">🕐</span>
+          <span>Timeblock</span>
+        </button>
+        <button class="m-extras-btn" onclick="mShowTab('recipes')">
+          <span class="m-extras-btn-icon">📖</span>
+          <span>Recipes</span>
+        </button>
+        <button class="m-extras-btn" onclick="mToggleDark()">
+          <span class="m-extras-btn-icon" id="darkToggleIcon">🌙</span>
+          <span id="darkToggleLabel">Night Mode</span>
+        </button>
+      </div>
+      <div class="m-extras-placeholder">
+        <div class="m-extras-icon">✨</div>
+        <div class="m-extras-title">More</div>
+        <div class="m-extras-sub">Quick shortcuts for Travel, Birthdays, and more — coming soon.</div>
+      </div>
+      <div class="m-build-stamp" style="text-align:center;font-size:10px;color:var(--sub);margin-top:24px"></div>
+    </div>
+
+    <!-- Recipes page (opened from More) -->
+    <div id="mRecipesPage" style="display:none">
+      <button class="m-back-btn" onclick="mShowTab('extras')">‹ More</button>
+      <div id="mRecipesList"></div>
+    </div>
+
+  </div>
+
+  <!-- Add task popup (today tab only) — opened by #mTodayAddBtn ("+") via mToggleQuickAdd,
+       not always visible (reclaims the screen space it used to permanently occupy). Same
+       form/fields/IDs as before, just gated behind a tap instead of docked on screen. A
+       <form> (not a bare input+onkeydown) so the iOS keyboard's Return key reliably
+       submits, same fix already proven for the login screen (#mLogin's form). type="button"
+       is required on every non-submit button inside a form, or it defaults to type=submit
+       and double-fires the action. -->
+  <div id="mQuickAddBackdrop" onclick="mCloseQuickAdd()"></div>
+  <div id="mShopAddBackdrop" onclick="mCloseShopAdd()"></div>
+  <form id="mAddBar" onsubmit="event.preventDefault();mAddTask();return false">
+    <input id="mNewTask" type="text" placeholder="Add task…">
+    <!-- Type-specific fields — shown/hidden by _mAddSyncTypeFields (mobile-overview.js) as
+         the category picker below changes. Placed above the picker row (not below) so the
+         form still grows upward from the same bottom-anchored point when they appear. -->
+    <!-- Plain task / Shopping only (Travel has its own Start/End dates below; Weekly Reset/
+         Recurring have "Starting date" instead) — shows and lets you change whichever date
+         this add is actually targeting, defaulting to today (or, from Month's "+", whichever
+         day is selected there — see mMonthQuickAdd). -->
+    <div id="mAddDueDateField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Due date</span>
+      <div class="m-cpick" id="mAddDueDatePick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleDatePick('dueDate')">
+          <span id="mAddDueDateLbl">Today</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts m-add-cal" id="mAddDueDateOpts"></div>
+      </div>
+    </div>
+    <div id="mAddDestField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Destination</span>
+      <input id="mAddDest" class="m-add-field-inp" type="text" placeholder="e.g. New York, NY">
+    </div>
+    <!-- Custom calendar popovers, not native <input type="date"> — a native date input
+         forces the keyboard down for its own wheel picker, same reason Store became a
+         custom picker earlier. mToggleDatePick('tvStart'/'tvEnd'/'recStart') drives all
+         three date fields in this form (Travel's two, Recurring/Weekly Reset's one below)
+         off one shared implementation (_mRenderAddDateCal, mobile-overview.js). -->
+    <div id="mAddDateRow" class="m-add-daterow" style="display:none">
+      <div id="mAddStartField" class="m-add-field" style="display:none">
+        <span class="m-add-field-lbl">Start date</span>
+        <div class="m-cpick" id="mAddStartPick">
+          <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleDatePick('tvStart')">
+            <span id="mAddStartLbl">Today</span>
+            <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+          </button>
+          <div class="m-cpick-opts m-add-cal" id="mAddTvStartOpts"></div>
+        </div>
+      </div>
+      <div id="mAddEndField" class="m-add-field" style="display:none">
+        <span class="m-add-field-lbl">End date</span>
+        <div class="m-cpick" id="mAddEndPick">
+          <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleDatePick('tvEnd')">
+            <span id="mAddEndLbl">Select…</span>
+            <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+          </button>
+          <div class="m-cpick-opts m-add-cal" id="mAddTvEndOpts"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Custom picker, not a native <select> — a native select forces the keyboard down to
+         show its own wheel picker, which was also destabilizing the popup's keyboard-relative
+         position (see _mQuickAddReposition). This one is just styled divs, so a tap on it can
+         be preventDefault-ed like the category picker to keep the keyboard up throughout. -->
+    <div id="mAddStoreField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Store</span>
+      <div class="m-cpick" id="mAddStorePick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleStorePick()">
+          <span id="mAddStoreLbl">HEB</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts" id="mAddStoreOpts">
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('HEB')"><span>HEB</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('Costco')"><span>Costco</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('Ikea')"><span>Ikea</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('Online')"><span>Online</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectStore('Other')"><span>Other</span></div>
+        </div>
+      </div>
+    </div>
+    <div id="mAddStoreCustomField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Store name</span>
+      <input id="mAddStoreCustom" class="m-add-field-inp" type="text" placeholder="Store name…" onkeydown="if(event.key==='Enter')event.stopPropagation()">
+    </div>
+    <div id="mAddLinkField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Link <span style="opacity:.55;font-weight:400">(optional)</span></span>
+      <input id="mAddLink" class="m-add-field-inp" type="url" placeholder="https://…">
+    </div>
+    <!-- Weekly Reset Task + Recurring Task fields — mirrors desktop's unified Add Recurring
+         modal (wrRuleAddModal, overview.js): both types share Cadence; which OTHER fields
+         show depends on type AND (for Starting date) cadence — see _mAddSyncTypeFields. -->
+    <div id="mAddPupField" class="m-add-field" style="display:none">
+      <label onmousedown="event.preventDefault()" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;font-size:14px;color:var(--text)">
+        <input type="checkbox" id="mAddPupCk" onmousedown="event.preventDefault()" style="width:15px;height:15px;accent-color:var(--accent)"> 🐾 Pup related
+      </label>
+    </div>
+    <div id="mAddCadenceField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Cadence</span>
+      <div class="m-cpick" id="mAddCadencePick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleCadencePick()">
+          <span id="mAddCadenceLbl">Every week</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts" id="mAddCadenceOpts"></div>
+      </div>
+    </div>
+    <!-- Due on: day-of-week (non-monthly cadence) or day-of-month (monthly cadence) —
+         Recurring Task only, never Weekly Reset (matches desktop: wrAddAppearDay/DateField
+         only ever show for the "Scheduled" type, isSch, regardless of cadence). -->
+    <div id="mAddDayField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Due on</span>
+      <div class="m-cpick" id="mAddDayPick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleDayPick()">
+          <span id="mAddDayLbl">Sunday</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts" id="mAddDayOpts"></div>
+      </div>
+    </div>
+    <div id="mAddDomField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Due on</span>
+      <div class="m-cpick" id="mAddDomPick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleDomPick()">
+          <span id="mAddDomLbl">1st</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts" id="mAddDomOpts"></div>
+      </div>
+    </div>
+    <!-- Starting date: Recurring Task always; Weekly Reset Task only when cadence isn't
+         weekly (a weekly WR item has no anchor — matches desktop's updateWrRuleCadenceUI). -->
+    <div id="mAddRecStartField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Starting date</span>
+      <div class="m-cpick" id="mAddRecStartPick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleDatePick('recStart')">
+          <span id="mAddRecStartLbl">Today</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts m-add-cal" id="mAddRecStartOpts"></div>
+      </div>
+    </div>
+    <div class="m-add-row2">
+      <div class="m-cpick" id="mAddPick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mTogglePick('add')">
+          <span class="m-cpick-dot" id="mAddPickDot"></span>
+          <span id="mAddPickLbl">Home</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts" id="mAddPickOpts"></div>
+      </div>
+      <button type="button" id="mAddFlagBtn" onclick="mToggleAddFlag()" aria-label="Flag important" title="Flag important">⚑</button>
+      <button type="submit" id="mAddBtn">Add</button>
+    </div>
+  </form>
+
+  <!-- Shop add bar — same form-wrap fix as #mAddBar above. On-demand popup (opened via
+       #mShopHdrAddBtn's "+" in the header, mToggleShopAdd), same pattern as #mAddBar.
+       Store/link fields mirror Today's own add bar's Shopping-type fields exactly
+       (#mAddStoreField/#mAddStoreCustomField/#mAddLinkField) — same custom picker (a
+       native select forces the keyboard down, see the comment on #mAddStoreField above),
+       same "Other" -> free-text store name behavior, same optional link field. -->
+  <form id="mShopAddBar" onsubmit="event.preventDefault();mAddShopItem();return false">
+    <input id="mShopNewName" type="text" placeholder="Item name…">
+    <div class="m-add-field">
+      <span class="m-add-field-lbl">Store</span>
+      <div class="m-cpick" id="mShopAddStorePick">
+        <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleShopAddStorePick()">
+          <span id="mShopAddStoreLbl">HEB</span>
+          <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </button>
+        <div class="m-cpick-opts" id="mShopAddStoreOpts">
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopAddStore('HEB')"><span>HEB</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopAddStore('Costco')"><span>Costco</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopAddStore('Ikea')"><span>Ikea</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopAddStore('Online')"><span>Online</span></div>
+          <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopAddStore('Other')"><span>Other</span></div>
+        </div>
+      </div>
+    </div>
+    <div id="mShopAddStoreCustomField" class="m-add-field" style="display:none">
+      <span class="m-add-field-lbl">Store name</span>
+      <input id="mShopAddStoreCustom" class="m-add-field-inp" type="text" placeholder="Store name…" onkeydown="if(event.key==='Enter')event.stopPropagation()">
+    </div>
+    <div class="m-add-field">
+      <span class="m-add-field-lbl">Link <span style="opacity:.55;font-weight:400">(optional)</span></span>
+      <input id="mShopAddLink" class="m-add-field-inp" type="url" placeholder="https://…">
+    </div>
+    <div class="m-add-row2">
+      <button type="submit" id="mShopAddBtn">Add</button>
+    </div>
+  </form>
+
+  <!-- Bottom nav -->
+  <div id="mNavBackdrop"></div>
+  <nav id="mNav">
+    <div class="m-nav-highlight" id="mNavHighlight"></div>
+    <button class="m-nav-btn active" onclick="mShowTab('today')">
+      <svg class="m-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="22" x2="12" y2="19"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="22" y1="12" x2="19" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="19.1" y1="4.9" x2="17" y2="7"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="19.1" y1="19.1" x2="17" y2="17"/></svg>
+      <span>Today</span>
+    </button>
+    <button class="m-nav-btn" onclick="mShowTab('week')">
+      <svg class="m-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Week</span>
+    </button>
+    <button class="m-nav-btn" onclick="mShowTab('month')">
+      <svg class="m-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="14.01"/><line x1="8" y1="18" x2="8" y2="18.01"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
+      <span>Month</span>
+    </button>
+    <button class="m-nav-btn" onclick="mShowTab('shop')">
+      <svg class="m-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span>Shop</span>
+    </button>
+    <button class="m-nav-btn" onclick="mShowTab('extras')">
+      <svg class="m-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="7" height="7" rx="1"/><rect x="14" y="2" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="7" rx="1"/><rect x="14" y="15" width="7" height="7" rx="1"/></svg>
+      <span>More</span>
+    </button>
+  </nav>
+</div>
+
+<!-- Recurring/Weekly Reset edit sheet (name/notes/important only — cadence/schedule
+     editing isn't built yet; use the existing skip/move-to-today flows for that). -->
+<div id="mRecEditBackdrop" onclick="mCloseRecEdit()"></div>
+<div id="mRecEditSheet">
+  <h3>Edit Recurring Task</h3>
+  <input id="mRecEditName" type="text" placeholder="Name" style="margin-bottom:10px">
+  <textarea id="mRecEditNotes" placeholder="Notes" rows="3" style="width:100%;padding:11px 13px;border-radius:var(--rs);border:1px solid var(--border);background:var(--glass);font-size:16px;font-family:inherit;color:var(--text);outline:none;margin-bottom:10px;resize:none"></textarea>
+  <button type="button" id="mRecEditImpBtn" class="m-flag-btn" onclick="mToggleRecEditImp()" aria-label="Flag important" title="Flag important" style="margin-bottom:12px">⚑</button>
+  <div class="m-edit-actions">
+    <button id="mRecEditSave" onclick="mSaveRecEdit()" style="flex:1;background:var(--accent);color:#fff">Save</button>
+  </div>
+</div>
+
+<!-- Edit task sheet -->
+<div id="mEditBackdrop" onclick="mCloseEdit()"></div>
+<div id="mEditSheet">
+  <h3>Edit Task</h3>
+  <input id="mEditName" type="text" placeholder="Task name" onkeydown="if(event.key==='Enter')mSaveEditTask()" style="margin-bottom:10px">
+  <div class="m-add-row2" style="margin-bottom:10px">
+    <div class="m-cpick" id="mEditPick">
+      <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mTogglePick('edit')">
+        <span class="m-cpick-dot" id="mEditPickDot"></span>
+        <span id="mEditPickLbl">Home</span>
+        <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      </button>
+      <div class="m-cpick-opts m-cpick-opts--up" id="mEditPickOpts"></div>
+    </div>
+    <button type="button" id="mEditImpBtn" class="m-flag-btn" onclick="mToggleEditImp()" aria-label="Flag important" title="Flag important">⚑</button>
+  </div>
+  <input id="mEditDue" type="date" style="margin-bottom:12px">
+  <div class="m-edit-actions">
+    <button id="mEditDel" onclick="mDeleteEditTask()">Delete</button>
+    <button id="mEditSave" onclick="mSaveEditTask()">Save</button>
+  </div>
+</div>
+
+<!-- Block edit/create sheet -->
+<div id="mBlockBackdrop" onclick="mCloseBlock()"></div>
+<div id="mBlockSheet">
+  <h3 id="mBlockSheetTitle">Add Block</h3>
+  <input id="mBlockName" type="text" placeholder="Block title" onkeydown="if(event.key==='Enter')mSaveBlock()">
+  <div class="m-block-row">
+    <input id="mBlockTime" type="time" class="m-time-inp">
+    <div class="m-dur-btns">
+      <button class="m-dur-btn" data-dur="30" onclick="mSetDur(30)">30m</button>
+      <button class="m-dur-btn" data-dur="45" onclick="mSetDur(45)">45m</button>
+      <button class="m-dur-btn" data-dur="60" onclick="mSetDur(60)">1h</button>
+      <button class="m-dur-btn" data-dur="90" onclick="mSetDur(90)">1.5h</button>
+      <button class="m-dur-btn" data-dur="120" onclick="mSetDur(120)">2h</button>
+    </div>
+  </div>
+  <div class="m-cpick" id="mBlockPick" style="margin-bottom:16px">
+    <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mTogglePick('block')">
+      <span class="m-cpick-dot" id="mBlockPickDot"></span>
+      <span id="mBlockPickLbl">Home</span>
+      <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </button>
+    <div class="m-cpick-opts m-cpick-opts--up" id="mBlockPickOpts"></div>
+  </div>
+  <div class="m-edit-actions">
+    <button id="mBlockDel" onclick="mDeleteBlock()">Delete</button>
+    <button id="mBlockSave" onclick="mSaveBlock()">Save</button>
+  </div>
+</div>
+
+<!-- Full add sheet (today) -->
+<div id="mFullAddBackdrop" onclick="mCloseFullAdd()"></div>
+<div id="mFullAddSheet">
+  <h3>Add Task</h3>
+  <input id="mFullAddName" type="text" placeholder="Task name" onkeydown="if(event.key==='Enter')mSaveFullAdd()">
+  <div id="mFullAddDestField" class="m-full-add-field" style="display:none">
+    <span class="m-full-add-lbl">Destination</span>
+    <input id="mFullAddDest" type="text" placeholder="e.g. New York, NY">
+  </div>
+  <div class="m-full-add-field">
+    <span class="m-full-add-lbl" id="mFullAddDueLbl">Due date</span>
+    <input id="mFullAddDue" type="date">
+  </div>
+  <div id="mFullAddEndField" class="m-full-add-field" style="display:none">
+    <span class="m-full-add-lbl">End date</span>
+    <input id="mFullAddEnd" type="date">
+  </div>
+  <div id="mFullAddModeField" class="m-full-add-field" style="display:none">
+    <span class="m-full-add-lbl">Travel mode</span>
+    <select id="mFullAddMode">
+      <option value="">None</option>
+      <option value="plane">✈️ Plane</option>
+      <option value="drive">🚗 Drive</option>
+    </select>
+  </div>
+  <div class="m-add-row2" style="margin-bottom:12px">
+    <div class="m-cpick" id="mFullAddPick">
+      <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mTogglePick('fulladd')">
+        <span class="m-cpick-dot" id="mFullAddPickDot"></span>
+        <span id="mFullAddPickLbl">Home</span>
+        <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      </button>
+      <div class="m-cpick-opts m-cpick-opts--up" id="mFullAddPickOpts"></div>
+    </div>
+    <button type="button" class="m-flag-btn" id="mFullAddImpBtn" onclick="mToggleFullAddImp()" aria-label="Flag important" title="Flag important">⚑</button>
+  </div>
+  <button id="mFullAddSave" onclick="mSaveFullAdd()">Add Task</button>
+</div>
+
+<!-- Task quick-actions menu (Today/Week/Month) — icon-only row, positioned next to the
+     tapped row by _mShowTaskMenu/_mPositionTaskMenu (mobile-overview.js), not a bottom
+     sheet. Recurring/WR rows show Edit + the 5 Skip/Move buttons below instead of
+     Duplicate/Flag/Delete (toggled by _mShowTaskMenu) — same popup, same convention,
+     instead of their own separate full-width text-labeled sheet. -->
+<div id="mTaskMenuBackdrop" onclick="mCloseTaskMenu()"></div>
+<div id="mTaskMenuSheet">
+  <button type="button" class="m-tmenu-btn" id="mTaskMenuEditBtn" onclick="mTaskMenuEdit()" title="Edit" aria-label="Edit">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  </button>
+  <button type="button" class="m-tmenu-btn" id="mTaskMenuDupBtn" onclick="mTaskMenuDuplicate()" title="Duplicate" aria-label="Duplicate">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+  </button>
+  <button type="button" class="m-tmenu-btn m-tmenu-flag" id="mTaskMenuFlagBtn" onclick="mTaskMenuToggleImportant()" title="Flag as Important" aria-label="Flag as Important">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+  </button>
+  <button type="button" class="m-tmenu-btn m-tmenu-del" id="mTaskMenuDelBtn" onclick="mTaskMenuDelete()" title="Delete" aria-label="Delete">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+  </button>
+  <button type="button" class="m-tmenu-btn" id="mTaskMenuSkipBtn" onclick="mWrActionsSkip()" title="Skip this week" aria-label="Skip this week" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg>
+  </button>
+  <button type="button" class="m-tmenu-btn" id="mTaskMenuAllNextBtn" onclick="mWrActionsAllFuture(1)" title="Move all future to next week" aria-label="Move all future to next week" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 6 12 12 6 18"/><polyline points="12 6 18 12 12 18"/></svg>
+  </button>
+  <button type="button" class="m-tmenu-btn" id="mTaskMenuThisNextBtn" onclick="mWrActionsThisWeek(1)" title="Move this one to next week" aria-label="Move this one to next week" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+  </button>
+  <!-- Same Edit as mTaskMenuEditBtn (both call mTaskMenuEdit()) — a separate button so it
+       can sit LAST for the WR set (skip, all-future, this-time, edit) while the regular
+       set keeps Edit first; one shared DOM position can't be both. -->
+  <button type="button" class="m-tmenu-btn" id="mTaskMenuWrEditBtn" onclick="mTaskMenuEdit()" title="Edit" aria-label="Edit" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  </button>
+</div>
+
+<!-- Past-week recurring/WR "move to today" scope sheet -->
+<div id="mWrScopeBackdrop" onclick="mCloseWrScopeSheet()"></div>
+<div id="mWrScopeSheet">
+  <h3 id="mWrScopeTitle"></h3>
+  <button type="button" class="m-wr-scope-opt" onclick="mWrScopeDoSkip()">⊘&nbsp;&nbsp;Skip past week</button>
+  <button type="button" class="m-wr-scope-opt" onclick="mWrScopeDoThis()">⊘&nbsp;&nbsp;This time only</button>
+  <button type="button" class="m-wr-scope-opt" onclick="mWrScopeDoSame()">↻&nbsp;&nbsp;Same day</button>
+  <button type="button" class="m-wr-scope-opt" onclick="mWrScopeDoChange()">↻&nbsp;&nbsp;Change day to today</button>
+</div>
+
+<!-- Shop edit sheet -->
+<div id="mShopEditBackdrop" onclick="mCloseShopEdit()"></div>
+<div id="mShopEditSheet">
+  <h3>Edit Item</h3>
+  <input id="mShopEditName" type="text" placeholder="Item name" onkeydown="if(event.key==='Enter')mSaveShopEdit()" style="margin-bottom:10px">
+  <div class="m-add-field">
+    <span class="m-add-field-lbl">Store</span>
+    <div class="m-cpick" id="mShopEditStorePick">
+      <button type="button" class="m-cpick-btn" onmousedown="event.preventDefault()" onclick="mToggleShopEditStorePick()">
+        <span id="mShopEditStoreLbl">HEB</span>
+        <span class="m-cpick-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      </button>
+      <div class="m-cpick-opts m-cpick-opts--up" id="mShopEditStoreOpts">
+        <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopEditStore('HEB')"><span>HEB</span></div>
+        <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopEditStore('Costco')"><span>Costco</span></div>
+        <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopEditStore('Ikea')"><span>Ikea</span></div>
+        <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopEditStore('Online')"><span>Online</span></div>
+        <div class="m-cpick-opt" onmousedown="event.preventDefault()" onclick="mSelectShopEditStore('Other')"><span>Other</span></div>
+      </div>
+    </div>
+  </div>
+  <div id="mShopEditStoreCustomField" class="m-add-field" style="display:none">
+    <span class="m-add-field-lbl">Store name</span>
+    <input id="mShopEditStoreCustom" class="m-add-field-inp" type="text" placeholder="Store name…" onkeydown="if(event.key==='Enter')event.stopPropagation()">
+  </div>
+  <div class="m-add-field">
+    <span class="m-add-field-lbl">Link <span style="opacity:.55;font-weight:400">(optional)</span></span>
+    <input id="mShopEditLink" class="m-add-field-inp" type="url" placeholder="https://…">
+  </div>
+  <input id="mShopEditDue" type="date" style="margin-bottom:10px">
+  <input id="mShopEditTime" type="time" style="margin-bottom:12px">
+  <div class="m-edit-actions">
+    <button id="mShopEditDel" onclick="mDeleteShopItem()">Delete</button>
+    <button id="mShopEditSave" onclick="mSaveShopEdit()">Save</button>
+  </div>
+</div>
+
+<!-- Meals sheet -->
+<div id="mMealsBackdrop" onclick="mCloseMeals()"></div>
+<div id="mMealsSheet" class="m-recipe-sheet"></div>
+
+<!-- Full shopping list sheet -->
+<div id="mFullListBackdrop" onclick="mCloseFullList()"></div>
+<div id="mFullListSheet" class="m-recipe-sheet"></div>
+
+<!-- Recipe picker sheet -->
+<div id="mRecipeBackdrop" onclick="mCloseRecipes()"></div>
+<div id="mRecipeSheet" class="m-recipe-sheet"></div>
+
+
+
+<!-- Hidden undo scaffolding (required by core.js pushUndo) -->
+<div id="undoToast" style="display:none!important"><span id="undoMsg"></span><button id="redoBtn"></button></div>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/mobile-sw.js').then(function(reg){
+    try{reg.update();}catch(e){}
+    // Re-check for a newer worker every time the app is reopened/foregrounded.
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden){ try{reg.update();}catch(e){} } });
+  }).catch(function(){});
+}
+</script>
+<script src="supabase.min.js?v=2110"></script>
+<script src="core.js?v=20260927h"></script>
+<script src="features.js?v=20260927h"></script>
+<script src="mobile-overview.js?v=20260927h"></script>
+</body></html>
