@@ -81,7 +81,7 @@ body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
    unreliable — the native selection-drag was competing with our custom touchmove logic
    for the same finger movement). Same fix applied to #mWeekList/#mShopList/#mMonthDetail
    below. */
-#mTodayList{padding-bottom:96px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+#mTodayList{padding-bottom:96px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;touch-action:pan-y}
 
 /* ── Section (flat content list) ──────────────────────────────────────────── */
 /* Was a solid floating card + shadow — now that --bg and --bg-elevated are both plain
@@ -121,7 +121,16 @@ body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
    highlighted copy that follows your finger, part of Safari's own drag-and-drop-text/
    links/images support), a completely different mechanism from text SELECTION and not
    covered by user-select/touch-callout at all. */
-.m-row-outer,.m-row-outer *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+/* touch-action:pan-y is the actual fix for "copy link"/data-detector-style native menus —
+   it's the spec-level declaration that a touch on this element may ONLY pan vertically,
+   which is what suppresses the browser's own long-press gesture recognizers (the ones that
+   arm text selection, link/data-detector callouts, etc.) entirely, while leaving normal
+   scroll completely untouched. user-select/touch-callout/user-drag/format-detection/
+   contextmenu-prevention are all real, correct pieces too, but none of them is a
+   substitute for this — each only blocks ONE of several independent native mechanisms
+   that can each independently trigger a "Copy"-style menu; this blocks the recognizer
+   that arms all of them at the source. */
+.m-row-outer,.m-row-outer *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;touch-action:pan-y}
 /* "Lift" treatment — scale up slightly + a stronger shadow + a touch of transparency,
    matching how iOS's own reorderable lists (Reminders, Mail, Home Screen) visually pick an
    item up off the list rather than just tinting it. transition is on the OUTER element so
@@ -382,7 +391,7 @@ body.dark #mQuickAddBackdrop,body.dark #mShopAddBackdrop{background:rgba(0,0,0,.
    the margin (32px total). 96px bottom clears the floating nav (20px bottom + 56px height
    = 76px footprint, plus a small buffer) so the last row can actually scroll clear of it
    instead of stopping short, same idea as #mWeekList's own static padding-bottom below. */
-#mShopList{padding:0 0 96px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+#mShopList{padding:0 0 96px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;touch-action:pan-y}
 #mShopHeaderBtns{display:flex;align-items:center;gap:10px}
 .m-shop-hdr-icon{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:none;color:var(--sub);font-size:17px;font-weight:600;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .m-shop-hdr-icon:active{background:var(--glass)}
@@ -587,7 +596,7 @@ body.dark .m-tmenu-del{color:#fca5a5}
 
 /* ── Week view ────────────────────────────────────────────────────────────── */
 #mWeekPage{display:flex;flex-direction:column;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;position:relative}
-#mWeekList{display:flex;flex-direction:column;padding:4px 12px 80px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+#mWeekList{display:flex;flex-direction:column;padding:4px 12px 80px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;touch-action:pan-y}
 
 /* Week divider — a real section break between weeks (bold rule + generous spacing),
    not just a label, so scrolling from one week into the next reads as a clear boundary
@@ -622,7 +631,7 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 
 /* Week task row — same left color bar + circle checkbox convention as Today's list
    (.m-chk-wrap, shared CSS), just at a more compact size to fit a whole week on screen. */
-.m-wk-row{display:flex;align-items:center;gap:8px;padding:7px 14px;border-top:1px solid var(--border);-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+.m-wk-row{display:flex;align-items:center;gap:8px;padding:7px 14px;border-top:1px solid var(--border);-webkit-user-select:none;user-select:none;-webkit-user-drag:none;touch-action:pan-y}
 .m-wk-day .m-wk-row:first-of-type{border-top:none}
 /* Live-reparent drag feedback — same visual treatment Today's own .m-row-dragging uses. */
 /* Same "lift" treatment as Today's .m-row-outer.m-row-dragging (see its own comment) — a
@@ -732,7 +741,7 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 .m-mo-dot{width:5px;height:5px;border-radius:50%}
 /* Day detail panel — elevated (white/light-surface) card so it reads as visually
    distinct from the scrolling calendar above it. */
-#mMonthDetail{flex-shrink:0;max-height:26vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg-elevated);border-radius:14px 14px 0 0;box-shadow:0 -4px 14px rgba(0,0,0,.07);margin:4px -8px 0;padding:12px 16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+#mMonthDetail{flex-shrink:0;max-height:26vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg-elevated);border-radius:14px 14px 0 0;box-shadow:0 -4px 14px rgba(0,0,0,.07);margin:4px -8px 0;padding:12px 16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;touch-action:pan-y}
 .m-mo-detail-hd{font-size:13px;font-weight:700;color:var(--text);padding:0 2px 8px}
 .m-mo-detail-empty{font-size:12px;color:var(--sub);padding:8px 4px}
 /* Rows are mTaskRow's own .m-row-outer/.m-row markup (band + circle checkbox), same as
