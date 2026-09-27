@@ -5154,7 +5154,12 @@ async function mInit() {
   // to the login screen (see "Boot loading" below hideLoginOverlay/showLoginOverlay) —
   // never let the wrong screen paint while waiting on the network; restore synchronously
   // from what's already on disk instead.
-  mShowTab(['today','tb','week','month','shop','extras','recipes'].includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today');
+  // ?tab=today / ?tab=month (the Today/Month home-screen icons) jump straight there,
+  // overriding last-tab restore; launched with no param (the Dashboard icon), same
+  // last-tab behavior as always.
+  const _mValidTabs = ['today', 'tb', 'week', 'month', 'shop', 'extras', 'recipes'];
+  const _mTabParam = new URLSearchParams(location.search).get('tab');
+  mShowTab(_mValidTabs.includes(_mTabParam) ? _mTabParam : (_mValidTabs.includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today'));
   mInitPickers();
   mInitTodayGestures();
   mInitShopGestures();
