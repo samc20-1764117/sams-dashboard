@@ -2,7 +2,7 @@
   "name": "Today",
   "short_name": "Today",
   "description": "Sam's Dashboard — Today",
-  "start_url": "/mobile?tab=today&v=20260927f",
+  "start_url": "/mobile.html?tab=today&v=20260927g",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
