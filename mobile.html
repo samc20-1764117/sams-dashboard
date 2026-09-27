@@ -17,9 +17,12 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <title>Sam's Dashboard</title>
 <script>
-// Three home-screen icons, one page: ?tab=today / ?tab=month get their own icon
-// and name baked in here, BEFORE the user taps Share > Add to Home Screen — iOS
-// reads whatever's in the DOM at that moment, there's no separate manifest per icon.
+// Three home-screen icons, one page: ?tab=today / ?tab=month get their own icon,
+// name AND manifest baked in here, BEFORE the user taps Share > Add to Home Screen.
+// The manifest swap matters most — iOS installs using the manifest's own start_url,
+// not the address-bar URL you were actually viewing, so without a per-tab manifest
+// every icon silently launches the same shared start_url and the ?tab= param this
+// whole mechanism depends on never even exists on that launch.
 (function(){
   try{
     var t=new URLSearchParams(location.search).get('tab');
@@ -28,6 +31,8 @@
       if(icon)icon.href='icons/icon-'+t+'-180.png';
       var title=document.querySelector('meta[name="apple-mobile-web-app-title"]');
       if(title)title.content=t==='today'?'Today':'Month';
+      var manifest=document.querySelector('link[rel="manifest"]');
+      if(manifest)manifest.href='mobile-'+t+'-manifest.json';
     }
   }catch(e){}
 })();
@@ -37,7 +42,7 @@
 // navigating to a versioned URL (a URL iOS has never cached — plain reload() can be
 // served straight back out of the iOS PWA app-shell cache and never update).
 (function(){
-  window._BUILD='20260927d';var BUILD=window._BUILD;
+  window._BUILD='20260927e';var BUILD=window._BUILD;
   try{
     var qs=new URLSearchParams(location.search);
     fetch('/mobile-version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
@@ -50,7 +55,7 @@
 })();
 </script>
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
-<link rel="stylesheet" href="mobile.css?v=20260927d">
+<link rel="stylesheet" href="mobile.css?v=20260927e">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');if(s.cfg&&s.cfg.dark)document.documentElement.classList.add('init-dark');}catch(e){}})();</script>
 </head>
 <body>
@@ -662,7 +667,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20260927d"></script>
-<script src="features.js?v=20260927d"></script>
-<script src="mobile-overview.js?v=20260927d"></script>
+<script src="core.js?v=20260927e"></script>
+<script src="features.js?v=20260927e"></script>
+<script src="mobile-overview.js?v=20260927e"></script>
 </body></html>

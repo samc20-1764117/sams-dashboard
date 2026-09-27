@@ -1,21 +1,21 @@
 {
-  "name": "Sam's Dashboard",
-  "short_name": "Dashboard",
-  "description": "Sam's personal dashboard",
-  "start_url": "/mobile.html?v=20260927e",
+  "name": "Today",
+  "short_name": "Today",
+  "description": "Sam's Dashboard — Today",
+  "start_url": "/mobile.html?tab=today&v=20260927e",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "icons/icon-today-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "icons/icon-today-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
