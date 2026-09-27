@@ -2455,13 +2455,19 @@ function mInitPTR() {
     if (!active) return;
     const dy = e.touches[0].clientY - startY;
     if (dy <= 0) { active = false; return; }
+    // Registered non-passive specifically so this preventDefault can fire — without it,
+    // iOS's own native rubber-band bounce engages on #mMain (and can chain up to the whole
+    // page) AT THE SAME TIME as this custom indicator grows, which is what made the pull
+    // look like it was dragging the entire screen down instead of just revealing #mPTR.
+    // overscroll-behavior (body/#mMain, mobile.css) is the other half of this fix.
+    e.preventDefault();
     const pull = Math.min(dy * 0.5, THRESHOLD * 1.1);
     ptr.style.height = pull + 'px';
     ptr.style.opacity = String(Math.min(pull / THRESHOLD, 1));
     triggered = pull >= THRESHOLD;
     ptr.classList.toggle('ptr-ready', triggered);
     if (lbl) lbl.textContent = triggered ? 'Release to refresh' : 'Pull to refresh';
-  }, {passive: true});
+  }, {passive: false});
 
   main.addEventListener('touchend', async () => {
     if (!active) return;

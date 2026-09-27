@@ -5,7 +5,12 @@ html.init-dark{--bg:#16141f;--glass:rgba(30,28,40,.8);--bg-elevated:#242030;--bo
   --nav-glass-bg:rgba(30,28,40,.42);--nav-glass-shadow:0 8px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.06);
   --nav-icon-inactive:rgba(255,255,255,.65);--nav-pill-bg:rgba(255,255,255,.16);--nav-pill-shadow:0 4px 14px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.3)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;font-size:15px}
+/* overscroll-behavior:none — without it, pulling down at the top of any scroll area can
+   still rubber-band bounce the whole PAGE natively (iOS Safari's default), which is what
+   made pull-to-refresh look like it was dragging the entire screen down instead of just
+   revealing the #mPTR indicator. #mApp is already clamped to exactly 100dvh (see its own
+   comment) so the document itself never legitimately needs to scroll/bounce. */
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;font-size:15px;overscroll-behavior:none}
 
 /* ── App shell ─────────────────────────────────────────────────────────────── */
 /* height (not min-height): clamps #mApp to exactly the viewport so it can never grow
@@ -60,7 +65,11 @@ body.dark .m-prog-ring.m-prog-complete .m-prog-ring-fg{stroke:#4ade80}
 .m-reload-btn:active{background:var(--glass)}
 
 /* ── Main scroll area ─────────────────────────────────────────────────────── */
-#mMain{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-height:0}
+/* overscroll-behavior-y:contain — same reasoning as body's own overscroll-behavior:none
+   above, scoped to #mMain's own internal scroll specifically: without it, #mMain could
+   still rubber-band bounce ITSELF at the top before mInitPTR's preventDefault (below)
+   ever gets a chance to take over the gesture. */
+#mMain{flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-height:0;overscroll-behavior-y:contain}
 /* Extra bottom clearance so the LAST task can actually scroll clear of the floating glass
    #mNav (bottom:20px, height:56px ≈ 76px total) instead of landing flush against/under it
    with no further room to scroll — same reasoning as #mShopList/#mWeekList's own
