@@ -6205,7 +6205,7 @@ function renderGuidePage(){
     </table>
   </div>
   <div style="${panel}">
-    ${secT('Videos Shortcuts')}
+    ${secT('Videos Shortcuts (Videos page)')}
     <table style="width:100%;border-collapse:collapse;font-size:12px">
     ${tHead('Key','Action')}
     ${sRow('N / B','New big video')}
@@ -6214,6 +6214,22 @@ function renderGuidePage(){
     ${sRow('←/→','Switch tabs')}
     ${sRow('↑/↓','Scroll top / current')}
     ${sRow('Delete / ⌫','Delete selected')}
+    </table>
+  </div>
+  <div style="${panel}">
+    ${secT('Videos Shortcuts (Overview popup)')}
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+    ${tHead('Key','Action')}
+    ${sRow('↑/↓','Navigate rows (Shift extends selection)')}
+    ${sRow('⌘/Ctrl + ↑/↓','Reorder selected — swaps a Big video\'s position, or reorders a Small within its parent group (multi-select aware)')}
+    ${sRow('Enter','Edit selected')}
+    ${sRow('N / B','New big video (pre-set Up Next)')}
+    ${sRow('L','New little video (pre-set Up Next)')}
+    ${sRow('W + ←/→','Shift week (works with panel open)')}
+    ${sRow('M','Toggle monthly schedule')}
+    ${sRow('T','Toggle All Videos toolbox')}
+    ${sRow('⌘/Ctrl + Click · Shift + Click','Multi-select — drag any selected item to move/nest the WHOLE selection, not just the one dragged')}
+    ${sRow('Delete / ⌫','Action menu (Move to Ideas / Delete) — respects multi-selection')}
     </table>
   </div>
   <div style="${panel}">
