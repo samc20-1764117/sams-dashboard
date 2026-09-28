@@ -1960,6 +1960,12 @@ function renderWkCal(){
       else if(t._type==='vidstep')chip.dataset.tid=t.id;
       else if(t._type==='pup')chip.dataset.tid='pup-sess-'+t._pupSessId;
       else if(t._type==='fin-cancel')chip.dataset.tid='fin-cancel-'+t._subId;
+      // Stashes the item's TRUE originating week (t._wkKey) — for a carried/lookback occurrence
+      // (e.g. a still-undone recurring task from LAST week showing pinned to today), this is NOT
+      // the same as the currently-viewed week. The Cmd+←/→ move-by-day handler (features.js) reads
+      // this to know which week's _dateOverrides entry actually needs updating — see the comment
+      // there for the bug this fixes ("HEB from last week... won't let me move to tomorrow").
+      if(t._wkKey)chip.dataset.wkkey=t._wkKey;
       chip.draggable=true;
       chip.addEventListener('dragstart',e2=>{
         // Set directly here, not via a delegated #wkcCols listener — this handler calls

@@ -7072,6 +7072,18 @@ document.addEventListener('keydown',async e=>{
     if(!document.querySelector('.tb-col')||document.querySelector('.tb-col')){
       const dir=e.key==='ArrowLeft'?-1:1;
       const _shiftDs=(ds,n)=>{const d=new Date(ds+'T12:00:00');d.setDate(d.getDate()+n);return d2s(d);};
+      // A recurring/WR chip's relevant _dateOverrides entry lives under the week it actually
+      // originated from (t._wkKey, stashed on the chip as data-wkkey by renderWkCal, overview.js)
+      // — NOT necessarily the currently-viewed week. A still-undone occurrence from LAST week that
+      // renders pinned to TODAY via the lookback/carry mechanism (rules/wr-system.md) is exactly
+      // this case: its override sits under last week's key, so blindly using getWkKey(wkOff) here
+      // found nothing to move and silently no-op'd (2026-09-28 bug: "HEB from last week... won't
+      // let me move to tomorrow"). Falls back to the viewed week if no chip/stash is found (e.g.
+      // selection came from somewhere that isn't a rendered weekly-cal chip).
+      const _wkKeyForSid=sid=>{
+        const chip=document.querySelector('.chip[data-tid="'+CSS.escape(sid)+'"]');
+        return (chip&&chip.dataset.wkkey)||getWkKey(wkOff);
+      };
       const undos=[];
       const renames=[];
       let moved=false;
@@ -7094,7 +7106,7 @@ document.addEventListener('keydown',async e=>{
         if(sid.startsWith('rec-virt-')){
           const recId=sid.replace('rec-virt-','');
           const r=st.recurring.find(x=>String(x.id)===recId);if(!r)continue;
-          const wkKey=getWkKey(wkOff);if(!r._dateOverrides)r._dateOverrides={};
+          const wkKey=_wkKeyForSid(sid);if(!r._dateOverrides)r._dateOverrides={};
           const wkTask=getRecurringWeekTasks(wkOff).find(t=>String(t._recId)===recId);
           const curDs=r._dateOverrides[wkKey]||(wkTask&&wkTask.due_date);
           if(!curDs||curDs==='__skip__')continue;
@@ -7108,7 +7120,7 @@ document.addEventListener('keydown',async e=>{
         if(sid.startsWith('wrec-')){
           const recId=sid.replace('wrec-','');
           const r=st.recurring.find(x=>String(x.id)===recId);if(!r)continue;
-          const wkKey=getWkKey(wkOff);if(!r._dateOverrides)r._dateOverrides={};
+          const wkKey=_wkKeyForSid(sid);if(!r._dateOverrides)r._dateOverrides={};
           const curDs=r._dateOverrides[wkKey];if(!curDs||curDs==='__skip__')continue;
           const prev=curDs;const newDs=_shiftDs(curDs,dir);
           r._dateOverrides[wkKey]=newDs;
@@ -7120,7 +7132,7 @@ document.addEventListener('keydown',async e=>{
         if(sid.startsWith('wrrule-virt-')){
           const ruleId=sid.replace('wrrule-virt-','');
           const r=st.wrRules.find(x=>String(x.id)===ruleId);if(!r)continue;
-          const wkKey=getWkKey(wkOff);if(!r._dateOverrides)r._dateOverrides={};
+          const wkKey=_wkKeyForSid(sid);if(!r._dateOverrides)r._dateOverrides={};
           const curDs=r._dateOverrides[wkKey];if(!curDs||curDs==='__skip__')continue;
           const prev=curDs;const newDs=_shiftDs(curDs,dir);
           r._dateOverrides[wkKey]=newDs;
