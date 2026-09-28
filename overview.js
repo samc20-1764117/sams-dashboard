@@ -5336,7 +5336,18 @@ function _vidOvKeyNav(e){
   if(e.key==='e'&&!e.metaKey&&!e.ctrlKey&&!_vidCalOpen){e.preventDefault();_vidOvToggleTitleMode();return true;}
   if((e.key==='n'||e.key==='b')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!_vidCalOpen){e.preventDefault();_vidOvNewVideo('B');return true;}
   if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!_vidCalOpen){e.preventDefault();_vidOvNewVideo('L');return true;}
-  if(_vidOvAllOpen)return false;
+  // Was an unconditional `if(_vidOvAllOpen)return false;` — disabled ALL of this function's
+  // remaining behavior (arrow nav, Cmd+↑/↓ reorder, Delete/Backspace, Enter, M) the moment the
+  // All Videos toolbox was ALSO open, even when the user's actual selection/focus was still in
+  // the main Up Next list (2026-09-28 bug report: "command up and down for reorder... not
+  // working for up next when i have the toolbox pop up open as well"). The function already has
+  // a more precise `_lastSelSurface==='vidOv'` check a few lines down, added later specifically
+  // to answer "which list should this keypress act on" for exactly this kind of ambiguity — this
+  // blanket bail predates that and was never removed, so it was silently overriding the more
+  // correct check with a cruder one. Only bail here when the toolbox, not the main list, is
+  // actually what the user was last interacting with; `_allKey` (the toolbox's own listener,
+  // gated on its own `_voaSel`) still handles that case independently.
+  if(_vidOvAllOpen&&_lastSelSurface!=='vidOv')return false;
   if(_vidCalOpen&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))return false;
   const rows=_vidOvGetRows();if(!rows.length)return false;
   // Cmd+Up/Down: reorder videos — gated on _lastSelSurface same as plain Up/Down below, so a
@@ -5663,7 +5674,12 @@ function _vidOvInlineAdd(bigId,orderBefore,orderAfter,afterEl){
   const row=document.createElement('div');
   row.className='vid-ov-inline-add';
   row.style.cssText='padding:3px 6px;display:flex;align-items:center;gap:5px';
-  row.innerHTML=`<div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:rgba(140,135,160,.4);font-size:9px">└</div><input type="text" placeholder="Video topic..." style="flex:1;min-width:0;border:none;outline:none;background:transparent;font-size:11px;color:var(--text);font-weight:500;padding:3px 4px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(14,165,233,.3)">`;
+  // autocomplete="off" (2026-09-28 fix — "the + button... auto-populating with the last one
+  // selected"): this input has no name/id and gets recreated fresh on every "+" click, so Chrome's
+  // form-fill heuristics were offering (and sometimes auto-filling) whatever was typed into the
+  // PREVIOUS inline-add input as a suggestion, reading as "it remembered my last entry." The video
+  // calendar's own search input (`#vidCalSearchInput`) already sets this for the same reason.
+  row.innerHTML=`<div style="width:12px;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:rgba(140,135,160,.4);font-size:9px">└</div><input type="text" autocomplete="off" placeholder="Video topic..." style="flex:1;min-width:0;border:none;outline:none;background:transparent;font-size:11px;color:var(--text);font-weight:500;padding:3px 4px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(14,165,233,.3)">`;
   const inp=row.querySelector('input');
   // For + on B video (no orderBefore), insert after last child row
   if(afterEl&&afterEl.parentNode&&orderBefore==null){
