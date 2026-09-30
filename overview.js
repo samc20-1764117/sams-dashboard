@@ -4612,6 +4612,14 @@ function _wkcAdvanceDay(dir,ds,targetIdx=null){
       const targetId=_wkcItemId(items[idx]);
       selectedTasks.clear();selectedTasks.add(targetId);lastSelectedId=targetId;
       _lastSelWkcDs=newDs; // keep the tracked column in sync as we cross into a new day
+      // Keep the Cmd+V paste target in sync too — a day column's own mousedown handler
+      // (renderWkCal) sets _pasteColDates on click, but arrow-navigating into a new day never
+      // did, so copying a task then arrowing to another day and pasting silently pasted back
+      // onto the ORIGINAL day (or wherever a stale earlier click left it) instead of the day
+      // you just navigated to (2026-09-30 bug report — "if i copy a task and then go to next day
+      // ... by using left or right arrows ... and hit paste then it should paste on the day of
+      // the selected task").
+      _pasteColDates=[newDs];
       applySelHighlight();
       return;
     }

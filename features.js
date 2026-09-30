@@ -7501,7 +7501,11 @@ document.addEventListener('keydown',async e=>{
         pushUndo(()=>{st.wrRules=st.wrRules.filter(x=>x.id!==tmpId&&!(sv&&sv[0]&&x.id===sv[0].id));save();renderRecOv();renderWeeklyPage();},'Duplicated WR rule');
       } else if(t._isRec){
         const dupName=uniqueRecName(t.name);
-        const todayDs=d2s(new Date());
+        // Anchor the new series to the paste-target day (same _pasteColDates the plain-task and
+        // vidstep branches below use — set on a weekly-cal day-column click, or by arrow-navigating
+        // across days, see _wkcAdvanceDay) instead of always hardcoding today, so "paste" lands the
+        // duplicate's first occurrence on whichever day you actually selected.
+        const todayDs=(activePg==='overview'&&Array.isArray(_pasteColDates)&&_pasteColDates.length)?_pasteColDates[0]:d2s(new Date());
         const tempId='rec-tmp-'+Date.now();
         const localCopy={...t,id:tempId,name:dupName,starting_date:todayDs,_doneByWk:{},_done:false,_dateOverrides:{},_isRec:undefined};
         st.recurring.push(localCopy);
