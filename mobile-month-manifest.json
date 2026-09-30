@@ -2,7 +2,7 @@
   "name": "Month",
   "short_name": "Month",
   "description": "Sam's Dashboard — Month",
-  "start_url": "/mobile-month?v=20260930a",
+  "start_url": "/mobile-month?v=20260930b",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
