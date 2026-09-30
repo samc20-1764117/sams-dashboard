@@ -5183,10 +5183,7 @@ async function mInit() {
   // (not animate) the pill to the real position now that #mApp is actually measurable.
   _mNavMoveHighlight(false);
   await syncAll(); // renderAll() inside this re-renders whichever tab mShowTab already picked, above
-  setInterval(() => {
-    if (!document.hidden && _mValidTabs.includes(_mTabParam) && _mCurTab !== _mTabParam) mShowTab(_mTabParam);
-    if (cfg.url && cfg.key && !document.hidden) syncAll(true);
-  }, 30000);
+  setInterval(() => { if (cfg.url && cfg.key && !document.hidden) syncAll(true); }, 30000);
 
   // iOS suspends setInterval while the PWA is backgrounded — so reopening the app
   // shows stale data (tasks completed on desktop still appear undone → false overdue)
@@ -5209,15 +5206,6 @@ async function mInit() {
   document.addEventListener('visibilitychange', _mForegroundSync);
   window.addEventListener('pageshow', _mForegroundSync);
   window.addEventListener('focus', _mForegroundSync);
-  // Belt-and-suspenders for Today/Month: standalone iOS apps don't reliably fire
-  // visibilitychange/pageshow/focus when resumed from the background (confirmed —
-  // the same restore logic works every time on a real reload/refresh, just not on
-  // a bare reopen-from-icon). The 30s interval above is one backstop; this is a
-  // faster one — the very first tap anywhere after reopening snaps the tab back
-  // instantly instead of waiting on a timer or an event that might not come.
-  document.addEventListener('touchstart', () => {
-    if (_mValidTabs.includes(_mTabParam) && _mCurTab !== _mTabParam) mShowTab(_mTabParam);
-  }, { passive: true });
 }
 
 document.addEventListener('DOMContentLoaded', mInit);
