@@ -3791,6 +3791,27 @@ function _recMoveAllFuture(r,srcWkKey,ds,extraRender,keepDay){
   sbReq('PATCH','wr_recurring_rules',{starting_date:newStart,appears_on_date:newAppears,date_overrides:r._dateOverrides},recQs(r.id));
   pushUndo(()=>{r.starting_date=prevStart;r.appears_on_date=prevAppears;if(_prevSrcPin!==undefined)r._dateOverrides[srcWkKey]=_prevSrcPin;_orphans.forEach(o=>{if(o.val===undefined)delete r._dateOverrides[o.wk];else r._dateOverrides[o.wk]=o.val;});_futPins.forEach(o=>{r._dateOverrides[o.wk]=o.val;});rerender();sbReq('PATCH','wr_recurring_rules',{starting_date:prevStart,appears_on_date:prevAppears,date_overrides:r._dateOverrides},recQs(r.id));},'Moved recurring task all future');
 }
+// WR-rule equivalent of checking "is this rule's current-week occurrence still overdue and
+// undone" — used by _wrCtxShiftScheduleOne's convergence loop (below) since WR rules (st.wrRules)
+// don't go through getRecurringWeekTasks (that's st.recurring-only). Returns the overdue due-date
+// string if so, else null. A pin at _dateOverrides[wk] gives the date directly; otherwise it's
+// derived from appears_on_date the same way getRecurringWeekTasks does for non-WR interval
+// cadences (WR rules share the same cadence/appears_on_date vocabulary).
+function _wrRuleCurWkOverdueDs(rule){
+  const wk=getWkKey(0);
+  if(rule._dateOverrides&&rule._dateOverrides[wk]==='__skip__')return null;
+  if(!isWRRuleDueThisWeek(rule,0))return null;
+  if(isDoneWRRule(rule.id,wk))return null;
+  const pin=rule._dateOverrides&&rule._dateOverrides[wk];
+  let ds;
+  if(pin&&pin!=='__skip__')ds=pin;
+  else{
+    const dow=dayNameToIdx(rule.appears_on_date);if(dow<0)return null;
+    const d=getDateForDow(dow,0);if(!d)return null;
+    ds=d2s(d);
+  }
+  return ds<tod()?ds:null;
+}
 function wrCtxShiftSchedule(delta){hideWrRuleCtx();_wrCtxEach(()=>_wrCtxShiftScheduleOne(delta));}
 function _wrCtxShiftScheduleOne(delta){
   const rid=_wrCtxRecId||_wrCtxRuleId;if(!rid)return;
@@ -3806,6 +3827,50 @@ function _wrCtxShiftScheduleOne(delta){
   const base=rule.starting_date?new Date(rule.starting_date+'T12:00'):new Date(wkKey+'T12:00');
   base.setDate(base.getDate()+delta);
   rule.starting_date=d2s(base);
+  // A single `delta` (±7 days = one week) nudge only flips the schedule's PARITY by one interval
+  // step — for an occurrence that's been overdue a while, moving it forward exactly one step can
+  // still land in the past (e.g. biweekly: today is Sunday, last occurrence was Friday 9 days ago
+  // — one "Next" nudge moves it to THIS past Friday, 2 days ago, still overdue). It LOOKED handled
+  // (no error, toast says "moved") but the task silently stayed overdue, just on a new date — the
+  // exact "I moved it... but it's still showing overdue" bug report (2026-09-30, reported again
+  // 2026-10-12 for a WR-rule biweekly task — same root cause, both `isRec` and the WR-rule branch
+  // need it). Keep nudging in the same direction (bounded) until the current week's occurrence is
+  // actually done or in the future. Only for a forward ("Next") shift — a backward ("Prev") shift
+  // making something MORE overdue isn't a convergence problem to loop-fix.
+  if(delta>0){
+    let _guard=0;
+    while(_guard<60){
+      let _stillOv;
+      if(isRec){
+        const _curOcc=getRecurringWeekTasks(0).find(t=>String(t._recId)===String(rid));
+        _stillOv=!!(_curOcc&&!_curOcc.done&&_curOcc.due_date<tod());
+      }else{
+        _stillOv=!!_wrRuleCurWkOverdueDs(rule);
+      }
+      if(!_stillOv)break;
+      base.setDate(base.getDate()+delta);rule.starting_date=d2s(base);
+      _guard++;
+    }
+  }
+  // WR rules have a SEPARATE "past miss" tracking layer (_wrWeekMisses(), the WR card's own red
+  // overdue row) that a schedule shift alone never satisfies — re-anchoring the schedule only
+  // changes FUTURE due-ness, it doesn't mark whatever past due-week prompted this action as
+  // resolved. Reported 2026-10-12: a biweekly WR rule ("Bathroom") right-clicked from its overdue
+  // row, shifted "All future → Next" (even repeatedly, well past convergence above), kept showing
+  // as a miss from the ORIGINAL due week regardless, because nothing ever told _wrWeekMisses() that
+  // week had been handled. If `wkKey` (the week this was invoked from) was itself a genuine past
+  // due-and-undone week, record it as moved — same override shape wrMoveToThisWeek/writeWrOverride
+  // use elsewhere, so _wrWeekMisses()'s own "moved" check picks it up. (Separate pushUndo entry
+  // from the schedule-shift undo below — writeWrOverride manages its own — so this is a 2-step
+  // undo for one click; acceptable given how rarely this path fires, and far simpler/safer than
+  // threading a second revert into the shift's own closure.)
+  if(!isRec){
+    const _wkKeyOff=Math.round((new Date(wkKey+'T12:00')-new Date(getWkKey(0)+'T12:00'))/(7*86400000));
+    if(_wkKeyOff<0&&isWRRuleDueThisWeek(rule,_wkKeyOff)&&!isDoneWRRule(rid,wkKey)){
+      const _alreadyHandled=(st.wrOverrides||[]).some(o=>String(o.rule_id)===String(rid)&&o.wk_key===wkKey&&(o.override_type==='skip'||o.override_type==='move'));
+      if(!_alreadyHandled)writeWrOverride(rid,wkKey,{override_type:'move',moved_to_wk_key:getWkKey(0)},{undoLabel:'Resolved missed week'});
+    }
+  }
   // Clear anything pinning this rule to the CURRENT week, or the shifted schedule won't actually move it
   // off this week: its own per-week pin/skip, plus any stale move-override into/at this week.
   if(!rule._dateOverrides)rule._dateOverrides={};
