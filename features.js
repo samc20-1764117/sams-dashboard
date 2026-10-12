@@ -1482,7 +1482,18 @@ function mkMCell(date,om,today,altMo){
         +(rightExt?`border-right:none;`:'')
         +(totalExt?`width:calc(100% + ${totalExt}px);`:'');
     }
-    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}${isPast&&!(isTravel&&_dk())?'opacity:.35;':''}${travelSpanStyle}`;
+    // Travel gets a bolder, solid-accent border + a soft colored shadow instead of the generic
+    // faint translucent border every other chip type uses (2026-10-12 feedback: "travel tasks are
+    // really important... make that stand out more") — travel chips already visually span multiple
+    // days as one continuous bar, so adding weight here (not just color, which it already had)
+    // makes that bar read as a distinct, elevated element instead of blending in with single-day
+    // chips. Declared AFTER the base border-color/width so it wins on the same inline string;
+    // travelSpanStyle (below) still correctly blanks border-left/right on bridging segments so the
+    // multi-day bar still looks seamless there — only the visual start/end segments show the full
+    // accent border. The inset highlight is preserved (combined into one box-shadow) rather than
+    // dropped, since this is an inline style and would otherwise fully override .mcell-t's own.
+    const travelAccentStyle=isTravel?`border-width:1.5px;border-color:${s.d};box-shadow:0 1px 3px ${s.d}4d,inset 0 1px 0 rgba(255,255,255,.4);`:'';
+    chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}${isPast&&!(isTravel&&_dk())?'opacity:.35;':''}${travelAccentStyle}${travelSpanStyle}`;
     if(_ti>=_visN){chip.style.display='none';chip.dataset.moreHidden='1';}
     if(!t._virtual&&!t._type)chip.dataset.tid=String(t.id);
     else if(isTravel)chip.dataset.tid='tv-'+t._srcId;
