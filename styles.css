@@ -194,6 +194,8 @@ body.dark .ainput:focus{background:rgba(255,255,255,.08);box-shadow:0 0 0 2px rg
 body.dark .kol-input:focus{box-shadow:0 0 0 2px rgba(255,255,255,.06);}
 body.dark .mcell{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.06);}
 body.dark .mcell:hover{background:rgba(255,255,255,.05);}
+body.dark .mcell.mcell-alt{background:rgba(255,255,255,.07);}
+body.dark .mcell.mcell-alt:hover{background:rgba(255,255,255,.1);}
 body.dark .mcell.travel-sel{background:rgba(20,184,166,.14);border-color:rgba(20,184,166,.45);}
 body.dark .mcell-num{color:var(--muted);}
 body.dark .mcell-t{border-color:rgba(255,255,255,.06);box-shadow:none;}
@@ -1005,6 +1007,13 @@ body.dark #moSearchSug{background:rgba(20,20,24,.98);border-color:rgba(255,255,2
 .mcell{min-height:max(70px,calc((94vh - 86px) / 5 - 4px));min-width:0;background:rgba(255,252,248,.55);border:1px solid rgba(255,220,200,.35);border-radius:var(--rs);padding:4px;cursor:pointer;transition:background .1s;user-select:none;-webkit-user-select:none}
 .mcell.travel-sel{background:rgba(20,184,166,.09);border-color:rgba(20,184,166,.4)}
 .mcell:hover{background:rgba(255,252,248,.82)}
+/* Alternates every other month's week-rows to a whiter/lighter shade (2026-10-12 feedback:
+   "make each month more distinct... alternate the background to a lighter or whiter version")
+   — the continuous multi-year month view (renderMoCal, features.js) only had a thin text label
+   (.mo-sep) marking where one month ends and the next begins, easy to miss scrolling quickly.
+   Declared after the base .mcell/:hover rules so it wins the (otherwise tied) specificity. */
+.mcell.mcell-alt{background:rgba(255,255,255,.7)}
+.mcell.mcell-alt:hover{background:rgba(255,255,255,.92)}
 .mcell.om{opacity:.3}.mcell.tc{border-color:var(--accent);border-width:1.5px}
 .mcell-n{font-size:10px;font-weight:700;font-family:'DM Sans',sans-serif;color:var(--text);width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:50%;margin-bottom:2px}
 .mcell.tc .mcell-n{background:var(--accent);color:#fff}

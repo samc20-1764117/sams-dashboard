@@ -1231,19 +1231,25 @@ function renderMoCal(){
   }
   const cells=document.getElementById('mCells');cells.innerHTML='';
   const _mgs=gc('weekly goals');
-  let curMo=-1;
+  let curMo=-1,_moAlt=false;
   for(let w=0;w<TOTAL;w++){
     const wkMon=new Date(weekStart);wkMon.setDate(weekStart.getDate()+w*7);
     const mo=wkMon.getMonth();
     if(mo!==curMo){
       curMo=mo;
+      _moAlt=!_moAlt;
       const sep=document.createElement('div');sep.className='mo-sep';
       sep.textContent=wkMon.toLocaleDateString('en-US',{month:'long',year:'numeric'});
       cells.appendChild(sep);
     }
     for(let d=0;d<7;d++){
+      // Whole week-row shares one shade per month change (2026-10-12 feedback: "make each month
+      // more distinct... alternate the background") rather than per-day — a week spanning two
+      // calendar months is already grouped under whichever month its Monday falls in (same month
+      // the .mo-sep label above it names), so this keeps one continuous shade per visual block
+      // instead of an odd mid-row color split.
       const date=new Date(wkMon);date.setDate(wkMon.getDate()+d);
-      cells.appendChild(mkMCell(date,false,today));
+      cells.appendChild(mkMCell(date,false,today,_moAlt));
     }
     // Goals This Week cell
     const wkMonDs=d2s(wkMon);
@@ -1253,6 +1259,9 @@ function renderMoCal(){
     const _moIsCurWk=(wkMonDs<=today&&wkEndDs>=today);
     const _moOvGoals=_moIsCurWk?st.tasks.filter(t=>t.category==='Weekly Goals'&&!t.done&&t.due_date&&t.due_date.split('T')[0]<wkMonDs):[];
     const _allGoalTasks=[..._moOvGoals,...goalTasks];
+    // Not given .mcell-alt — .mo-goals-cell's own background is !important (a deliberately
+    // distinct, always-white sidebar-like lane, not meant to blend with the day cells), so the
+    // class would be a visual no-op anyway.
     const goalsCell=document.createElement('div');goalsCell.className='mcell mo-goals-cell';goalsCell.dataset.wkmon=wkMonDs;
     const gBody=document.createElement('div');gBody.className='mcell-body';
     // "Move overdue to this week" banner for monthly view
@@ -1399,10 +1408,10 @@ function moGoToday(){
   _moNavYear=new Date().getFullYear();const yrSel2=document.getElementById('moYearSel');if(yrSel2)yrSel2.value=String(_moNavYear);
   setTimeout(scrollMoToday,30);
 }
-function mkMCell(date,om,today){
+function mkMCell(date,om,today,altMo){
   const ds=d2s(date);const cell=document.createElement('div');
   cell.dataset.ds=ds;
-  cell.className='mcell'+(om?' om':'')+(ds===today?' tc':'');
+  cell.className='mcell'+(om?' om':'')+(altMo?' mcell-alt':'')+(ds===today?' tc':'');
   const _MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   cell.dataset.tip=`${_MO[date.getMonth()]} ${date.getDate()}`;
   // Header row with date + add btn
