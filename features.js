@@ -1492,7 +1492,10 @@ function mkMCell(date,om,today,altMo){
     // multi-day bar still looks seamless there — only the visual start/end segments show the full
     // accent border. The inset highlight is preserved (combined into one box-shadow) rather than
     // dropped, since this is an inline style and would otherwise fully override .mcell-t's own.
-    const travelAccentStyle=isTravel?`border-width:1.5px;border-color:${s.d};box-shadow:0 1px 3px ${s.d}4d,inset 0 1px 0 rgba(255,255,255,.4);`:'';
+    // Thinner border + bigger ambient glow per 2026-10-12 follow-up ("like it, less thick border,
+    // more glow") — 0-offset/wider-blur box-shadow reads as a glow rather than a directional drop
+    // shadow, which is what was actually asked for over the original tighter 1px/3px shadow.
+    const travelAccentStyle=isTravel?`border-width:1px;border-color:${s.d};box-shadow:0 0 8px ${s.d}80,inset 0 1px 0 rgba(255,255,255,.4);`:'';
     chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}${isPast&&!(isTravel&&_dk())?'opacity:.35;':''}${travelAccentStyle}${travelSpanStyle}`;
     if(_ti>=_visN){chip.style.display='none';chip.dataset.moreHidden='1';}
     if(!t._virtual&&!t._type)chip.dataset.tid=String(t.id);

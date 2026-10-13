@@ -1009,7 +1009,7 @@ body.dark #moSearchSug{background:rgba(20,20,24,.98);border-color:rgba(255,255,2
    match. z-index 4 (one below #mDow's 5) so the weekday header still wins when they'd overlap
    during a fast scroll. Needs an opaque background of its own since content scrolls underneath it
    once stuck — var(--bg) matches #mDow's own background approach. */
-.mo-sep{grid-column:1/-1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:10px 4px 4px;border-top:1px solid rgba(210,205,228,.3);margin-top:2px;position:sticky;top:22px;z-index:4;background:var(--bg)}
+.mo-sep{grid-column:1/-1;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text);padding:10px 4px 6px;border-top:1px solid rgba(210,205,228,.3);margin-top:2px;position:sticky;top:22px;z-index:4;background:var(--bg)}
 .mcells{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .mo-goals-cell{background:rgba(255,255,255,.18)!important;border:1px solid rgba(255,255,255,.25)!important;border-left:2px solid rgba(255,255,255,.88)!important}
 .mcell{min-height:max(70px,calc((94vh - 86px) / 5 - 4px));min-width:0;background:rgba(255,252,248,.55);border:1px solid rgba(255,220,200,.35);border-radius:var(--rs);padding:4px;cursor:pointer;transition:background .1s;user-select:none;-webkit-user-select:none}
