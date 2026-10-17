@@ -563,11 +563,13 @@ let _mAddDateViewY = 0, _mAddDateViewM = 0;
 // label in this app already reads, e.g. the day header), the actual date for anything
 // else — reads faster at a glance than a bare date for the two days you're overwhelmingly
 // most likely to be picking (today's own due date, or push-to-tomorrow).
+function _mUn(n) { n = String(n || 'Task'); return '"' + (n.length > 22 ? n.slice(0, 21) + '…' : n) + '"'; }
 function _mFmtAddDate(ds) {
   const today = tod();
   if (ds === today) return 'Today';
   const tmrw = d2s(new Date(new Date(today + 'T12:00').getTime() + 86400000));
   if (ds === tmrw) return 'Tomorrow';
+  if (ds === d2s(new Date(new Date(today + 'T12:00').getTime() - 86400000))) return 'Yesterday';
   return new Date(ds + 'T12:00').toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
 }
 function mToggleDatePick(which) {
@@ -1549,7 +1551,7 @@ function mMoveToToday(id, type, extra) {
       if (r2) { if (prev) r2._dateOverrides[extra] = prev; else delete r2._dateOverrides[extra]; }
       save(); renderAll();
       sbReq('PATCH', 'wr_recurring_rules', {date_overrides: r2 ? r2._dateOverrides : {}}, `?id=eq.${id}`);
-    }, 'Moved to today');
+    }, _mUn(r.name) + ' moved to Today');
   } else if (type === 'wrrule') {
     const r = st.wrRules.find(x => String(x.id) === String(id));
     if (!r) return;
@@ -1563,7 +1565,7 @@ function mMoveToToday(id, type, extra) {
       if (r2) { if (prev) r2._dateOverrides[extra] = prev; else delete r2._dateOverrides[extra]; }
       save(); renderAll();
       sbReqSilent('PATCH', 'wr_recurring_rules', {date_overrides: r2 ? r2._dateOverrides : {}}, `?id=eq.${id}`);
-    }, 'Moved to today');
+    }, _mUn(r.name) + ' moved to Today');
   } else {
     const t = st.tasks.find(x => String(x.id) === String(id));
     if (!t) return;
@@ -1572,7 +1574,7 @@ function mMoveToToday(id, type, extra) {
     _mMoveTaskBlocks(id, from, today);
     save();
     sbReq('PATCH', 'tasks', {due_date: today}, `?id=eq.${id}`);
-    pushUndo(() => { const t2 = st.tasks.find(x => String(x.id) === String(id)); if (t2) { t2.due_date = from; _mMoveTaskBlocks(id, today, from); } save(); renderAll(); sbReq('PATCH', 'tasks', {due_date: from}, `?id=eq.${id}`); }, 'Moved to today');
+    pushUndo(() => { const t2 = st.tasks.find(x => String(x.id) === String(id)); if (t2) { t2.due_date = from; _mMoveTaskBlocks(id, today, from); } save(); renderAll(); sbReq('PATCH', 'tasks', {due_date: from}, `?id=eq.${id}`); }, _mUn(t.name) + ' moved to Today');
   }
   renderAll();
 }
@@ -2118,7 +2120,7 @@ async function mDeleteById(id) {
     }
     save();
     renderAll();
-  }, 'Deleted task');
+  }, _mUn(copy.name) + ' deleted');
 }
 
 // Routes tap-to-edit to whichever surface this row's type actually has. Plain tasks
@@ -2212,7 +2214,8 @@ function mInitTodayGestures() {
     mCloseTaskMenu();
     outer.classList.add('m-row-dragging');
     _mTodDrag = {el: outer, origOrder: [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid),
-      tid: outer.dataset.tid || null, origDs: _mQuickAddTargetDsToday(), origDue: null, lastShift: 0};
+      tid: outer.dataset.tid || null, origDs: _mQuickAddTargetDsToday(), origDue: null, lastShift: 0, x: e.touches[0].clientX, edgeDir: 0, edgeSince: 0};
+    if (_mTodDrag.tid) { _mTodEdgeShow(); _mTodDrag.tick = setInterval(_mTodEdgeTick, 80); }
     _mTodDragBlock = Infinity; // keep #mMain's own day-swipe from also firing on this same horizontal drag
     _mTodDragMove(e);
   }, {passive: false});
@@ -2262,6 +2265,43 @@ function _mFlipReflow(containers, dragEl, mutate) {
   });
 }
 
+// Left/right edge hint zones shown while dragging a real task; holding the finger inside one
+// for 300ms moves the task a day (repeats every 700ms), with a slide animation on the list.
+const _M_EDGE_X = 48;
+function _mTodEdgeShow() {
+  _mTodEdgeHide();
+  [['L', '◀'], ['R', '▶']].forEach(([k, ar]) => {
+    const d = document.createElement('div');
+    d.className = 'm-drag-edge m-drag-edge-' + k;
+    d.id = 'mDragEdge' + k;
+    document.body.appendChild(d);
+  });
+  _mTodEdgeLabels();
+}
+function _mTodEdgeLabels() {
+  const cur = _mQuickAddTargetDsToday();
+  const lbl = n => { const d = new Date(cur + 'T12:00'); d.setDate(d.getDate() + n); return _mFmtAddDate(d2s(d)); };
+  const L = document.getElementById('mDragEdgeL'), R = document.getElementById('mDragEdgeR');
+  if (L) L.textContent = '◀ ' + lbl(-1);
+  if (R) R.textContent = lbl(1) + ' ▶';
+}
+function _mTodEdgeHide() { document.querySelectorAll('.m-drag-edge').forEach(n => n.remove()); }
+function _mTodEdgeTick() {
+  const D = _mTodDrag;
+  if (!D) return;
+  const dir = D.x < _M_EDGE_X ? -1 : D.x > window.innerWidth - _M_EDGE_X ? 1 : 0;
+  const L = document.getElementById('mDragEdgeL'), R = document.getElementById('mDragEdgeR');
+  if (L) L.classList.toggle('hot', dir === -1);
+  if (R) R.classList.toggle('hot', dir === 1);
+  if (!dir) { D.edgeDir = 0; return; }
+  const now = Date.now();
+  if (D.edgeDir !== dir) { D.edgeDir = dir; D.edgeSince = now; return; }
+  if (now - D.edgeSince >= 300 && now - D.lastShift >= 700) {
+    D.lastShift = now;
+    _mTodDragDayShift(dir);
+    _mTodEdgeLabels();
+  }
+}
 let _mTodDragBlock = 0; // Date.now() ms until which the Today day-swipe is suppressed
 function _mQuickAddTargetDsToday() { return _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr(); }
 
@@ -2288,6 +2328,15 @@ function _mTodDragDayShift(dir) {
   const list = document.getElementById('mTodayList');
   const fresh = list && list.querySelector(`.m-row-outer[data-rid="${CSS.escape(String(D.tid))}"]`);
   if (fresh) fresh.replaceWith(el); else if (list) list.appendChild(el);
+  if (list) { // slide the new day's list in from the side the task was pushed toward
+    list.style.transition = 'none';
+    list.style.transform = `translateX(${dir * 36}px)`;
+    list.style.opacity = '.35';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      list.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1), opacity .22s ease';
+      list.style.transform = ''; list.style.opacity = '';
+    }));
+  }
   navigator.vibrate?.(8);
 }
 
@@ -2298,11 +2347,7 @@ function _mTodDragMove(e) {
   if (!list) return;
   const touch = e.touches[0];
   const {el} = _mTodDrag;
-  const EDGE_X = 56;
-  if ((touch.clientX < EDGE_X || touch.clientX > window.innerWidth - EDGE_X) && Date.now() - _mTodDrag.lastShift > 650) {
-    _mTodDrag.lastShift = Date.now();
-    _mTodDragDayShift(touch.clientX < EDGE_X ? -1 : 1);
-  }
+  _mTodDrag.x = touch.clientX;
   el.style.pointerEvents = 'none';
   const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.m-row-outer');
   el.style.pointerEvents = '';
@@ -2315,7 +2360,9 @@ function _mTodDragMove(e) {
 }
 
 function _mTodDragEnd(cancelled) {
-  const {el, origOrder, tid, origDue} = _mTodDrag;
+  const {el, origOrder, tid, origDue, tick} = _mTodDrag;
+  if (tick) clearInterval(tick);
+  _mTodEdgeHide();
   _mTodDrag = null;
   _mTodDragBlock = Date.now() + 400;
   document.removeEventListener('touchmove', _mTodDragMove);
@@ -2347,10 +2394,9 @@ function _mTodDragEnd(cancelled) {
       const m2 = _dayOrder(); if (prevOrder) m2[ds] = prevOrder; else delete m2[ds]; _dayOrderSet(m2);
       save(); renderAll();
       sbReq('PATCH', 'tasks', {due_date: origDue}, `?id=eq.${tid}`);
-    }, 'Moved to ' + _mFmtAddDate(ds));
+    }, _mUn((st.tasks.find(x => String(x.id) === String(tid)) || {}).name) + ' moved to ' + _mFmtAddDate(ds));
     return;
   }
-  pushUndo(() => { const m2 = _dayOrder(); if (prevOrder) m2[ds] = prevOrder; else delete m2[ds]; _dayOrderSet(m2); renderAll(); }, 'Reordered today');
 }
 
 // ── Task long-press menu (Edit/Duplicate/Flag/Delete) ────────────────────────────
@@ -4058,11 +4104,9 @@ function mInitWeekGestures() {
       // desktop's sort correctly too. No-op if it landed back exactly where it started.
       if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) return;
       const m = _dayOrder();
-      const prevOrder = m[origDs] ? [...m[origDs]] : null;
       m[origDs] = newOrder;
       _dayOrderSet(m);
       mRenderWeek();
-      pushUndo(() => { const m2 = _dayOrder(); if (prevOrder) m2[origDs] = prevOrder; else delete m2[origDs]; _dayOrderSet(m2); renderAll(); }, 'Reordered day');
       return;
     }
 
@@ -4089,7 +4133,7 @@ function mInitWeekGestures() {
       _dayOrderSet(m2);
       save(); renderAll();
       sbReq('PATCH', 'tasks', {due_date: _prevDue}, `?id=eq.${tid}`);
-    }, 'Moved to ' + _mFmtAddDate(targetDs));
+    }, _mUn(t.name) + ' moved to ' + _mFmtAddDate(targetDs));
     sbReq('PATCH', 'tasks', {due_date: targetDs}, `?id=eq.${tid}`);
   }
 
@@ -4322,7 +4366,7 @@ async function mDeleteShopDirect(id) {
   // Mirrors desktop's delShop (features.js) exactly, local-restore-only included —
   // not re-POSTing on undo is an existing desktop quirk, kept here for parity rather
   // than inventing a different (better) behavior mobile-only.
-  pushUndo(() => { st.shopping.push(copy); save(); renderAll(); }, 'Deleted item');
+  pushUndo(() => { st.shopping.push(copy); save(); renderAll(); }, _mUn(copy.name) + ' deleted');
 }
 
 // Shop edit sheet
@@ -4883,15 +4927,17 @@ function _mMonthDayBadge(tasks) {
     const isOverdue = !noCheck && isOv(t.due_date) && !t.done;
     const isImportant = !!t.important && !t.done;
     const key = (t._type === 'birthday' || t._type === 'holiday') ? t._type : isOverdue ? '_overdue' : isImportant ? '_important' : _mMonthCatKey(t).toLowerCase();
-    const color = isOverdue ? OV.d : isImportant ? IMP.d : gc(_mMonthCatKey(t)).d;
+    const _dk = typeof _isDk === 'function' && _isDk();
+    const pal = isOverdue ? (_dk ? OV_DARK : OV) : isImportant ? (_dk ? IMP_DARK : IMP) : gc(_mMonthCatKey(t));
+    const color = `background:${pal.bg};box-shadow:inset 0 0 0 1.5px ${pal.d}`;
     counts[key] = (counts[key] || 0) + 1;
     colorFor[key] = color;
   });
   const rank = k => k === 'birthday' ? -4 : k === 'holiday' ? -3 : k === '_overdue' ? -2 : k === '_important' ? -1 : (order.indexOf(k) === -1 ? 999 : order.indexOf(k));
   const keys = Object.keys(counts).sort((a, b) => rank(a) - rank(b));
-  if (keys.length === 1) return `<span class="m-mo-dot" style="background:${colorFor[keys[0]]}"></span>`;
+  if (keys.length === 1) return `<span class="m-mo-dot" style="${colorFor[keys[0]]}"></span>`;
   const total = items.length;
-  const segs = keys.map(k => `<span style="flex:${counts[k] / total};background:${colorFor[k]}"></span>`).join('');
+  const segs = keys.map(k => `<span style="flex:${counts[k] / total};${colorFor[k]}"></span>`).join('');
   return `<div class="m-mo-bar">${segs}</div>`;
 }
 

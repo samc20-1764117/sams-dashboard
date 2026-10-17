@@ -625,8 +625,7 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 .m-wk-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
 .m-wk-dname{font-size:13px;font-weight:700;color:var(--text)}
 .m-wk-ddate{font-size:12px;color:var(--sub)}
-.m-wk-day.m-wk-drop-target{border-color:var(--accent);border-width:2px;background:rgba(124,106,247,.1);transition:border-color .12s ease,background-color .12s ease}
-.m-wk-day.m-wk-drop-target .m-wk-row{background:rgba(124,106,247,.06)}
+.m-wk-day.m-wk-drop-target{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);transition:border-color .15s ease,box-shadow .15s ease}
 .m-wk-empty{padding:12px 14px;font-size:12px;color:var(--sub)}
 
 /* Week task row — same left color bar + circle checkbox convention as Today's list
@@ -736,9 +735,9 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
    background/color are conditional, never its box dimensions. */
 .m-mo-num{width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .m-mo-day.is-today .m-mo-num{background:var(--accent);color:#fff;font-weight:700;border-radius:50%}
-.m-mo-bar{display:flex;width:88%;max-width:34px;height:4px;border-radius:2px;overflow:hidden}
-.m-mo-bar span{height:100%}
-.m-mo-dot{width:5px;height:5px;border-radius:50%}
+.m-mo-bar{display:flex;gap:2px;width:92%;max-width:38px;height:7px}
+.m-mo-bar span{height:100%;border-radius:3px;min-width:4px}
+.m-mo-dot{width:7px;height:7px;border-radius:50%}
 /* Day detail panel — elevated (white/light-surface) card so it reads as visually
    distinct from the scrolling calendar above it. */
 #mMonthDetail{flex-shrink:0;max-height:26vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg-elevated);border-radius:14px 14px 0 0;box-shadow:0 -4px 14px rgba(0,0,0,.07);margin:4px -8px 0;padding:12px 16px;padding-bottom:calc(16px + env(safe-area-inset-bottom));user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none;touch-action:pan-y}
@@ -847,3 +846,14 @@ body.dark .m-mv-today:active{background:#ef4444;color:#fff}
 /* Week: block iOS selection/callout (Copy/Translate) on every descendant of the list during hold */
 #mWeekList,#mWeekList *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
 .m-wk-row,.m-wk-row *{touch-action:pan-y}
+
+/* Hold-menu callout fix: text nodes are never the touch target (row div is), so iOS has no word to select/Look Up/Translate */
+.m-row-name,.m-wk-task-name,.m-wk-icon,.m-wk-ddate,.m-wk-dname{pointer-events:none}
+html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable="true"],[contenteditable=""]{-webkit-user-select:text;user-select:text}
+
+/* Today drag: edge hint zones (prev/next day) */
+.m-drag-edge{position:fixed;top:28%;bottom:28%;width:48px;z-index:90;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent);background:rgba(124,106,247,.10);writing-mode:vertical-rl;pointer-events:none;transition:background .12s ease,transform .12s ease;white-space:nowrap}
+.m-drag-edge-L{left:0;border-radius:0 16px 16px 0;transform:translateX(-4px)}
+.m-drag-edge-R{right:0;border-radius:16px 0 0 16px;transform:translateX(4px)}
+.m-drag-edge.hot{background:rgba(124,106,247,.32);transform:none}

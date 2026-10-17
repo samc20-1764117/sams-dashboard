@@ -3181,9 +3181,10 @@ function renderRecOv(){
   const elReg=document.getElementById('recList');if(elReg)elReg.innerHTML='';
   function recOvOrder(r){
     const isPup=r.pup_related===true||r.pup_related==='true';
+    const isPersonal=r.personal_related===true||r.personal_related==='true';
     const c=r.cadence||'weekly';
     const cadOrd=c==='weekly'?0:c==='biweekly'?2:c==='monthly'?4:c==='quarterly'?6:c==='biannual'?8:c==='annual'?10:12;
-    return cadOrd+(isPup?1:0);
+    return cadOrd+(isPup||isPersonal?1:0);
   }
   const sorted=[...items].sort((a,b)=>{
     const aDone=isDoneWR(a.id),bDone=isDoneWR(b.id);
@@ -3213,6 +3214,20 @@ function renderRecOv(){
     wrap.appendChild(chk);
     return wrap;
   }
+  // Personal Maintenance (beauty) WR items — same pattern as makePawEl above, just tinted
+  // purple (.chk-personal, styles.css) instead of pup-blue.
+  function makeBeautyEl(ruleId,isDone){
+    const wrap=document.createElement('label');
+    wrap.className='chk-wrap';
+    wrap.title='Toggle';
+    wrap.addEventListener('click',e=>e.stopPropagation());
+    wrap.addEventListener('mousedown',e=>e.stopPropagation());
+    const chk=document.createElement('input');
+    chk.type='checkbox';chk.className='chk chk-personal';chk.checked=isDone;
+    chk.addEventListener('change',function(){togWrRule(ruleId,this.checked,wkKey);});
+    wrap.appendChild(chk);
+    return wrap;
+  }
   // ── Overdue WR: PREVIOUS WEEK ONLY (older misses stay history), and only when the rule is
   // NOT also due this week (a weekly task due again supersedes last week's miss). Shows here in
   // the WR container ONLY — WR overdue is deliberately separate from the general overdue list.
@@ -3220,11 +3235,13 @@ function renderRecOv(){
     _wrWeekMisses().forEach(({r,pwk})=>{
       const rid=String(r.id);
       const isPup=r.pup_related===true||r.pup_related==='true';
+      const isPersonal=r.personal_related===true||r.personal_related==='true';
       const row=document.createElement('div');
       row.className='ti ov-row';
       row.style.cssText='cursor:default;break-inside:avoid;margin:0 6px;padding:3px 50px 3px 10px';
       row.addEventListener('contextmenu',e=>showWrRuleCtx(e,rid,pwk));
       if(isPup){row.appendChild(makePawEl(rid,false));}
+      else if(isPersonal){row.appendChild(makeBeautyEl(rid,false));}
       else{const cw=document.createElement('label');cw.className='chk-wrap';cw.addEventListener('click',e=>e.stopPropagation());const c=document.createElement('input');c.type='checkbox';c.className='chk';c.addEventListener('change',function(){togWrRule(rid,this.checked,pwk);});cw.appendChild(c);row.appendChild(cw);}
       const nm=document.createElement('span');nm.className='tn';nm.textContent=r.name;row.appendChild(nm);
       const mv=document.createElement('button');
@@ -3240,6 +3257,7 @@ function renderRecOv(){
     const rid=String(r.id);
     const isDone=isDoneWR(r.id);
     const isPup=r.pup_related===true||r.pup_related==='true';
+    const isPersonal=r.personal_related===true||r.personal_related==='true';
     const selId='wrrule-'+rid;
     const pinDs=r._dateOverrides&&r._dateOverrides[wkKey];
     // Assigned to a day within the CURRENT week (wrRecOff===0 only — a past week's pins are all
@@ -3263,6 +3281,8 @@ function renderRecOv(){
     row.addEventListener('contextmenu',e=>showWrRuleCtx(e,rid,wkKey));
     if(isPup){
       row.appendChild(makePawEl(rid,isDone));
+    } else if(isPersonal){
+      row.appendChild(makeBeautyEl(rid,isDone));
     } else {
       const chkWrap=document.createElement('label');chkWrap.className='chk-wrap';chkWrap.addEventListener('click',e=>e.stopPropagation());
       const chk=document.createElement('input');chk.type='checkbox';chk.className='chk';chk.checked=isDone;
@@ -4134,6 +4154,7 @@ function openWrEditModal(ruleId,wkKey,defaultScope='this'){
   _wrBuildSelects('wrEdit');
   document.getElementById('wrEditName').value=rule.name||'';
   document.getElementById('wrEditPup').checked=!!(rule.pup_related===true||rule.pup_related==='true');
+  document.getElementById('wrEditPersonal').checked=!!(rule.personal_related===true||rule.personal_related==='true');
   document.getElementById('wrEditCadence').value=rule.cadence||'weekly';
   document.getElementById('wrEditAnchor').value=rule.starting_date||d2s(new Date());
   document.getElementById('wrEditNotes').value=rule.notes||'';
@@ -4165,9 +4186,9 @@ function saveWrEditModal(){
   } else {
     const name=document.getElementById('wrEditName').value.trim();if(!name)return;
     const rule=st.wrRules.find(r=>String(r.id)===_wrEditRuleId);if(!rule)return;
-    const prev={name:rule.name,cadence:rule.cadence,starting_date:rule.starting_date,pup_related:rule.pup_related,notes:rule.notes};
+    const prev={name:rule.name,cadence:rule.cadence,starting_date:rule.starting_date,pup_related:rule.pup_related,personal_related:rule.personal_related,notes:rule.notes};
     const cadenceFields=_wrReadCadenceFields('wrEdit');
-    const patch={name,pup_related:document.getElementById('wrEditPup').checked,notes:document.getElementById('wrEditNotes').value.trim()||null,...cadenceFields};
+    const patch={name,pup_related:document.getElementById('wrEditPup').checked,personal_related:document.getElementById('wrEditPersonal').checked,notes:document.getElementById('wrEditNotes').value.trim()||null,...cadenceFields};
     Object.assign(rule,patch);
     sbReqSilent('PATCH','wr_recurring_rules',patch,`?id=eq.${_wrEditRuleId}`);
     save();renderAll();renderWeeklyPage();
@@ -4181,6 +4202,7 @@ function openWrRuleAddModal(cadence,type='wr'){
   _wrBuildSelects('wrAdd');
   document.getElementById('wrAddName').value='';
   document.getElementById('wrAddPup').checked=false;
+  document.getElementById('wrAddPersonal').checked=false;
   document.getElementById('wrAddCadence').value=cadence||'weekly';
   document.getElementById('wrAddAnchor').value=d2s(new Date());
   document.getElementById('wrAddAppearDay').value='Friday';
@@ -4225,7 +4247,8 @@ async function saveWrRuleAdd(){
     return;
   }
   const pup_related=document.getElementById('wrAddPup').checked;
-  const payload={name,pup_related,notes,is_weekly_reset:true,is_enabled:true,sort_order:st.wrRules.length,...cadenceFields};
+  const personal_related=document.getElementById('wrAddPersonal').checked;
+  const payload={name,pup_related,personal_related,notes,is_weekly_reset:true,is_enabled:true,sort_order:st.wrRules.length,...cadenceFields};
   const tmpId='wrrule-tmp-'+Date.now();
   st.wrRules.push({...payload,id:tmpId});
   save();renderRecOv();renderWeeklyPage();

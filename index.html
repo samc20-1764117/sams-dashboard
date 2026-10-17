@@ -746,6 +746,9 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div class="mfield" id="recPupField">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="recPupRelated" style="width:13px;height:13px;accent-color:var(--accent)"> 🐾 Pup related</label>
     </div>
+    <div class="mfield" id="recPersonalField">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="recPersonalRelated" style="width:13px;height:13px;accent-color:var(--accent)"> 💅 Personal maintenance</label>
+    </div>
 
     <div class="mfield">
       <label>Cadence</label>
@@ -895,6 +898,9 @@ if(sessionStorage._mReloaded===BUILD);else{
     </div>
     <div class="mfield" id="recEditPupField">
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="recEditPupRelated" style="width:13px;height:13px;accent-color:var(--accent)"> 🐾 Pup related</label>
+    </div>
+    <div class="mfield" id="recEditPersonalField">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="recEditPersonalRelated" style="width:13px;height:13px;accent-color:var(--accent)"> 💅 Personal maintenance</label>
     </div>
     <div class="mfield">
       <label>Cadence</label>
@@ -1168,6 +1174,7 @@ if(sessionStorage._mReloaded===BUILD);else{
     <div id="wrEditPanelAll" style="display:none">
       <div class="mfield"><label>Task name *</label><input id="wrEditName" placeholder="Task name"></div>
       <div class="mfield"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="wrEditPup" style="width:13px;height:13px;accent-color:var(--accent)"> 🐾 Pup related</label></div>
+      <div class="mfield"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="wrEditPersonal" style="width:13px;height:13px;accent-color:var(--accent)"> 💅 Personal maintenance</label></div>
       <div class="mfield">
         <label>Cadence</label>
         <select id="wrEditCadence" onchange="updateWrRuleCadenceUI('wrEdit')">
@@ -1199,6 +1206,7 @@ if(sessionStorage._mReloaded===BUILD);else{
     </div>
     <div class="mfield"><label>Task name *</label><input id="wrAddName" placeholder="e.g. Laundry, Sunny bowls…"></div>
     <div class="mfield" id="wrAddPupField"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="wrAddPup" style="width:13px;height:13px;accent-color:var(--accent)"> 🐾 Pup related</label></div>
+    <div class="mfield" id="wrAddPersonalField"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="wrAddPersonal" style="width:13px;height:13px;accent-color:var(--accent)"> 💅 Personal maintenance</label></div>
     <div class="mfield">
       <label>Cadence</label>
       <select id="wrAddCadence" onchange="updateWrRuleCadenceUI('wrAdd')">
