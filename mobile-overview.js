@@ -4023,7 +4023,11 @@ function mShopRow(s) {
 function mRenderShop() {
   const list = document.getElementById('mShopList');
   if (!list) return;
-  const items = st.shopping || [];
+  // Mobile deliberately diverges from desktop here (explicit request): checked items
+  // disappear from the list instead of sinking to the bottom struck-through. togShop's
+  // optimistic update calls renderShopFull() → mRenderShop() (mobile's override, above)
+  // right after setting s.done, so checking a box re-renders it straight out of the list.
+  const items = (st.shopping || []).filter(s => !s.done);
 
   // Group by store
   const groups = {};
@@ -4032,14 +4036,7 @@ function mRenderShop() {
     if (!groups[k]) groups[k] = [];
     groups[k].push(s);
   });
-  // Not-done items first (by shop_order), done items sink to the bottom of their own
-  // store group and stay visible/struck-through instead of disappearing — matches
-  // desktop's todo/done merge (renderShopFull, features.js) instead of filtering done
-  // items out entirely.
-  Object.values(groups).forEach(arr => arr.sort((a, b) => {
-    if (!!a.done !== !!b.done) return a.done ? 1 : -1;
-    return (a.shop_order ?? 9999) - (b.shop_order ?? 9999);
-  }));
+  Object.values(groups).forEach(arr => arr.sort((a, b) => (a.shop_order ?? 9999) - (b.shop_order ?? 9999)));
 
   // Known stores (M_SHOP_STORES, below) group in that fixed order — HEB first, matching
   // the store picker's own order — not alphabetically (that put Costco ahead of HEB).
