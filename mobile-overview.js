@@ -1929,6 +1929,44 @@ async function mRedo() {
   _mSnack('Redone', 'UNDO', () => mUndo());
 }
 
+// ── Shake to undo (iOS Notes-style) ──────────────────────────────────────────────
+// No native "shake" event on the web — DeviceMotion is the only signal available, and
+// iOS gates it behind a permission prompt that MUST be requested from inside a real
+// user-gesture handler (silently calling it on page load always rejects). Requesting
+// it on the first tap anywhere satisfies that without needing a dedicated "Enable"
+// button of its own; requestPermission() is cheap to call even if already granted.
+(function () {
+  let lastX = null, lastY = null, lastZ = null, lastSampleAt = 0, lastShakeAt = 0;
+  const SHAKE_THRESHOLD = 16; // sum of |Δx|+|Δy|+|Δz| in m/s² between samples
+  const SHAKE_COOLDOWN = 1200; // ms — ignore further shakes right after triggering one
+
+  function onMotion(e) {
+    const a = e.accelerationIncludingGravity;
+    if (!a || a.x === null) return;
+    const now = Date.now();
+    if (now - lastSampleAt < 100) return; // sample at ~10Hz, plenty for a shake gesture
+    if (lastX !== null) {
+      const delta = Math.abs(a.x - lastX) + Math.abs(a.y - lastY) + Math.abs(a.z - lastZ);
+      if (delta > SHAKE_THRESHOLD && now - lastShakeAt > SHAKE_COOLDOWN) {
+        lastShakeAt = now;
+        mUndo();
+      }
+    }
+    lastX = a.x; lastY = a.y; lastZ = a.z; lastSampleAt = now;
+  }
+
+  function enableShakeToUndo() {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      DeviceMotionEvent.requestPermission().then(state => {
+        if (state === 'granted') window.addEventListener('devicemotion', onMotion);
+      }).catch(() => {});
+    } else if (typeof DeviceMotionEvent !== 'undefined') {
+      window.addEventListener('devicemotion', onMotion); // Android / older iOS — no gate
+    }
+  }
+  document.addEventListener('touchstart', enableShakeToUndo, { once: true, passive: true });
+})();
+
 async function mSaveEditTask() {
   if (!_mEditId) return;
   const t = st.tasks.find(x => String(x.id) === String(_mEditId));
