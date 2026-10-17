@@ -2251,8 +2251,7 @@ function mInitTodayGestures() {
 // the drop target directly, not this animation.
 function _mFlipReflow(containers, dragEl, mutate) {
   const rows = containers.filter(Boolean)
-    .flatMap(c => [...c.querySelectorAll('.m-row-outer[data-rid], .m-wk-row[data-rid]')])
-    .filter(r => r !== dragEl);
+    .flatMap(c => [...c.querySelectorAll('.m-row-outer[data-rid], .m-wk-row[data-rid]')]);
   const first = new Map(rows.map(r => [r, r.getBoundingClientRect()]));
   mutate();
   rows.forEach(r => {
@@ -2260,12 +2259,14 @@ function _mFlipReflow(containers, dragEl, mutate) {
     const l = r.getBoundingClientRect();
     const dy = f.top - l.top;
     if (Math.abs(dy) < 1) return;
+    // The lifted row keeps its scale while it glides into its new slot.
+    const lift = r === dragEl ? ' scale(1.025)' : '';
     r.style.transition = 'none';
-    r.style.transform = `translateY(${dy}px)`;
-    requestAnimationFrame(() => {
-      r.style.transition = 'transform .18s cubic-bezier(.2,.8,.2,1)';
-      r.style.transform = '';
-    });
+    r.style.transform = `translateY(${dy}px)${lift}`;
+    r.getBoundingClientRect(); // commit the start frame
+    r.style.transition = 'transform .3s cubic-bezier(.22,1,.36,1)';
+    r.style.transform = lift.trim();
+    setTimeout(() => { if (r.style.transform === lift.trim()) { r.style.transition = ''; r.style.transform = ''; } }, 320);
   });
 }
 
@@ -2286,8 +2287,8 @@ function _mTodEdgeLabels() {
   const cur = _mQuickAddTargetDsToday();
   const lbl = n => { const d = new Date(cur + 'T12:00'); d.setDate(d.getDate() + n); return _mFmtAddDate(d2s(d)); };
   const L = document.getElementById('mDragEdgeL'), R = document.getElementById('mDragEdgeR');
-  if (L) L.textContent = '◀ ' + lbl(-1);
-  if (R) R.textContent = lbl(1) + ' ▶';
+  if (L) L.innerHTML = '<span class="a">◀</span><span>' + lbl(-1) + '</span>';
+  if (R) R.innerHTML = '<span class="a">▶</span><span>' + lbl(1) + '</span>';
 }
 function _mTodEdgeHide() { document.querySelectorAll('.m-drag-edge').forEach(n => n.remove()); }
 function _mTodEdgeTick() {
@@ -2300,48 +2301,45 @@ function _mTodEdgeTick() {
   if (!dir) { D.edgeDir = 0; return; }
   const now = Date.now();
   if (D.edgeDir !== dir) { D.edgeDir = dir; D.edgeSince = now; return; }
-  if (now - D.edgeSince >= 300 && now - D.lastShift >= 700) {
-    D.lastShift = now;
-    _mTodDragDayShift(dir);
-    _mTodEdgeLabels();
-  }
+  if (now - D.edgeSince >= 300) _mTodDragDayShift(dir);
 }
 let _mTodDragBlock = 0; // Date.now() ms until which the Today day-swipe is suppressed
 function _mQuickAddTargetDsToday() { return _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr(); }
 
-// Dragging a real task to the left/right screen edge moves it to the previous/next day
-// (repeats every 650ms while held there). Row element is detached and re-inserted after the
-// re-render so the live touch keeps a connected target (iOS drops touch events otherwise).
+// Holding a dragged real task in the left/right edge zone sends it to the previous/next day:
+// the row flies off in that direction, the task's due date changes, and the view STAYS on the
+// current day (the undo toast says where it went).
 function _mTodDragDayShift(dir) {
   const D = _mTodDrag;
   if (!D || !D.tid) return;
   const t = st.tasks.find(x => String(x.id) === String(D.tid));
   if (!t) return;
+  const tid = D.tid, el = D.el;
   const fromDs = _mQuickAddTargetDsToday();
-  const d = new Date(fromDs + 'T00:00:00'); d.setDate(d.getDate() + dir);
+  const d = new Date(fromDs + 'T12:00:00'); d.setDate(d.getDate() + dir);
   const toDs = d2s(d);
-  if (D.origDue === null) D.origDue = (t.due_date || '').split('T')[0];
-  t.due_date = toDs;
-  _mMoveTaskBlocks(D.tid, fromDs, toDs);
-  save();
-  const el = D.el;
-  el.remove();
-  _mTodayOffset += dir;
-  mRenderToday();
-  _mUpdateTodayHeader();
-  const list = document.getElementById('mTodayList');
-  const fresh = list && list.querySelector(`.m-row-outer[data-rid="${CSS.escape(String(D.tid))}"]`);
-  if (fresh) fresh.replaceWith(el); else if (list) list.appendChild(el);
-  if (list) { // slide the new day's list in from the side the task was pushed toward
-    list.style.transition = 'none';
-    list.style.transform = `translateX(${dir * 36}px)`;
-    list.style.opacity = '.35';
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      list.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1), opacity .22s ease';
-      list.style.transform = ''; list.style.opacity = '';
-    }));
-  }
+  const origDue = (t.due_date || '').split('T')[0];
+  clearInterval(D.tick); _mTodEdgeHide();
+  _mTodDrag = null;
+  _mTodDragBlock = Date.now() + 600;
+  el.classList.remove('m-row-dragging');
   navigator.vibrate?.(8);
+  el.style.transition = 'transform .26s cubic-bezier(.5,0,.9,.5), opacity .26s ease';
+  el.style.transform = `translateX(${dir * window.innerWidth}px)`;
+  el.style.opacity = '0';
+  setTimeout(() => {
+    t.due_date = toDs;
+    _mMoveTaskBlocks(tid, origDue, toDs);
+    save();
+    mRenderToday();
+    sbReq('PATCH', 'tasks', {due_date: toDs}, `?id=eq.${tid}`);
+    pushUndo(() => {
+      const t2 = st.tasks.find(x => String(x.id) === String(tid));
+      if (t2) { t2.due_date = origDue; _mMoveTaskBlocks(tid, toDs, origDue); }
+      save(); renderAll();
+      sbReq('PATCH', 'tasks', {due_date: origDue}, `?id=eq.${tid}`);
+    }, _mUn(t.name) + ' moved to ' + _mFmtAddDate(toDs));
+  }, 240);
 }
 
 function _mTodDragMove(e) {
@@ -2388,8 +2386,8 @@ function _mTodDragEnd(cancelled) {
   const prevOrder = m[ds] ? [...m[ds]] : null;
   m[ds] = newOrder;
   _dayOrderSet(m);
-  mRenderToday();
   if (moved) {
+    mRenderToday();
     // Task changed day mid-drag: persist the final due_date and undo back to the original.
     sbReq('PATCH', 'tasks', {due_date: ds}, `?id=eq.${tid}`);
     pushUndo(() => {
@@ -3965,12 +3963,12 @@ function _mWkDragAutoScroll() {
   const sc = _mWkScroller();
   const hdr = document.getElementById('mHeader');
   const topLimit = Math.max(hdr ? hdr.getBoundingClientRect().bottom : 0, 0);
-  const botLimit = window.innerHeight - 70; // floating nav
-  const EDGE = 90, MAXSPD = 18;
+  const botLimit = window.innerHeight - 80; // floating nav
+  const EDGE = 56, MAXSPD = 16;
   const y = _mWkDrag.y;
   let v = 0;
-  if (y > botLimit - EDGE) v = Math.min(MAXSPD, 3 + (y - (botLimit - EDGE)) / EDGE * MAXSPD);
-  else if (y < topLimit + EDGE) v = -Math.min(MAXSPD, 3 + ((topLimit + EDGE) - y) / EDGE * MAXSPD);
+  if (y > botLimit - EDGE) { const f = Math.min(1, (y - (botLimit - EDGE)) / EDGE); v = f * f * MAXSPD; }
+  else if (y < topLimit + EDGE) { const f = Math.min(1, ((topLimit + EDGE) - y) / EDGE); v = -f * f * MAXSPD; }
   if (v) { sc.scrollTop += v; _mWkDragHit(); }
   _mWkDrag.raf = requestAnimationFrame(() => { if (_mWkDrag) { _mWkDrag.raf = 0; _mWkDragAutoScroll(); } });
 }
@@ -4109,8 +4107,7 @@ function mInitWeekGestures() {
       if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) return;
       const m = _dayOrder();
       m[origDs] = newOrder;
-      _dayOrderSet(m);
-      mRenderWeek();
+      _dayOrderSet(m); // DOM is already in the new order — no re-render, so no flash on drop
       return;
     }
 
@@ -4930,14 +4927,18 @@ function _mMonthDayBadge(tasks) {
     const noCheck = t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday';
     const isOverdue = !noCheck && isOv(t.due_date) && !t.done;
     const isImportant = !!t.important && !t.done;
-    const key = (t._type === 'birthday' || t._type === 'holiday') ? t._type : isOverdue ? '_overdue' : isImportant ? '_important' : _mMonthCatKey(t).toLowerCase();
+    // Categories that share a color are one segment: home+weekly reset (blue), birthday+holiday (orange), shopping+buy.
+    const _grp = {weekly_reset: 'home', holiday: 'birthday', buy: 'shopping'};
+    const _ck = _mMonthCatKey(t).toLowerCase();
+    const catKey = _grp[_ck] || _ck;
+    const key = catKey === 'birthday' ? 'birthday' : isOverdue ? '_overdue' : isImportant ? '_important' : catKey;
     const _dk = typeof _isDk === 'function' && _isDk();
-    const pal = isOverdue ? (_dk ? OV_DARK : OV) : isImportant ? (_dk ? IMP_DARK : IMP) : gc(_mMonthCatKey(t));
+    const pal = isOverdue ? (_dk ? OV_DARK : OV) : isImportant ? (_dk ? IMP_DARK : IMP) : gc(catKey);
     const color = `background:${pal.bg};box-shadow:inset 0 0 0 1.5px ${pal.d}`;
     counts[key] = (counts[key] || 0) + 1;
     colorFor[key] = color;
   });
-  const rank = k => k === 'birthday' ? -4 : k === 'holiday' ? -3 : k === '_overdue' ? -2 : k === '_important' ? -1 : (order.indexOf(k) === -1 ? 999 : order.indexOf(k));
+  const rank = k => k === 'birthday' ? -4 : k === '_overdue' ? -2 : k === '_important' ? -1 : (order.indexOf(k) === -1 ? 999 : order.indexOf(k));
   const keys = Object.keys(counts).sort((a, b) => rank(a) - rank(b));
   if (keys.length === 1) return `<span class="m-mo-dot" style="${colorFor[keys[0]]}"></span>`;
   const total = items.length;

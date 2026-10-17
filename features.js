@@ -3321,6 +3321,25 @@ function togFinCancelDone(subId,checked){
   const prev=_finCancelDone.has(sid);
   if(checked)_finCancelDone.add(sid);else _finCancelDone.delete(sid);
   _finCancelSave();
+  // Flight-credit reminders: the dismissed flag lives on the fin_points row (reminder_done) so
+  // it syncs to every device — _finCancelDone is localStorage-only, so desktop-completed
+  // credits kept showing as overdue on mobile.
+  if(sid.startsWith('flight-')){
+    const fp=(st.finPoints||[]).find(r=>'flight-'+r.id===sid);
+    if(fp){
+      const prevDone=!!fp.reminder_done;
+      fp.reminder_done=!!checked;
+      if(!String(fp.id).startsWith('l-'))sbReqSilent('PATCH','fin_points',{reminder_done:!!checked},`?id=eq.${fp.id}`);
+      pushUndo(()=>{
+        if(prev)_finCancelDone.add(sid);else _finCancelDone.delete(sid);
+        _finCancelSave();fp.reminder_done=prevDone;
+        if(!String(fp.id).startsWith('l-'))sbReqSilent('PATCH','fin_points',{reminder_done:prevDone},`?id=eq.${fp.id}`);
+        _finCancelRender();
+      },(checked?'Checked':'Unchecked')+' flight credit task');
+      _finCancelRender();
+      return;
+    }
+  }
   // Also archive/unarchive the subscription
   const sub=st.finSubs.find(r=>String(r.id)===sid);
   if(sub){
@@ -3380,7 +3399,13 @@ function _finCancelTasksForDate(ds){
     if(!p.expires_on)return;
     if(!Number.isFinite(p.remind_days_before))return; // reminder explicitly cleared — no alert
     const sid='flight-'+p.id;
-    if(_finCancelDone.has(sid))return; // dismissed — stays hidden until unchecked (removes from the set)
+    // Dismissed on ANY device (reminder_done, synced) or this one (legacy local set).
+    if(p.reminder_done)return;
+    if(_finCancelDone.has(sid)){
+      // One-time upgrade: push a locally-dismissed reminder up so other devices see it as done too.
+      if(!p._rdPushed&&!String(p.id).startsWith('l-')){p._rdPushed=true;p.reminder_done=true;sbReqSilent('PATCH','fin_points',{reminder_done:true},`?id=eq.${p.id}`);}
+      return;
+    }
     const expDate=new Date(p.expires_on+'T00:00:00');
     const leadDays=p.remind_days_before;
     const reminderDate=new Date(expDate);reminderDate.setDate(reminderDate.getDate()-leadDays);
