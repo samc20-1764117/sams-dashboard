@@ -1245,8 +1245,10 @@ async function mAddTask() {
   pushUndo(() => { st.tasks = st.tasks.filter(x => x.id !== t.id); save(); renderAll(); sbReq('DELETE', 'tasks', null, `?id=eq.${t.id}`); }, 'Added task');
   const sv = await sbReq('POST', 'tasks', {name: n, category: cat, due_date: ds, done: false, important});
   if (sv && sv[0]) {
-    const i = st.tasks.findIndex(x => x.id === t.id);
-    if (i > -1) st.tasks[i] = sv[0];
+    // Mutate in place (not array-replace) so the pushUndo closure above still has the
+    // right id to filter/delete by if Undo is tapped after this resolves — same reason
+    // _mAddTravel/the shopping branch above do it this way.
+    Object.assign(t, sv[0]);
     save();
     // Row's data-tid still points at the temp local id until this re-renders — tapping it
     // in that window looked up a task that no longer existed under that id (silently found

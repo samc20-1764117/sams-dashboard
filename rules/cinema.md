@@ -37,12 +37,10 @@
 - `C` — toggles to/from the Cinema page (same bare-letter nav pattern as `O`/`P`/`F`/`H`/`B`/`L`).
 - `Delete`/`Backspace` — bulk-deletes the current selection, gated on `_cinemaSelIds.size` + `page-cinema` active + no input focused.
 
-### Modal (`#cinemaModal`) — deliberately diverges from the app's usual "Enter-anywhere-saves" convention
-Explicit `tabindex` sequence: **Title(1) → Watched(2) → New season(3) → Genre(4) → Genre 2nd(5) → Where to watch(6) → Notes(7) → Save(8)**. Type toggle (Show/Movie segmented control) and Rating live in the header as mouse-only quick controls — both `tabindex="-1"`, intentionally outside the tab sequence since the user never mentioned them in the walkthrough.
-- Enter is a **no-op** on Title/Genre/Genre2/Where (no default action fires on a bare `<input>`/`<select>` outside a `<form>`).
-- Enter on the two checkboxes **toggles them and keeps focus** (custom `onkeydown`, since native Enter does nothing on a checkbox — only Space does) — does NOT save.
-- Enter in Notes inserts a newline (native textarea behavior, untouched).
-- Enter on the Save button **saves and closes** — free via native button-activates-on-Enter behavior, no JS needed. This is why the modal has a real, focusable Save button again (previously removed, re-added specifically so Tab has somewhere real to land at the end of the sequence).
+### Modal (`#cinemaModal`) — now follows the app's usual "Enter-anywhere-saves" convention (matches `tModal`)
+Explicit `tabindex` sequence: **Title(1) → Type toggle(2) → Watched(3) → Rating(4) → Genre(5) → Genre 2nd(6) → Where to watch(7) → Notes(8) → Save(9)**. Rating now sits in-flow right after Watched (moved out of the header). New season lives in the header as a mouse-only amber/muted flag badge (`cinemaNewSeasonBadge`, `tabindex="-1"`) — click toggles it, styling driven by `_cinemaRenderNewSeasonBadge()`.
+- **Enter saves-and-closes from anywhere** (overlay-level `onkeydown` on `#cinemaModal`, same shape as `tModal`'s), except from Notes (`TEXTAREA`, where it inserts a newline) — this includes dropdowns (Genre/Genre2/Where) and the Watched checkbox, no per-field handlers needed. Guarded on Title being non-empty; if Title is blank, Enter does nothing (no save, no close).
+- **Type toggle** (Show/Movie segmented control, now positioned right after the Title field, `tabindex="2"`): Left arrow/`S` → Show, Right arrow/`M` → Movie, Space cycles between them. Enter is NOT intercepted here — it bubbles to the overlay handler and saves, same as everywhere else.
 - No Cancel button — Escape or click-outside-the-modal closes without saving (unchanged).
 - The header's Genre/Genre2/Where-to-watch `<select>` elements are styled as filled pills (`#cinemaModal .mfield select` — purple tint, bold, colored arrow) to visually match the Task modal's colored Category trigger, not left as plain native selects.
 
