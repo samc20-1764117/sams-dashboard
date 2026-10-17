@@ -518,7 +518,7 @@ function renderRtWrGroup(containerId, rules, cadence){
       onclick="selTask(event,'wrrule-${rid}')"
       ondblclick="if(!event.target.closest('[data-pup]')&&!event.target.closest('.delbtn')&&!event.target.closest('.btn-xs')){event.stopPropagation();openWrEditModal('${rid}',null,'all');}"
       oncontextmenu="showWrRuleCtx(event,'${rid}',getWkKey(wkOff))">
-      <td class="rt-editable" style="box-shadow:inset 3px 0 0 ${rowClr}" title="${esc(r.name)}">${esc(r.name)}${cadence==='other'?(()=>{const _KB=['weekly','biweekly','monthly'];const _CB={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};const _bl=_CB[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})():''}</td>
+      <td class="rt-editable" style="box-shadow:inset 3px 0 0 ${rowClr}" title="${esc(r.name)}">${esc(r.name)}${cadence==='other'?(()=>{const _KB=['weekly','biweekly','monthly'];const _CB={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};const _bl=_CB[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--muted);margin-left:4px">${_bl}</span>`:''})():''}</td>
       <td class="rt-meta" style="text-align:center">${nextTxt}</td>
       <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><div class="rt-actions"><button class="delbtn" onclick="_rtDelClick('${rid}',false)">✕</button></div></td>
       <td data-pup="1" style="text-align:center;cursor:pointer;font-size:12px" onclick="event.stopPropagation();rtToggleWrPup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
@@ -592,7 +592,7 @@ function renderRtGroup(containerId, tasks, cadence){
     const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const dayDisp=r.appears_on_date||'—';
     const _KB_RT=['weekly','biweekly','monthly'];const _CB_RT={quarterly:'Q',biannual:'BA',annual:'A',bimonthly:'B',monthly:'M'};
-    const _rtBadge=(()=>{const _bl=!_KB_RT.includes(r.cadence)&&_CB_RT[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--subtle);margin-left:4px">${_bl}</span>`:''})();
+    const _rtBadge=(()=>{const _bl=!_KB_RT.includes(r.cadence)&&_CB_RT[r.cadence];return _bl?`<span style="float:right;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 3px;border-radius:3px;background:rgba(0,0,0,.11);color:var(--muted);margin-left:4px">${_bl}</span>`:''})();
     const nextDs=_rtNextDate(r);
     const rowClr=_rtChipBg(r.cadence,'sch');
     const tds=`<td class="rt-editable" style="box-shadow:inset 3px 0 0 ${rowClr}">${esc(r.name)}${cadence==='other'?_rtBadge:''}</td>
