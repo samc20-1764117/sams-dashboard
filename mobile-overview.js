@@ -2086,6 +2086,12 @@ async function mDeleteById(id) {
   if (!t) return;
   const copy = { ...t };
   const linkedBlocks = (st.blocks || []).filter(b => String(b.taskId) === String(id));
+  // Re-posting on undo (below) assigns the task a brand-new id, which would silently
+  // orphan its spot in that day's manual drag-order (_dayOrder, keyed by id — shared by
+  // Today/Week/Month) and drop it to the bottom instead of back where it was. Capture
+  // the position now so it can be carried over to whatever id the repost gets.
+  const ds = copy.due_date;
+  const orderIdx = ds ? (_dayOrder()[ds] || []).indexOf(String(id)) : -1;
   st.tasks = st.tasks.filter(x => String(x.id) !== String(id));
   if (st.blocks) st.blocks = st.blocks.filter(b => String(b.taskId) !== String(id));
   save();
@@ -2097,12 +2103,18 @@ async function mDeleteById(id) {
   // the server assigns before re-linking the task's blocks to it.
   pushUndo(async () => {
     const sv = await sbReq('POST', 'tasks', { name: copy.name, category: copy.category, due_date: copy.due_date, done: copy.done, important: copy.important || false });
+    let newId = copy.id;
     if (sv && sv[0]) {
+      newId = sv[0].id;
       st.tasks.push(sv[0]);
-      linkedBlocks.forEach(b => { b.taskId = String(sv[0].id); if (st.blocks) st.blocks.push(b); sbSaveBlock(b); });
+      linkedBlocks.forEach(b => { b.taskId = String(newId); if (st.blocks) st.blocks.push(b); sbSaveBlock(b); });
     } else {
       st.tasks.push(copy);
       linkedBlocks.forEach(b => { if (st.blocks) st.blocks.push(b); sbSaveBlock(b); });
+    }
+    if (orderIdx >= 0) {
+      const m = _dayOrder();
+      if (m[ds]) { m[ds][orderIdx] = String(newId); _dayOrderSet(m); }
     }
     save();
     renderAll();
