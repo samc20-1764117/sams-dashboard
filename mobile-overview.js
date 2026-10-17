@@ -2199,7 +2199,9 @@ function mInitTodayGestures() {
     _mTodPress = null;
     mCloseTaskMenu();
     outer.classList.add('m-row-dragging');
-    _mTodDrag = {el: outer, origOrder: [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid)};
+    _mTodDrag = {el: outer, origOrder: [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid),
+      tid: outer.dataset.tid || null, origDs: _mQuickAddTargetDsToday(), origDue: null, lastShift: 0};
+    _mTodDragBlock = Infinity; // keep #mMain's own day-swipe from also firing on this same horizontal drag
     _mTodDragMove(e);
   }, {passive: false});
 
@@ -2248,6 +2250,35 @@ function _mFlipReflow(containers, dragEl, mutate) {
   });
 }
 
+let _mTodDragBlock = 0; // Date.now() ms until which the Today day-swipe is suppressed
+function _mQuickAddTargetDsToday() { return _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr(); }
+
+// Dragging a real task to the left/right screen edge moves it to the previous/next day
+// (repeats every 650ms while held there). Row element is detached and re-inserted after the
+// re-render so the live touch keeps a connected target (iOS drops touch events otherwise).
+function _mTodDragDayShift(dir) {
+  const D = _mTodDrag;
+  if (!D || !D.tid) return;
+  const t = st.tasks.find(x => String(x.id) === String(D.tid));
+  if (!t) return;
+  const fromDs = _mQuickAddTargetDsToday();
+  const d = new Date(fromDs + 'T00:00:00'); d.setDate(d.getDate() + dir);
+  const toDs = d2s(d);
+  if (D.origDue === null) D.origDue = (t.due_date || '').split('T')[0];
+  t.due_date = toDs;
+  _mMoveTaskBlocks(D.tid, fromDs, toDs);
+  save();
+  const el = D.el;
+  el.remove();
+  _mTodayOffset += dir;
+  mRenderToday();
+  _mUpdateTodayHeader();
+  const list = document.getElementById('mTodayList');
+  const fresh = list && list.querySelector(`.m-row-outer[data-rid="${CSS.escape(String(D.tid))}"]`);
+  if (fresh) fresh.replaceWith(el); else if (list) list.appendChild(el);
+  navigator.vibrate?.(8);
+}
+
 function _mTodDragMove(e) {
   if (!_mTodDrag) return;
   e.preventDefault();
@@ -2255,6 +2286,11 @@ function _mTodDragMove(e) {
   if (!list) return;
   const touch = e.touches[0];
   const {el} = _mTodDrag;
+  const EDGE_X = 56;
+  if ((touch.clientX < EDGE_X || touch.clientX > window.innerWidth - EDGE_X) && Date.now() - _mTodDrag.lastShift > 650) {
+    _mTodDrag.lastShift = Date.now();
+    _mTodDragDayShift(touch.clientX < EDGE_X ? -1 : 1);
+  }
   el.style.pointerEvents = 'none';
   const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.m-row-outer');
   el.style.pointerEvents = '';
@@ -2267,24 +2303,41 @@ function _mTodDragMove(e) {
 }
 
 function _mTodDragEnd(cancelled) {
-  const {el, origOrder} = _mTodDrag;
+  const {el, origOrder, tid, origDue} = _mTodDrag;
   _mTodDrag = null;
+  _mTodDragBlock = Date.now() + 400;
   document.removeEventListener('touchmove', _mTodDragMove);
   el.classList.remove('m-row-dragging');
-  if (cancelled) { mRenderToday(); return; }
+  const moved = origDue !== null && origDue !== undefined;
+  if (cancelled) {
+    if (moved) { const t = st.tasks.find(x => String(x.id) === String(tid)); if (t) t.due_date = origDue; save(); }
+    mRenderToday(); return;
+  }
 
   const list = document.getElementById('mTodayList');
   const newOrder = [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid);
   // Dropped back exactly where it started — no-op, no toast. The task menu is owned by
   // a plain tap (mInitTodayGestures, above), not a stalled drag attempt.
-  if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) return;
+  if (!moved && JSON.stringify(newOrder) === JSON.stringify(origOrder)) return;
 
-  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
+  const ds = _mQuickAddTargetDsToday();
   const m = _dayOrder();
   const prevOrder = m[ds] ? [...m[ds]] : null;
   m[ds] = newOrder;
   _dayOrderSet(m);
   mRenderToday();
+  if (moved) {
+    // Task changed day mid-drag: persist the final due_date and undo back to the original.
+    sbReq('PATCH', 'tasks', {due_date: ds}, `?id=eq.${tid}`);
+    pushUndo(() => {
+      const t2 = st.tasks.find(x => String(x.id) === String(tid));
+      if (t2) { t2.due_date = origDue; _mMoveTaskBlocks(tid, ds, origDue); }
+      const m2 = _dayOrder(); if (prevOrder) m2[ds] = prevOrder; else delete m2[ds]; _dayOrderSet(m2);
+      save(); renderAll();
+      sbReq('PATCH', 'tasks', {due_date: origDue}, `?id=eq.${tid}`);
+    }, 'Moved to ' + _mFmtAddDate(ds));
+    return;
+  }
   pushUndo(() => { const m2 = _dayOrder(); if (prevOrder) m2[ds] = prevOrder; else delete m2[ds]; _dayOrderSet(m2); renderAll(); }, 'Reordered today');
 }
 
@@ -2598,6 +2651,7 @@ function _mBindDaySwipe(el, {gate, onDragStart} = {}) {
     dragStarted = false;
     const dx = lastX - startX;
     const dy = lastY - startY;
+    if (Date.now() < _mTodDragBlock) return; // a task drag owns horizontal movement right now
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
       _mTodayOffset += dx < 0 ? 1 : -1;
       mRenderToday();
@@ -3836,22 +3890,43 @@ function _mWkDragMove(e) {
   const list = document.getElementById('mWeekList');
   if (!list) return;
   const touch = e.touches[0];
-  const {el} = _mWkDrag;
+  _mWkDrag.x = touch.clientX; _mWkDrag.y = touch.clientY;
+  _mWkDragHit();
+  if (!_mWkDrag.raf) _mWkDragAutoScroll();
+}
 
-  // Auto-scroll the actual scrolling element (page or document — see _mWkScroller) when
-  // near top/bottom edges, same threshold/speed as before.
-  const scroller = _mWkScroller();
-  const mr = scroller.getBoundingClientRect ? scroller.getBoundingClientRect() : {top: 0, bottom: window.innerHeight};
-  const EDGE = 80, SPEED = 8;
-  if (touch.clientY > mr.bottom - EDGE)      scroller.scrollTop += SPEED;
-  else if (touch.clientY < mr.top + EDGE)    scroller.scrollTop -= SPEED;
+// Keeps scrolling while the finger is HELD near the top/bottom edge (touchmove alone only
+// fires on movement, so a still finger never scrolled). Speed ramps up the closer to the
+// edge; after each scroll step the hit-test re-runs since rows moved under the finger.
+function _mWkDragAutoScroll() {
+  if (!_mWkDrag) return;
+  const sc = _mWkScroller();
+  const hdr = document.getElementById('mHeader');
+  const topLimit = Math.max(hdr ? hdr.getBoundingClientRect().bottom : 0, 0);
+  const botLimit = window.innerHeight - 70; // floating nav
+  const EDGE = 90, MAXSPD = 18;
+  const y = _mWkDrag.y;
+  let v = 0;
+  if (y > botLimit - EDGE) v = Math.min(MAXSPD, 3 + (y - (botLimit - EDGE)) / EDGE * MAXSPD);
+  else if (y < topLimit + EDGE) v = -Math.min(MAXSPD, 3 + ((topLimit + EDGE) - y) / EDGE * MAXSPD);
+  if (v) { sc.scrollTop += v; _mWkDragHit(); }
+  _mWkDrag.raf = requestAnimationFrame(() => { if (_mWkDrag) { _mWkDrag.raf = 0; _mWkDragAutoScroll(); } });
+}
 
+function _mWkDragHit() {
+  if (!_mWkDrag) return;
+  const list = document.getElementById('mWeekList');
+  if (!list) return;
+  const {el, x, y} = _mWkDrag;
+  const touch = {clientX: x, clientY: y};
   // el has pointer-events:none while we hit-test so elementFromPoint sees what's under it
   el.style.pointerEvents = 'none';
   const hit = document.elementFromPoint(touch.clientX, touch.clientY);
   el.style.pointerEvents = '';
   const targetDay = hit?.closest('.m-wk-day[data-ds]');
   if (!targetDay || !list.contains(targetDay)) return;
+  // Non-task rows (recurring/WR/shop/etc.) can reorder within their own day but not change day.
+  if (!el.dataset.tid && targetDay.dataset.ds !== _mWkDrag.origDs) return;
   const targetRow = hit?.closest('.m-wk-row[data-rid]');
   // Only the origin day (before this move) and the target day can have any rows actually
   // shift position — scoping _mFlipReflow's measurement to just those two (not the whole
@@ -3937,7 +4012,6 @@ function mInitWeekGestures() {
     // finger right away instead of jumping on the next move.
     const rowEl = _mWkPress.outer;
     _mWkPress = null;
-    if (!rowEl.dataset.tid) return; // not draggable (see comment above) — leave menu closed, no-op
     mCloseTaskMenu();
     const dayEl = rowEl.closest('.m-wk-day[data-ds]');
     const origDs = dayEl?.dataset.ds;
@@ -3946,14 +4020,15 @@ function mInitWeekGestures() {
     // tell "landed back where it started" (no-op) from "actually reordered".
     const origOrder = [...dayEl.querySelectorAll('.m-wk-row[data-rid]')].map(r => r.dataset.rid);
     rowEl.classList.add('m-wk-row-dragging');
-    _mWkDrag = {tid: rowEl.dataset.tid, el: rowEl, origDs, origOrder};
+    _mWkDrag = {tid: rowEl.dataset.tid, el: rowEl, origDs, origOrder, x: e.touches[0].clientX, y: e.touches[0].clientY, raf: 0};
     _mWkDragMove(e);
   }, {passive: false});
 
   function endDrag(cancelled) {
     if (!_mWkDrag) return;
     document.removeEventListener('touchmove', _mWkDragMove);
-    const {tid, el, origDs, origOrder} = _mWkDrag;
+    const {tid, el, origDs, origOrder, raf} = _mWkDrag;
+    if (raf) cancelAnimationFrame(raf);
     _mWkDrag = null;
     el.classList.remove('m-wk-row-dragging');
     document.querySelectorAll('.m-wk-day').forEach(d => d.classList.remove('m-wk-drop-target'));
@@ -4795,12 +4870,12 @@ function _mMonthDayBadge(tasks) {
     const noCheck = t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday';
     const isOverdue = !noCheck && isOv(t.due_date) && !t.done;
     const isImportant = !!t.important && !t.done;
-    const key = isOverdue ? '_overdue' : isImportant ? '_important' : _mMonthCatKey(t).toLowerCase();
+    const key = (t._type === 'birthday' || t._type === 'holiday') ? t._type : isOverdue ? '_overdue' : isImportant ? '_important' : _mMonthCatKey(t).toLowerCase();
     const color = isOverdue ? OV.d : isImportant ? IMP.d : gc(_mMonthCatKey(t)).d;
     counts[key] = (counts[key] || 0) + 1;
     colorFor[key] = color;
   });
-  const rank = k => k === '_overdue' ? -2 : k === '_important' ? -1 : (order.indexOf(k) === -1 ? 999 : order.indexOf(k));
+  const rank = k => k === 'birthday' ? -4 : k === 'holiday' ? -3 : k === '_overdue' ? -2 : k === '_important' ? -1 : (order.indexOf(k) === -1 ? 999 : order.indexOf(k));
   const keys = Object.keys(counts).sort((a, b) => rank(a) - rank(b));
   if (keys.length === 1) return `<span class="m-mo-dot" style="background:${colorFor[keys[0]]}"></span>`;
   const total = items.length;

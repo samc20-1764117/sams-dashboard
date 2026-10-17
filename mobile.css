@@ -843,3 +843,7 @@ body.dark .m-mv-today:active{background:#ef4444;color:#fff}
 /* Trip banner row (week view): full-row tint, no checkbox/emoji */
 .m-wk-travel{padding:9px 16px;border-top:1px solid var(--border);font-size:13px}
 .m-wk-day.is-past .m-wk-travel{opacity:.6}
+
+/* Week: block iOS selection/callout (Copy/Translate) on every descendant of the list during hold */
+#mWeekList,#mWeekList *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+.m-wk-row,.m-wk-row *{touch-action:pan-y}
