@@ -1495,7 +1495,18 @@ function mkMCell(date,om,today,altMo){
     // Thinner border + bigger ambient glow per 2026-10-12 follow-up ("like it, less thick border,
     // more glow") — 0-offset/wider-blur box-shadow reads as a glow rather than a directional drop
     // shadow, which is what was actually asked for over the original tighter 1px/3px shadow.
-    const travelAccentStyle=isTravel?`border-width:1px;border-color:${s.d};box-shadow:0 0 8px ${s.d}80,inset 0 1px 0 rgba(255,255,255,.4);`:'';
+    // Glow (box-shadow) is ONLY applied on isVisualFirst segments — reported same day: "messing up
+    // between days, there's like a weird streak". Box-shadow blur radiates on ALL 4 sides of an
+    // element regardless of offset, so every bridging segment's own glow was overlapping with its
+    // neighbor's glow right in the shared gap between them, doubling up into a bright seam at every
+    // day boundary of a multi-day trip. isVisualFirst already correctly marks either the trip's true
+    // start OR the first day of a new week-row for a trip that wraps across rows (needed so a long
+    // trip still gets re-anchored each row) — since no two isVisualFirst segments of the SAME trip
+    // are ever adjacent to each other (middle/last segments never glow), restricting the glow to
+    // just that one segment per row-run removes every adjacency entirely, no overlap possible. The
+    // solid accent BORDER still applies to every segment regardless (a flat border at a shared edge
+    // is a single line, not a blurred radius — no equivalent doubling risk there).
+    const travelAccentStyle=isTravel?`border-width:1px;border-color:${s.d};box-shadow:${isVisualFirst?`0 0 8px ${s.d}80,`:''}inset 0 1px 0 rgba(255,255,255,.4);`:'';
     chip.style.cssText=`background:${s.bg};color:${s.t};border-color:${s.b};cursor:${t.done?'default':isTravel?'pointer':'grab'};${t.done?'opacity:.25;text-decoration:line-through;':''}${isPast&&!(isTravel&&_dk())?'opacity:.35;':''}${travelAccentStyle}${travelSpanStyle}`;
     if(_ti>=_visN){chip.style.display='none';chip.dataset.moreHidden='1';}
     if(!t._virtual&&!t._type)chip.dataset.tid=String(t.id);
