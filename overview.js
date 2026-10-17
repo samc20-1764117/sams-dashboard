@@ -4122,6 +4122,7 @@ function wrAddSetType(type){
   document.getElementById('wrAddTypeWR').style.cssText=base+(type==='wr'?';background:var(--accent);color:#fff':';background:transparent;color:var(--muted)');
   document.getElementById('wrAddTypeSch').style.cssText=base+(type==='sch'?';background:var(--accent);color:#fff':';background:transparent;color:var(--muted)');
   document.getElementById('wrAddPupField').style.display=type==='wr'?'block':'none';
+  document.getElementById('wrAddPersonalField').style.display=type==='wr'?'block':'none';
   document.getElementById('wrAddTimeField').style.display=type==='sch'?'block':'none';
   updateWrRuleCadenceUI('wrAdd');
   document.getElementById('wrAddName').focus();

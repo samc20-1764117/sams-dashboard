@@ -1981,7 +1981,11 @@ async function mRedo() {
       showToast('Shake-to-undo enabled', '#2e7d32', 1800);
     }
   }
-  document.addEventListener('touchstart', enableShakeToUndo, { once: true, passive: true });
+  // WebKit specifically rejects DeviceMotionEvent.requestPermission() when called from
+  // a touchstart listener (especially a passive one) with "requires a user gesture" —
+  // touchstart apparently doesn't count as trusted enough for this particular API even
+  // though it does for most others. A real click does.
+  document.addEventListener('click', enableShakeToUndo, { once: true });
 })();
 
 async function mSaveEditTask() {

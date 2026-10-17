@@ -504,11 +504,12 @@ function renderRtWrGroup(containerId, rules, cadence){
   const el=document.getElementById(containerId);if(!el)return;
   const cadLabel={weekly:'Weekly',biweekly:'Biweekly',monthly:'Monthly',other:'Other'}[cadence]||cadence;
   const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const thead=`<tr><th style="width:74px;text-align:left">Name</th><th style="width:50px">Next</th><th style="width:22px"></th><th style="width:24px" title="Pup related">🐾</th></tr>`;
+  const thead=`<tr><th style="width:74px;text-align:left">Name</th><th style="width:50px">Next</th><th style="width:22px"></th><th style="width:24px" title="Pup related">🐾</th><th style="width:24px" title="Personal maintenance">💅</th></tr>`;
   let tbody='';
   rules.forEach(r=>{
     const rid=String(r.id);
     const isPup=r.pup_related===true||r.pup_related==='true';
+    const isPersonal=r.personal_related===true||r.personal_related==='true';
     const isSel=selectedTasks.has('wrrule-'+rid);
     const nd=_rtWrNextDate(r);
     const nextTxt=nd?(nd.exact?fmtD(nd.ds):'Wk of '+fmtD(nd.ds)):'—';
@@ -521,6 +522,7 @@ function renderRtWrGroup(containerId, rules, cadence){
       <td class="rt-meta" style="text-align:center">${nextTxt}</td>
       <td onclick="event.stopPropagation()" ondblclick="event.stopPropagation()"><div class="rt-actions"><button class="delbtn" onclick="_rtDelClick('${rid}',false)">✕</button></div></td>
       <td data-pup="1" style="text-align:center;cursor:pointer;font-size:12px" onclick="event.stopPropagation();rtToggleWrPup('${rid}')" ondblclick="event.stopPropagation()" title="Toggle pup related">${isPup?'🐾':''}</td>
+      <td data-personal="1" style="text-align:center;cursor:pointer;font-size:12px" onclick="event.stopPropagation();rtToggleWrPersonal('${rid}')" ondblclick="event.stopPropagation()" title="Toggle personal maintenance">${isPersonal?'💅':''}</td>
     </tr>`;
   });
   const tableHtml=rules.length
@@ -544,6 +546,15 @@ function rtToggleWrPup(rid){
   pushUndo(()=>{rule.pup_related=prev;renderRecurringPage();renderRecOv();},'Toggled pup');
 }
 
+function rtToggleWrPersonal(rid){
+  const rule=(st.wrRules||[]).find(r=>String(r.id)===String(rid));if(!rule)return;
+  const prev=rule.personal_related;
+  rule.personal_related=!(rule.personal_related===true||rule.personal_related==='true');
+  renderRecurringPage();renderRecOv();
+  sbReqSilent('PATCH','wr_recurring_rules',{personal_related:rule.personal_related},`?id=eq.${rid}`);
+  pushUndo(()=>{rule.personal_related=prev;renderRecurringPage();renderRecOv();},'Toggled personal maintenance');
+}
+
 // X-button click on a Recurring Tasks page row: if the clicked row is part of a multi-selection,
 // delete every selected row (single combined undo via _wrBulkDelete); otherwise just this one.
 // Mirrors the existing _vidOvXClick pattern used for videos.
@@ -564,7 +575,7 @@ function delWrRule(rid){
   sbReqSilent('DELETE','wr_recurring_rules',null,`?id=eq.${sRid}`);
   save();renderRecurringPage();renderRecOv();
   pushUndo(async()=>{
-    const sv=await sbReqSilent('POST','wr_recurring_rules',{name:prevRule.name,cadence:prevRule.cadence,day_of_week:prevRule.day_of_week,starting_date:prevRule.starting_date,monthly_rule_type:prevRule.monthly_rule_type,monthly_nth:prevRule.monthly_nth,monthly_weekday:prevRule.monthly_weekday,monthly_date:prevRule.monthly_date,pup_related:prevRule.pup_related,notes:prevRule.notes,is_enabled:prevRule.is_enabled,sort_order:prevRule.sort_order},'');
+    const sv=await sbReqSilent('POST','wr_recurring_rules',{name:prevRule.name,cadence:prevRule.cadence,day_of_week:prevRule.day_of_week,starting_date:prevRule.starting_date,monthly_rule_type:prevRule.monthly_rule_type,monthly_nth:prevRule.monthly_nth,monthly_weekday:prevRule.monthly_weekday,monthly_date:prevRule.monthly_date,pup_related:prevRule.pup_related,personal_related:prevRule.personal_related,notes:prevRule.notes,is_enabled:prevRule.is_enabled,sort_order:prevRule.sort_order},'');
     if(sv&&sv[0])st.wrRules.push(sv[0]);else st.wrRules.push(prevRule);
     save();renderRecurringPage();renderRecOv();
   },'Deleted WR rule');
@@ -653,6 +664,15 @@ function rtTogglePup(rid){
   renderRecOv();renderWeeklyPage();
   sbReq('PATCH','wr_recurring_rules',{pup_related:r.pup_related},recQs(rid));
   pushUndo(()=>{r.pup_related=prev;renderRecOv();renderWeeklyPage();},'Toggled pup');
+}
+
+function rtTogglePersonal(rid){
+  const r=st.recurring.find(x=>String(x.id)===String(rid));if(!r)return;
+  const prev=r.personal_related;
+  r.personal_related=!(r.personal_related===true||r.personal_related==='true');
+  renderRecOv();renderWeeklyPage();
+  sbReq('PATCH','wr_recurring_rules',{personal_related:r.personal_related},recQs(rid));
+  pushUndo(()=>{r.personal_related=prev;renderRecOv();renderWeeklyPage();},'Toggled personal maintenance');
 }
 
 function openRecModalForSection(type, cadence){
@@ -785,6 +805,7 @@ function updateRecTypeUI(){
   updateRecCadenceUI();
   const isWr=document.getElementById('recType').value==='weekly_reset';
   const pf=document.getElementById('recPupField');if(pf)pf.style.display=isWr?'block':'none';
+  const pf2=document.getElementById('recPersonalField');if(pf2)pf2.style.display=isWr?'block':'none';
 }
 function updateRecCadenceUI(){
   const cad=document.getElementById('recCadence').value;
@@ -864,16 +885,18 @@ async function saveRecModal(){
   // Default start to today so new tasks never surface in past weeks (unbounded = legacy only)
   const startDate=document.getElementById('recStartDate').value||tod();
   const pupRelated=isWeekly&&!!(document.getElementById('recPupRelated')?.checked);
+  const personalRelated=isWeekly&&!!(document.getElementById('recPersonalRelated')?.checked);
   const notes=document.getElementById('recNotes')?.value.trim()||null;
   closeMod('recModal');
   // Use rec-tmp- prefix so sync localPending keeps it if POST hasn't resolved yet
   const localId='rec-tmp-'+Date.now();
-  const r={id:localId,name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,starting_date:startDate,cadence,pup_related:pupRelated,notes,_doneByWk:{},_done:false,_dateOverrides:{}};
+  const r={id:localId,name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,starting_date:startDate,cadence,pup_related:pupRelated,personal_related:personalRelated,notes,_doneByWk:{},_done:false,_dateOverrides:{}};
   st.recurring.push(r);save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();
   let recServerId=null;
   pushUndo(()=>{const rid=recServerId||localId;st.recurring=st.recurring.filter(x=>String(x.id)!==String(rid));save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(recServerId)sbReq('DELETE','wr_recurring_rules',null,recQs(recServerId));},'Added recurring task');
   const payload={name:n,is_weekly_reset:isWeekly,appears_on_date:appearsOn,cadence,starting_date:startDate};
   if(pupRelated)payload.pup_related=true;
+  if(personalRelated)payload.personal_related=true;
   if(notes)payload.notes=notes;
   const sv=await sbReq('POST','wr_recurring_rules',payload);
   if(sv&&sv[0]){
@@ -7526,7 +7549,7 @@ document.addEventListener('keydown',async e=>{
       if(t._isWrRule){
         const dupName=uniqueRecName(t.name);
         const tmpId='wrrule-tmp-'+Date.now();
-        const payload={name:dupName,cadence:t.cadence||'weekly',day_of_week:t.day_of_week,starting_date:t.starting_date||null,monthly_rule_type:t.monthly_rule_type||null,monthly_nth:t.monthly_nth||null,monthly_weekday:t.monthly_weekday||null,monthly_date:t.monthly_date||null,pup_related:t.pup_related||false,notes:t.notes||null,is_enabled:true,sort_order:st.wrRules.length};
+        const payload={name:dupName,cadence:t.cadence||'weekly',day_of_week:t.day_of_week,starting_date:t.starting_date||null,monthly_rule_type:t.monthly_rule_type||null,monthly_nth:t.monthly_nth||null,monthly_weekday:t.monthly_weekday||null,monthly_date:t.monthly_date||null,pup_related:t.pup_related||false,personal_related:t.personal_related||false,notes:t.notes||null,is_enabled:true,sort_order:st.wrRules.length};
         st.wrRules.push({...payload,id:tmpId});
         save();renderRecOv();renderWeeklyPage();
         const sv=await sbReq('POST','wr_recurring_rules',payload);
@@ -7681,6 +7704,7 @@ function updateRecEditUI(){
   const cad=document.getElementById('recEditCadence').value;
   const isMonthly=cad==='monthly';
   const pf=document.getElementById('recEditPupField');if(pf)pf.style.display=isWr?'block':'none';
+  const pf2=document.getElementById('recEditPersonalField');if(pf2)pf2.style.display=isWr?'block':'none';
   const tf=document.getElementById('recEditTimeField');if(tf)tf.style.display=isWr?'none':'block';
   const df=document.getElementById('recEditDurField');if(df)df.style.display=isWr?'none':'block';
   document.getElementById('recEditDayField').style.display=isMonthly?'none':'block';
@@ -7722,6 +7746,7 @@ function openRecEditModal(rid,wkKey='',scope='all'){
   }
   document.getElementById('recEditStartDate').value=r.starting_date||'';
   const pr=document.getElementById('recEditPupRelated');if(pr)pr.checked=!!(r.pup_related===true||r.pup_related==='true');
+  const pmr=document.getElementById('recEditPersonalRelated');if(pmr)pmr.checked=!!(r.personal_related===true||r.personal_related==='true');
   const recEditNotesEl=document.getElementById('recEditNotes');if(recEditNotesEl)recEditNotesEl.value=r.notes||'';
   const rst=document.getElementById('recEditStartTime');if(rst)rst.value=r.default_start_time||'';
   const ret=document.getElementById('recEditEndTime');if(ret)ret.value=r.default_end_time||'';
@@ -7793,14 +7818,15 @@ function saveRecEdit(){
   const defEnd=document.getElementById('recEditEndTime')?.value||null;
   const defDur=parseInt(document.getElementById('recEditDur')?.value)||60;
   closeMod('recEditModal');
-  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,pup_related:r.pup_related,notes:r.notes,default_start_time:r.default_start_time,default_end_time:r.default_end_time,default_tb_duration:r.default_tb_duration};
+  const personalRelated=isWr&&!!(document.getElementById('recEditPersonalRelated')?.checked);
+  const prev={name:r.name,is_weekly_reset:r.is_weekly_reset,cadence:r.cadence,appears_on_date:r.appears_on_date,starting_date:r.starting_date,pup_related:r.pup_related,personal_related:r.personal_related,notes:r.notes,default_start_time:r.default_start_time,default_end_time:r.default_end_time,default_tb_duration:r.default_tb_duration};
   // Schedule change → clear undone current/future-week move pins, or an old pin keeps
   // overriding the new schedule (e.g. day-of-month edited 26→25 but still shows the 26th)
   const schedChanged=prev.cadence!==cadence||String(prev.appears_on_date)!==String(appearsOn)||(startDate&&prev.starting_date!==startDate);
   const _futPins=schedChanged?_recClearFuturePins(r):[];
-  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.pup_related=pupRelated;r.notes=notes;r.default_start_time=defStart;r.default_end_time=defEnd;r.default_tb_duration=defDur;
+  r.name=name;r.is_weekly_reset=isWr;r.cadence=cadence;r.appears_on_date=appearsOn;r.starting_date=startDate;r.pup_related=pupRelated;r.personal_related=personalRelated;r.notes=notes;r.default_start_time=defStart;r.default_end_time=defEnd;r.default_tb_duration=defDur;
   save();renderRecOv();renderWeeklyPage();renderWkSummary();renderWkCal();if(document.getElementById('tbGrid'))renderDayTB();
-  const patch={name,is_weekly_reset:isWr,cadence,appears_on_date:appearsOn,pup_related:pupRelated,notes:notes||null,default_start_time:defStart,default_end_time:defEnd,default_tb_duration:defDur};
+  const patch={name,is_weekly_reset:isWr,cadence,appears_on_date:appearsOn,pup_related:pupRelated,personal_related:personalRelated,notes:notes||null,default_start_time:defStart,default_end_time:defEnd,default_tb_duration:defDur};
   if(startDate)patch.starting_date=startDate;
   if(_futPins.length)patch.date_overrides=r._dateOverrides;
   sbReq('PATCH','wr_recurring_rules',patch,recQs(rid));
