@@ -1204,7 +1204,7 @@ async function mAddTask() {
     const linkEl = document.getElementById('mAddLink'); if (linkEl) linkEl.value = '';
     mCloseQuickAdd();
     renderAll(); // not just mRenderToday() — this popup now also opens from Week's header "+"
-    pushUndo(() => { st.shopping = st.shopping.filter(x => x.id !== s.id); save(); renderAll(); sbReq('DELETE', 'shopping_list', null, `?id=eq.${s.id}`); }, 'Added item');
+    pushUndo(() => { st.shopping = st.shopping.filter(x => x.id !== s.id); save(); renderAll(); sbReq('DELETE', 'shopping_list', null, `?id=eq.${s.id}`); }, _mUn(s.name) + ' added');
     const sv = await sbReq('POST', 'shopping_list', {name: n, store, link, done: false, due_date: ds});
     if (sv && sv[0]) {
       // Mutate in place (like _mAddTravel above) so the pushUndo closure's captured s.id
@@ -1242,7 +1242,7 @@ async function mAddTask() {
   mCloseQuickAdd();
   document.getElementById('mAddFlagBtn')?.classList.remove('flagged');
   renderAll(); // not just mRenderToday() — this popup now also opens from Week's header "+"
-  pushUndo(() => { st.tasks = st.tasks.filter(x => x.id !== t.id); save(); renderAll(); sbReq('DELETE', 'tasks', null, `?id=eq.${t.id}`); }, 'Added task');
+  pushUndo(() => { st.tasks = st.tasks.filter(x => x.id !== t.id); save(); renderAll(); sbReq('DELETE', 'tasks', null, `?id=eq.${t.id}`); }, _mUn(t.name) + ' added');
   const sv = await sbReq('POST', 'tasks', {name: n, category: cat, due_date: ds, done: false, important});
   if (sv && sv[0]) {
     // Mutate in place (not array-replace) so the pushUndo closure above still has the
