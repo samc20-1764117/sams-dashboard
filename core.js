@@ -1495,16 +1495,18 @@ document.addEventListener('keydown',e=>{
   if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')&&!(_vPanel&&_vPanel.style.display==='block')){
     e.preventDefault();if(activePg==='guide')showPage('overview');else showPage('guide');return;
   }
-  // `.overlay.open:not(#mModal)` — was a blanket `.overlay.open` block (any modal open at all
-  // disabled dark mode entirely), which silently ate the 'd' keystroke the moment Month view (M)
-  // was open even though nothing in Month view actually uses 'd' for anything (checked every
-  // overlay in the codebase — no 'd'-key binding exists anywhere else either, so this was an
-  // overly broad "just in case" guard, not protecting a real conflict). Reported 2026-10-16: "d
-  // for dark mode... makes a clicking sound but not going to dark mode... just not right after i
-  // hit m for month". Scoped the exclusion to #mModal specifically rather than dropping the guard
-  // outright, since some OTHER modal might rely on it for a reason not yet hit/reported — if dark
-  // mode turns out to need excluding there too, extend this selector the same way.
-  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open:not(#mModal)')){
+  // No `.overlay.open` gate at all (2026-10-16, widened from an earlier `:not(#mModal)` carve-out
+  // that only fixed Month view specifically — reported again for the Weekly Reset card's OWN Month
+  // button/recMoModal, and explicit request not to keep whack-a-moling this modal by modal: "make
+  // sure d can be accessed anywhere after any action i dont want to have to catch these one by
+  // one"). Checked every overlay/modal in the codebase for a conflicting 'd'-key binding — none
+  // exists anywhere, so there was never a real conflict to guard against; the blanket block (and
+  // then the single-modal carve-out) was overly cautious "just in case," not protecting anything
+  // real. The `input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus` check below
+  // is the actually-correct scope for this shortcut — block only while genuinely typing, not
+  // "whenever some modal happens to be open." If a real conflict ever surfaces in some modal, add
+  // a targeted check for THAT modal's own state, not a blanket `.overlay.open` reintroduction.
+  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')){
     e.preventDefault();if(typeof toggleDark==='function')toggleDark();
   }
   // M to toggle month view on overview (skip if video popup is open — it uses M for its own calendar)
