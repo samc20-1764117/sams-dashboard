@@ -2003,15 +2003,26 @@ async function mSaveEditTask() {
   const important = _mEditImportant;
   if (!name) return;
   const id = _mEditId;
+  const prev = { name: t.name, category: t.category, due_date: t.due_date, important: t.important };
   const _prevDue = (t.due_date || '').split('T')[0];
+  const _newDue = due_date ? due_date.split('T')[0] : null;
   t.name = name;
   t.category = category;
   t.due_date = due_date;
   t.important = important;
-  if (due_date) _mMoveTaskBlocks(id, _prevDue, due_date.split('T')[0]);
+  if (due_date) _mMoveTaskBlocks(id, _prevDue, _newDue);
   save();
   mCloseEdit();
   renderAll(); // not just mRenderToday() — the edit sheet now also opens from Week's tap menu
+  // In-place restore (mirrors desktop's saveTModal edit branch) — same id throughout, so
+  // no new-id juggling needed the way delete's undo requires.
+  pushUndo(() => {
+    Object.assign(t, prev);
+    if (_newDue && _prevDue) _mMoveTaskBlocks(id, _newDue, _prevDue);
+    save();
+    renderAll();
+    sbReq('PATCH', 'tasks', { name: prev.name, category: prev.category, due_date: prev.due_date, important: prev.important }, `?id=eq.${id}`);
+  }, _mUn(name) + ' edited');
   await sbReq('PATCH', 'tasks', {name, category, due_date, important}, `?id=eq.${id}`);
 }
 
@@ -4437,10 +4448,17 @@ async function mSaveShopEdit() {
   const due_date = document.getElementById('mShopEditDue').value || null;
   const time = document.getElementById('mShopEditTime').value || null;
   const id = _mShopEditId;
+  const prev = { name: s.name, store: s.store, link: s.link, due_date: s.due_date, default_start_time: s.default_start_time };
   s.name = name; s.store = store; s.link = link; s.due_date = due_date; s.default_start_time = time;
   // renderAll() (not mRenderShop()+mRenderToday() only) — this sheet now also opens from
   // Week's tap menu, so Week needs to pick up the change too.
   save(); mCloseShopEdit(); renderAll();
+  pushUndo(() => {
+    Object.assign(s, prev);
+    save();
+    renderAll();
+    sbReq('PATCH', 'shopping_list', prev, `?id=eq.${id}`);
+  }, _mUn(name) + ' edited');
   const patch = {name, store, link, due_date};
   if (time !== null) patch.default_start_time = time;
   await sbReq('PATCH', 'shopping_list', patch, `?id=eq.${id}`);
