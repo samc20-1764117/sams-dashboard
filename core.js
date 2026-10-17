@@ -1495,7 +1495,16 @@ document.addEventListener('keydown',e=>{
   if(e.key==='l'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')&&!(_vPanel&&_vPanel.style.display==='block')){
     e.preventDefault();if(activePg==='guide')showPage('overview');else showPage('guide');return;
   }
-  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open')){
+  // `.overlay.open:not(#mModal)` — was a blanket `.overlay.open` block (any modal open at all
+  // disabled dark mode entirely), which silently ate the 'd' keystroke the moment Month view (M)
+  // was open even though nothing in Month view actually uses 'd' for anything (checked every
+  // overlay in the codebase — no 'd'-key binding exists anywhere else either, so this was an
+  // overly broad "just in case" guard, not protecting a real conflict). Reported 2026-10-16: "d
+  // for dark mode... makes a clicking sound but not going to dark mode... just not right after i
+  // hit m for month". Scoped the exclusion to #mModal specifically rather than dropping the guard
+  // outright, since some OTHER modal might rely on it for a reason not yet hit/reported — if dark
+  // mode turns out to need excluding there too, extend this selector the same way.
+  if(e.key==='d'&&!e.metaKey&&!e.ctrlKey&&!document.querySelector('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus')&&!document.querySelector('.overlay.open:not(#mModal)')){
     e.preventDefault();if(typeof toggleDark==='function')toggleDark();
   }
   // M to toggle month view on overview (skip if video popup is open — it uses M for its own calendar)

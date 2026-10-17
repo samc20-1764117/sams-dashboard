@@ -1955,13 +1955,28 @@ async function mRedo() {
     lastX = a.x; lastY = a.y; lastZ = a.z; lastSampleAt = now;
   }
 
+  // Visible on-device feedback (not just console) so permission/support state can be
+  // diagnosed without a debugger attached — remove once shake-to-undo is confirmed
+  // working reliably.
   function enableShakeToUndo() {
-    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    if (typeof DeviceMotionEvent === 'undefined') {
+      showToast('Shake-to-undo: motion API unavailable', '#c0392b', 2500);
+      return;
+    }
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
       DeviceMotionEvent.requestPermission().then(state => {
-        if (state === 'granted') window.addEventListener('devicemotion', onMotion);
-      }).catch(() => {});
-    } else if (typeof DeviceMotionEvent !== 'undefined') {
+        if (state === 'granted') {
+          window.addEventListener('devicemotion', onMotion);
+          showToast('Shake-to-undo enabled', '#2e7d32', 1800);
+        } else {
+          showToast('Shake-to-undo: motion access ' + state, '#c0392b', 2500);
+        }
+      }).catch(err => {
+        showToast('Shake-to-undo: permission error — ' + (err && err.message || err), '#c0392b', 3000);
+      });
+    } else {
       window.addEventListener('devicemotion', onMotion); // Android / older iOS — no gate
+      showToast('Shake-to-undo enabled', '#2e7d32', 1800);
     }
   }
   document.addEventListener('touchstart', enableShakeToUndo, { once: true, passive: true });
@@ -1992,11 +2007,8 @@ async function mSaveEditTask() {
 async function mDeleteEditTask() {
   if (!_mEditId) return;
   const id = _mEditId;
-  st.tasks = st.tasks.filter(x => String(x.id) !== String(id));
-  save();
   mCloseEdit();
-  renderAll();
-  await sbReq('DELETE', 'tasks', null, `?id=eq.${id}`);
+  await mDeleteById(id); // same delete+undo logic as the task menu's Delete button
 }
 
 // ── Full add sheet (today, all fields) ───────────────────────────────────────
@@ -2070,10 +2082,31 @@ async function mSaveFullAdd() {
 
 // ── Delete by id (task menu's Delete button) ─────────────────────────────────
 async function mDeleteById(id) {
+  const t = st.tasks.find(x => String(x.id) === String(id));
+  if (!t) return;
+  const copy = { ...t };
+  const linkedBlocks = (st.blocks || []).filter(b => String(b.taskId) === String(id));
   st.tasks = st.tasks.filter(x => String(x.id) !== String(id));
+  if (st.blocks) st.blocks = st.blocks.filter(b => String(b.taskId) !== String(id));
   save();
   renderAll(); // not just mRenderToday() — the task menu's Delete now also reaches here from Week
-  await sbReq('DELETE', 'tasks', null, `?id=eq.${id}`);
+  if (!String(id).startsWith('l-')) await sbReq('DELETE', 'tasks', null, `?id=eq.${id}`);
+  linkedBlocks.forEach(b => sbDeleteBlock(b.id));
+  // Mirrors desktop's delTask (features.js): the DELETE already happened, so undo
+  // re-POSTs rather than just restoring local state, and picks up whatever new id
+  // the server assigns before re-linking the task's blocks to it.
+  pushUndo(async () => {
+    const sv = await sbReq('POST', 'tasks', { name: copy.name, category: copy.category, due_date: copy.due_date, done: copy.done, important: copy.important || false });
+    if (sv && sv[0]) {
+      st.tasks.push(sv[0]);
+      linkedBlocks.forEach(b => { b.taskId = String(sv[0].id); if (st.blocks) st.blocks.push(b); sbSaveBlock(b); });
+    } else {
+      st.tasks.push(copy);
+      linkedBlocks.forEach(b => { if (st.blocks) st.blocks.push(b); sbSaveBlock(b); });
+    }
+    save();
+    renderAll();
+  }, 'Deleted task');
 }
 
 // Routes tap-to-edit to whichever surface this row's type actually has. Plain tasks
@@ -3436,9 +3469,17 @@ async function mSaveBlock() {
 async function mDeleteBlock() {
   if (!_mEditBlockId) return;
   const id = _mEditBlockId;
+  const b = (st.blocks || []).find(x => String(x.id) === String(id));
+  if (!b) return;
+  const copy = { ...b };
   st.blocks = (st.blocks || []).filter(x => String(x.id) !== String(id));
   save(); mCloseBlock(); mRenderTB();
   await sbDeleteBlock(id);
+  pushUndo(() => {
+    st.blocks.push(copy);
+    save(); mRenderTB();
+    sbSaveBlock(copy);
+  }, 'Removed from time block');
 }
 
 // ── Week view ─────────────────────────────────────────────────────────────────
@@ -4187,9 +4228,14 @@ async function mAddShopItem() {
 async function mDeleteShopDirect(id) {
   const s = st.shopping.find(x => String(x.id) === String(id));
   if (!s) return;
+  const copy = { ...s };
   st.shopping = st.shopping.filter(x => String(x.id) !== String(id));
   save(); renderAll(); // not just mRenderShop() — the task menu's Delete now also reaches here from Week
   await sbReq('DELETE', 'shopping_list', null, `?id=eq.${id}`);
+  // Mirrors desktop's delShop (features.js) exactly, local-restore-only included —
+  // not re-POSTing on undo is an existing desktop quirk, kept here for parity rather
+  // than inventing a different (better) behavior mobile-only.
+  pushUndo(() => { st.shopping.push(copy); save(); renderAll(); }, 'Deleted item');
 }
 
 // Shop edit sheet
@@ -4266,9 +4312,8 @@ async function mSaveShopEdit() {
 async function mDeleteShopItem() {
   if (!_mShopEditId) return;
   const id = _mShopEditId;
-  st.shopping = st.shopping.filter(x => String(x.id) !== String(id));
-  save(); mCloseShopEdit(); renderAll();
-  await sbReq('DELETE', 'shopping_list', null, `?id=eq.${id}`);
+  mCloseShopEdit();
+  await mDeleteShopDirect(id); // same delete+undo logic as the task menu's Delete button
 }
 
 // ── Meals sheet ────────────────────────────────────────────────────────────────
