@@ -1411,7 +1411,7 @@ function mSaveRecEdit() {
     save();
     renderAll();
     sbReq('PATCH', 'wr_recurring_rules', prev, `?id=eq.${id}`);
-  }, 'Edited recurring task');
+  }, _mUn(name) + ' edited');
 }
 
 // ── Recurring/WR quick-actions — icon buttons in the SAME popup the regular task menu
@@ -2094,10 +2094,11 @@ async function mSaveFullAdd() {
   save();
   mCloseFullAdd();
   mRenderToday();
+  pushUndo(() => { st.tasks = st.tasks.filter(x => x.id !== t.id); save(); renderAll(); sbReq('DELETE', 'tasks', null, `?id=eq.${t.id}`); }, _mUn(name) + ' added');
   const sv = await sbReq('POST', 'tasks', {name, category, due_date, done: false, important});
   if (sv && sv[0]) {
-    const i = st.tasks.findIndex(x => x.id === t.id);
-    if (i > -1) st.tasks[i] = sv[0];
+    // Mutate in place, not array-replace — same reason as mAddTask's plain-task branch.
+    Object.assign(t, sv[0]);
     save();
   }
 }
@@ -3569,8 +3570,21 @@ async function mSaveBlock() {
   if (_mEditBlockId) {
     const b = (st.blocks || []).find(x => String(x.id) === _mEditBlockId);
     if (!b) { mCloseBlock(); return; }
+    const prev = { title: b.title, sm: b.sm, dur: b.dur, cat: b.cat, ds: b.ds };
     b.title = name; b.sm = sm; b.dur = _mBlockDur; b.cat = cat; b.ds = ds;
     save(); mCloseBlock(); mRenderTB();
+    pushUndo(() => {
+      Object.assign(b, prev);
+      save(); mRenderTB();
+      const [ph, pm] = [Math.floor(prev.sm / 60), prev.sm % 60];
+      sbUpdateBlock(_mEditBlockId, {
+        title: prev.title,
+        start_minutes: prev.sm,
+        start_time: `${String(ph).padStart(2,'0')}:${String(pm).padStart(2,'0')}:00`,
+        duration_minutes: prev.dur,
+        category: prev.cat
+      });
+    }, _mUn(name) + ' edited');
     await sbUpdateBlock(_mEditBlockId, {
       title: name,
       start_minutes: sm,
@@ -3592,6 +3606,7 @@ async function mSaveBlock() {
     save();
     _mSelectedChipId = null;
     mCloseBlock(); mRenderTB();
+    pushUndo(() => { st.blocks = (st.blocks || []).filter(x => x.id !== b.id); save(); mRenderTB(); sbDeleteBlock(b.id); }, _mUn(name) + ' added');
     await sbSaveBlock(b);
   }
 }
@@ -4364,10 +4379,11 @@ async function mAddShopItem() {
   const customEl = document.getElementById('mShopAddStoreCustom'); if (customEl) customEl.value = '';
   const linkEl = document.getElementById('mShopAddLink'); if (linkEl) linkEl.value = '';
   mCloseShopAdd();
+  pushUndo(() => { st.shopping = st.shopping.filter(x => x.id !== s.id); save(); renderAll(); sbReq('DELETE', 'shopping_list', null, `?id=eq.${s.id}`); }, _mUn(n) + ' added');
   const sv = await sbReq('POST', 'shopping_list', {name: n, store, link, done: false});
   if (sv && sv[0]) {
-    const i = st.shopping.findIndex(x => x.id === s.id);
-    if (i > -1) st.shopping[i] = sv[0];
+    // Mutate in place, not array-replace — keeps the pushUndo closure's captured id valid.
+    Object.assign(s, sv[0]);
     save();
   }
 }
