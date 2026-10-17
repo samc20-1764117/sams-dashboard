@@ -124,6 +124,9 @@ Fixed range Jan 1 (curYr-3) → Dec 31 (curYr+2). `scrollMoToday()` BEFORE `.ope
 **X button**: WR→skip/delete; WRec→skip/`delRec`; non-WR→`skipRecVirtThisWk`/`delRec`.
 **Right-click** (`showWrRuleCtx`): Skip/Move/Edit/Delete.
 **Header rebuild**: `dowEl.innerHTML=''` before repopulating — `if(!dowEl.children.length)` guard prevents stale removal otherwise.
+**Open/scroll-to-today now matches `openMModal`/`scrollMoToday` (features.js) exactly** — fixed 2026-10-16, "cutting off the top of today... make more consistent with month button for weekly view". Two separate bugs, both just inconsistencies with the weekly-view Month button's own (working) implementation:
+  1. **Ordering**: `openRecMoModal` used to render + scroll-to-today SYNCHRONOUSLY, THEN add `.open` a frame later via `requestAnimationFrame` — so `scrollRecMoToday()`'s `offsetTop`/`offsetHeight` reads happened while the modal was still hidden/pre-open, before layout had settled. Now adds `.open` FIRST (synchronous) and defers render+scroll to the next frame, same order as `openMModal`.
+  2. **Scroll math**: `scrollRecMoToday()` did a direct `tc.offsetTop - mgrid.offsetTop` subtraction (only correct with no intermediate positioned wrapper between them) and a flimsy `-8px` buffer. Replaced with `scrollMoToday`'s approach: walk the full `offsetParent` chain to get `top`, then `mgrid.scrollTop = top - mdowH - 56`. The `-56` isn't re-derived per modal — both modals share the exact same `.mo-sep`/weekday-header (`.mdow`) structure (`#recMoDow` is also `class="mdow"`), so one constant covers both; if `.mo-sep`'s sizing ever changes again (see "Alternating month shading"/"Sticky month label" above), there's only one formula to update, not two independently-drifting ones.
 
 ### Shopping List (`features.js`)
 `shop_order integer`. X→`unscheduleShop`: null `due_date`, remove `st.blocks`.

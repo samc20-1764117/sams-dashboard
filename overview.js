@@ -2886,15 +2886,39 @@ function isWRecDueThisWeek(r,off=0){
 
 // ── Recurring Monthly View ────────────────────────────────────────────────────
 function openRecMoModal(){
-  renderRecMoCal();
-  scrollRecMoToday();
+  // Ordering now matches openMModal() (features.js), the weekly-view Month button's own open
+  // function — 2026-10-16 fix for "cutting off the top of today" on this modal specifically. This
+  // used to render + scroll-to-today SYNCHRONOUSLY, THEN add .open a frame later — so
+  // scrollRecMoToday()'s offsetTop/offsetHeight measurements ran against the grid while it was
+  // still hidden/pre-open, before layout had actually settled into its visible state, landing the
+  // scroll position slightly off (today's row ending up partially cut off at the top). Adding .open
+  // FIRST (synchronously) and deferring the render+scroll to the NEXT frame — same as openMModal —
+  // means the measurements happen once the modal is actually laid out and visible.
   const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.add('orbs-paused');
-  requestAnimationFrame(()=>document.getElementById('recMoModal').classList.add('open'));
+  document.getElementById('recMoModal').classList.add('open');
+  requestAnimationFrame(()=>{renderRecMoCal();scrollRecMoToday();});
 }
 function scrollRecMoToday(){
+  // Matches scrollMoToday() (features.js, the weekly-view Month button's equivalent) exactly —
+  // 2026-10-16 fix for "cutting off the top of today... make more consistent with month button for
+  // weekly view". The old formula did a direct `tc.offsetTop - mgrid.offsetTop` subtraction, which
+  // is only correct if tc's offsetParent chain has no intermediate positioned wrapper between it
+  // and mgrid; walking the chain (like scrollMoToday does) is robust to that regardless of DOM
+  // structure. It also only subtracted the weekday header's height (`mdowH`) plus a token 8px —
+  // not enough buffer once `.mo-sep` (the month label, shared CSS class with #mModal's own — see
+  // rules/pages.md) became sticky and bigger, since that sticky label sits BETWEEN the weekday
+  // header and the day cells and needs its own height accounted for too. scrollMoToday's `-56`
+  // already covers exactly that for the shared `.mo-sep`/weekday-header structure, so reusing it
+  // here (rather than re-deriving a separate constant) is what keeps the two genuinely in sync if
+  // that label's sizing ever changes again — one formula to update, not two.
   const mgrid=document.querySelector('#recMoModal .mgrid');
   const tc=document.querySelector('#recMoCells .mcell.tc');
-  if(tc&&mgrid){const mdow=document.getElementById('recMoDow');const mdowH=mdow?mdow.offsetHeight:0;mgrid.scrollTop=tc.offsetTop-mgrid.offsetTop-mdowH-8;}
+  if(!tc||!mgrid)return;
+  const mdow=document.getElementById('recMoDow');
+  const mdowH=mdow?mdow.offsetHeight:0;
+  let top=0,el=tc;
+  while(el&&el!==mgrid){top+=el.offsetTop;el=el.offsetParent;}
+  mgrid.scrollTop=top-mdowH-56;
 }
 function renderRecMoCal(){
   const today=tod();
