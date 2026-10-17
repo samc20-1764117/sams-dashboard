@@ -2289,28 +2289,55 @@ function _mFlipReflow(containers, dragEl, mutate) {
 
 // Left/right edge hint zones shown while dragging a real task; holding the finger inside one
 // for 300ms moves the task a day (repeats every 700ms), with a slide animation on the list.
-const _M_EDGE_X = 48;
+const _M_EDGE_X = 64;
+const _M_CHEV = {
+  L: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10.5" stroke-width="1.6" opacity=".45"/><path d="M13.5 8l-4 4 4 4"/></svg>',
+  R: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10.5" stroke-width="1.6" opacity=".45"/><path d="M10.5 8l4 4-4 4"/></svg>'
+};
 function _mTodEdgeShow() {
   _mTodEdgeHide();
-  [['L', '◀'], ['R', '▶']].forEach(([k, ar]) => {
+  const blur = document.createElement('div');
+  blur.id = 'mDragBlur';
+  document.body.appendChild(blur);
+  ['L', 'R'].forEach(k => {
     const d = document.createElement('div');
     d.className = 'm-drag-edge m-drag-edge-' + k;
     d.id = 'mDragEdge' + k;
     document.body.appendChild(d);
   });
   _mTodEdgeLabels();
+  _mTodEdgePlace();
+}
+// Blur the whole page except a band around the dragged row; keep the L/R zones beside that row.
+function _mTodEdgePlace() {
+  const D = _mTodDrag;
+  if (!D) return;
+  const r = D.el.getBoundingClientRect();
+  const h = Math.max(r.height + 14, 74);
+  const top = r.top + r.height / 2 - h / 2;
+  ['L', 'R'].forEach(k => {
+    const z = document.getElementById('mDragEdge' + k);
+    if (z) { z.style.top = top + 'px'; z.style.height = h + 'px'; }
+  });
+  const b = document.getElementById('mDragBlur');
+  if (b) {
+    const a = Math.max(0, r.top - 8), c = r.bottom + 8;
+    const m = `linear-gradient(#000 0,#000 ${a}px,transparent ${a}px,transparent ${c}px,#000 ${c}px)`;
+    b.style.webkitMaskImage = m; b.style.maskImage = m;
+  }
 }
 function _mTodEdgeLabels() {
   const cur = _mQuickAddTargetDsToday();
   const lbl = n => { const d = new Date(cur + 'T12:00'); d.setDate(d.getDate() + n); return _mFmtAddDate(d2s(d)); };
   const L = document.getElementById('mDragEdgeL'), R = document.getElementById('mDragEdgeR');
-  if (L) L.innerHTML = '<span class="a">◀</span><span>' + lbl(-1) + '</span>';
-  if (R) R.innerHTML = '<span class="a">▶</span><span>' + lbl(1) + '</span>';
+  if (L) L.innerHTML = _M_CHEV.L + '<span>' + lbl(-1) + '</span>';
+  if (R) R.innerHTML = _M_CHEV.R + '<span>' + lbl(1) + '</span>';
 }
-function _mTodEdgeHide() { document.querySelectorAll('.m-drag-edge').forEach(n => n.remove()); }
+function _mTodEdgeHide() { document.querySelectorAll('.m-drag-edge,#mDragBlur').forEach(n => n.remove()); }
 function _mTodEdgeTick() {
   const D = _mTodDrag;
   if (!D) return;
+  _mTodEdgePlace();
   const dir = D.x < _M_EDGE_X ? -1 : D.x > window.innerWidth - _M_EDGE_X ? 1 : 0;
   const L = document.getElementById('mDragEdgeL'), R = document.getElementById('mDragEdgeR');
   if (L) L.classList.toggle('hot', dir === -1);

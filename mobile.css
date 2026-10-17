@@ -853,10 +853,11 @@ html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea,select,[contenteditable="true"],[contenteditable=""]{-webkit-user-select:text;user-select:text}
 
 /* Today drag: edge hint zones (prev/next day) */
-.m-drag-edge{position:fixed;top:30%;bottom:30%;width:60px;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;line-height:1.15;font-weight:700;text-align:center;color:var(--accent);background:rgba(124,106,247,.10);pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;transition:background .12s ease,transform .12s ease}
-.m-drag-edge .a{font-size:20px}
-.m-drag-edge-L{left:0;border-radius:0 18px 18px 0;transform:translateX(-6px)}
-.m-drag-edge-R{right:0;border-radius:18px 0 0 18px;transform:translateX(6px)}
-.m-drag-edge.hot{background:rgba(124,106,247,.34);transform:none}
+.m-drag-edge{position:fixed;width:64px;z-index:91;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;line-height:1.1;font-weight:700;text-align:center;color:var(--accent);background:rgba(124,106,247,.14);border:1.5px solid rgba(124,106,247,.35);pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;transition:background .14s ease,transform .14s ease,color .14s ease;box-shadow:0 4px 16px rgba(124,106,247,.18)}
+.m-drag-edge-L{left:0;border-left:none;border-radius:0 18px 18px 0;transform:translateX(-8px)}
+.m-drag-edge-R{right:0;border-right:none;border-radius:18px 0 0 18px;transform:translateX(8px)}
+.m-drag-edge.hot{background:var(--accent);color:#fff;transform:none}
+#mDragBlur{position:fixed;inset:0;z-index:89;background:rgba(20,18,32,.28);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);pointer-events:none;animation:m-fade-in .18s ease}
+@keyframes m-fade-in{from{opacity:0}to{opacity:1}}
 .m-wk-row,.m-row-outer{will-change:auto}
 .m-wk-row,.m-row-outer{transition:box-shadow .2s ease,opacity .2s ease}
