@@ -1936,56 +1936,12 @@ async function mRedo() {
   _mSnack('Redone', 'UNDO', () => mUndo());
 }
 
-// ── Shake to undo (iOS Notes-style) ──────────────────────────────────────────────
-// No native "shake" event on the web — DeviceMotion is the only signal available, and
-// iOS gates it behind a permission prompt that MUST be requested from inside a real
-// user-gesture handler (silently calling it on page load always rejects). Requesting
-// it on the first tap anywhere satisfies that without needing a dedicated "Enable"
-// button of its own; requestPermission() is cheap to call even if already granted.
-(function () {
-  let lastX = null, lastY = null, lastZ = null, lastSampleAt = 0, lastShakeAt = 0;
-  const SHAKE_THRESHOLD = 16; // sum of |Δx|+|Δy|+|Δz| in m/s² between samples
-  const SHAKE_COOLDOWN = 1200; // ms — ignore further shakes right after triggering one
-
-  function onMotion(e) {
-    const a = e.accelerationIncludingGravity;
-    if (!a || a.x === null) return;
-    const now = Date.now();
-    if (now - lastSampleAt < 100) return; // sample at ~10Hz, plenty for a shake gesture
-    if (lastX !== null) {
-      const delta = Math.abs(a.x - lastX) + Math.abs(a.y - lastY) + Math.abs(a.z - lastZ);
-      if (delta > SHAKE_THRESHOLD && now - lastShakeAt > SHAKE_COOLDOWN) {
-        lastShakeAt = now;
-        mUndo();
-      }
-    }
-    lastX = a.x; lastY = a.y; lastZ = a.z; lastSampleAt = now;
-  }
-
-  // Visible on-device feedback (not just console) so permission/support state can be
-  // diagnosed without a debugger attached — remove once shake-to-undo is confirmed
-  // working reliably.
-  function enableShakeToUndo() {
-    if (typeof DeviceMotionEvent === 'undefined') return;
-    if (typeof DeviceMotionEvent.requestPermission === 'function') {
-      // Confirmed working (2026-10) — silent now that it's not being debugged live.
-      // Still surfaces a toast on the rare case it's actually broken, since that's
-      // not something to silently swallow.
-      DeviceMotionEvent.requestPermission().then(state => {
-        if (state === 'granted') window.addEventListener('devicemotion', onMotion);
-      }).catch(err => {
-        showToast('Shake-to-undo: permission error — ' + (err && err.message || err), '#c0392b', 3000);
-      });
-    } else {
-      window.addEventListener('devicemotion', onMotion); // Android / older iOS — no gate
-    }
-  }
-  // WebKit specifically rejects DeviceMotionEvent.requestPermission() when called from
-  // a touchstart listener (especially a passive one) with "requires a user gesture" —
-  // touchstart apparently doesn't count as trusted enough for this particular API even
-  // though it does for most others. A real click does.
-  document.addEventListener('click', enableShakeToUndo, { once: true });
-})();
+// Shake-to-undo was tried (2026-10) and removed — worked, but iOS doesn't persist the
+// DeviceMotion permission grant across standalone-app sessions (a deliberate WebKit
+// choice, not a bug: https://www.w3.org/TR/orientation-event/), so it meant re-approving
+// a system "Allow Motion & Orientation" prompt on a regular basis. Explicitly not wanted
+// back without a way around that prompt. Undo itself (mUndo/pushUndo, the toast/button)
+// is unaffected — only the shake gesture is gone.
 
 async function mSaveEditTask() {
   if (!_mEditId) return;
