@@ -2306,8 +2306,12 @@ function _mTodEdgeShow() {
     document.body.appendChild(d);
   });
   _mTodEdgeLabels();
-  _mTodEdgePlace();
+  // Inset the dragged row so the zones sit in the freed gutters instead of covering its text.
+  if (_mTodDrag) { _mEdgeInsetEl = _mTodDrag.el; _mEdgeInsetEl.classList.add('m-edge-inset'); }
+  requestAnimationFrame(_mTodEdgePlace);
+  setTimeout(_mTodEdgePlace, 230);
 }
+let _mEdgeInsetEl = null;
 // Blur the whole page except a band around the dragged row; keep the L/R zones beside that row.
 function _mTodEdgePlace() {
   const D = _mTodDrag;
@@ -2333,7 +2337,10 @@ function _mTodEdgeLabels() {
   if (L) L.innerHTML = _M_CHEV.L + '<span>' + lbl(-1) + '</span>';
   if (R) R.innerHTML = _M_CHEV.R + '<span>' + lbl(1) + '</span>';
 }
-function _mTodEdgeHide() { document.querySelectorAll('.m-drag-edge,#mDragBlur').forEach(n => n.remove()); }
+function _mTodEdgeHide() {
+  document.querySelectorAll('.m-drag-edge,#mDragBlur').forEach(n => n.remove());
+  if (_mEdgeInsetEl) { _mEdgeInsetEl.classList.remove('m-edge-inset'); _mEdgeInsetEl = null; }
+}
 function _mTodEdgeTick() {
   const D = _mTodDrag;
   if (!D) return;
