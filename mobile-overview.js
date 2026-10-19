@@ -1966,24 +1966,18 @@ async function mRedo() {
   // diagnosed without a debugger attached — remove once shake-to-undo is confirmed
   // working reliably.
   function enableShakeToUndo() {
-    if (typeof DeviceMotionEvent === 'undefined') {
-      showToast('Shake-to-undo: motion API unavailable', '#c0392b', 2500);
-      return;
-    }
+    if (typeof DeviceMotionEvent === 'undefined') return;
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
+      // Confirmed working (2026-10) — silent now that it's not being debugged live.
+      // Still surfaces a toast on the rare case it's actually broken, since that's
+      // not something to silently swallow.
       DeviceMotionEvent.requestPermission().then(state => {
-        if (state === 'granted') {
-          window.addEventListener('devicemotion', onMotion);
-          showToast('Shake-to-undo enabled', '#2e7d32', 1800);
-        } else {
-          showToast('Shake-to-undo: motion access ' + state, '#c0392b', 2500);
-        }
+        if (state === 'granted') window.addEventListener('devicemotion', onMotion);
       }).catch(err => {
         showToast('Shake-to-undo: permission error — ' + (err && err.message || err), '#c0392b', 3000);
       });
     } else {
       window.addEventListener('devicemotion', onMotion); // Android / older iOS — no gate
-      showToast('Shake-to-undo enabled', '#2e7d32', 1800);
     }
   }
   // WebKit specifically rejects DeviceMotionEvent.requestPermission() when called from
