@@ -2227,10 +2227,10 @@ function mInitTodayGestures() {
     const outer = _mTodPress.outer;
     _mTodPress = null;
     mCloseTaskMenu();
-    outer.classList.add('m-row-dragging');
+    const t0 = e.touches[0];
     _mTodDrag = {el: outer, origOrder: [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid),
-      tid: outer.dataset.tid || null, origDs: _mQuickAddTargetDsToday(), origDue: null, lastShift: 0, x: e.touches[0].clientX, edgeDir: 0, edgeSince: 0};
-    if (_mTodDrag.tid) { _mTodEdgeShow(); _mTodDrag.tick = setInterval(_mTodEdgeTick, 80); }
+      tid: outer.dataset.tid || null, x: t0.clientX, y: t0.clientY, startX: t0.clientX, ready: false, dir: 0};
+    _mDdBuild(_mTodDrag);
     _mTodDragBlock = Infinity; // keep #mMain's own day-swipe from also firing on this same horizontal drag
     _mTodDragMove(e);
   }, {passive: false});
@@ -2271,7 +2271,7 @@ function _mFlipReflow(containers, dragEl, mutate) {
     const dy = f.top - l.top;
     if (Math.abs(dy) < 1) return;
     // The lifted row keeps its scale while it glides into its new slot.
-    const lift = r === dragEl ? ' scale(1.025)' : '';
+    const lift = (r === dragEl && r.classList.contains('m-wk-row-dragging')) ? ' scale(1.025)' : '';
     r.style.transition = 'none';
     r.style.transform = `translateY(${dy}px)${lift}`;
     r.getBoundingClientRect(); // commit the start frame
@@ -2281,98 +2281,90 @@ function _mFlipReflow(containers, dragEl, mutate) {
   });
 }
 
-// Left/right edge hint zones shown while dragging a real task; holding the finger inside one
-// for 300ms moves the task a day (repeats every 700ms), with a slide animation on the list.
-const _M_EDGE_X = 64;
-const _M_CHEV = {
-  L: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10.5" stroke-width="1.6" opacity=".45"/><path d="M13.5 8l-4 4 4 4"/></svg>',
-  R: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10.5" stroke-width="1.6" opacity=".45"/><path d="M10.5 8l4 4-4 4"/></svg>'
+// ── Today drag: lifted-row clone in a fixed layer ──────────────────────────────────────
+// The real row stays in the list as a faint "slot" (so neighbors reflow around it); a clone
+// follows the finger. Dragging sideways slides the clone over a day strip that reveals
+// "Yesterday"/"Tomorrow" behind it (iOS swipe-action style) while the rest of the page
+// blurs; releasing past the threshold flies the task off to that day. The view stays on
+// the current day — the undo toast says where the task went.
+const _M_DD_THRESH = 90;
+const _M_DD_CHEV = {
+  l: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l-6 6 6 6"/></svg>',
+  r: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6l6 6-6 6"/></svg>'
 };
-function _mTodEdgeShow() {
-  _mTodEdgeHide();
-  const blur = document.createElement('div');
-  blur.id = 'mDragBlur';
-  document.body.appendChild(blur);
-  ['L', 'R'].forEach(k => {
-    const d = document.createElement('div');
-    d.className = 'm-drag-edge m-drag-edge-' + k;
-    d.id = 'mDragEdge' + k;
-    document.body.appendChild(d);
-  });
-  _mTodEdgeLabels();
-  // Inset the dragged row so the zones sit in the freed gutters instead of covering its text.
-  if (_mTodDrag) { _mEdgeInsetEl = _mTodDrag.el; _mEdgeInsetEl.classList.add('m-edge-inset'); }
-  requestAnimationFrame(_mTodEdgePlace);
-  setTimeout(_mTodEdgePlace, 230);
-}
-let _mEdgeInsetEl = null;
-// Blur the whole page except a band around the dragged row; keep the L/R zones beside that row.
-function _mTodEdgePlace() {
-  const D = _mTodDrag;
-  if (!D) return;
-  const r = D.el.getBoundingClientRect();
-  const h = Math.max(r.height + 14, 74);
-  const top = r.top + r.height / 2 - h / 2;
-  ['L', 'R'].forEach(k => {
-    const z = document.getElementById('mDragEdge' + k);
-    if (z) { z.style.top = top + 'px'; z.style.height = h + 'px'; }
-  });
-  const b = document.getElementById('mDragBlur');
-  if (b) {
-    const a = Math.max(0, r.top - 8), c = r.bottom + 8;
-    const m = `linear-gradient(#000 0,#000 ${a}px,transparent ${a}px,transparent ${c}px,#000 ${c}px)`;
-    b.style.webkitMaskImage = m; b.style.maskImage = m;
-  }
-}
-function _mTodEdgeLabels() {
-  const cur = _mQuickAddTargetDsToday();
-  const lbl = n => { const d = new Date(cur + 'T12:00'); d.setDate(d.getDate() + n); return _mFmtAddDate(d2s(d)); };
-  const L = document.getElementById('mDragEdgeL'), R = document.getElementById('mDragEdgeR');
-  if (L) L.innerHTML = _M_CHEV.L + '<span>' + lbl(-1) + '</span>';
-  if (R) R.innerHTML = _M_CHEV.R + '<span>' + lbl(1) + '</span>';
-}
-function _mTodEdgeHide() {
-  document.querySelectorAll('.m-drag-edge,#mDragBlur').forEach(n => n.remove());
-  if (_mEdgeInsetEl) { _mEdgeInsetEl.classList.remove('m-edge-inset'); _mEdgeInsetEl = null; }
-}
-function _mTodEdgeTick() {
-  const D = _mTodDrag;
-  if (!D) return;
-  _mTodEdgePlace();
-  const dir = D.x < _M_EDGE_X ? -1 : D.x > window.innerWidth - _M_EDGE_X ? 1 : 0;
-  const L = document.getElementById('mDragEdgeL'), R = document.getElementById('mDragEdgeR');
-  if (L) L.classList.toggle('hot', dir === -1);
-  if (R) R.classList.toggle('hot', dir === 1);
-  if (!dir) { D.edgeDir = 0; return; }
-  const now = Date.now();
-  if (D.edgeDir !== dir) { D.edgeDir = dir; D.edgeSince = now; return; }
-  if (now - D.edgeSince >= 300) _mTodDragDayShift(dir);
-}
 let _mTodDragBlock = 0; // Date.now() ms until which the Today day-swipe is suppressed
 function _mQuickAddTargetDsToday() { return _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr(); }
 
-// Holding a dragged real task in the left/right edge zone sends it to the previous/next day:
-// the row flies off in that direction, the task's due date changes, and the view STAYS on the
-// current day (the undo toast says where it went).
+function _mDdDayLabel(n) {
+  const d = new Date(_mQuickAddTargetDsToday() + 'T12:00'); d.setDate(d.getDate() + n);
+  return _mFmtAddDate(d2s(d));
+}
+function _mDdBuild(D) {
+  const r = D.el.getBoundingClientRect();
+  const layer = document.createElement('div'); layer.id = 'mDragLayer';
+  const strip = document.createElement('div'); strip.className = 'm-dd-strip';
+  strip.style.top = r.top + 'px'; strip.style.height = r.height + 'px';
+  const clone = D.el.cloneNode(true);
+  clone.removeAttribute('data-rid'); clone.removeAttribute('data-tid');
+  clone.classList.add('m-dd-clone');
+  clone.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;
+  layer.append(strip, clone);
+  document.body.appendChild(layer);
+  D.layer = layer; D.strip = strip; D.clone = clone; D.grabY = D.y - r.top; D.left = r.left;
+  D.lblPrev = D.tid ? _mDdDayLabel(-1) : ''; D.lblNext = D.tid ? _mDdDayLabel(1) : '';
+  D.el.classList.add('m-dd-ghost');
+  navigator.vibrate?.(8);
+}
+function _mDdUpdate(D) {
+  const dxRaw = D.tid ? D.x - D.startX : 0;
+  const a = Math.abs(dxRaw), sgn = dxRaw < 0 ? -1 : 1;
+  // Rubber-band past the threshold so the row feels anchored instead of flying free.
+  const vis = sgn * (a <= _M_DD_THRESH ? a : _M_DD_THRESH + (a - _M_DD_THRESH) * 0.35);
+  const top = D.y - D.grabY;
+  D.clone.style.top = top + 'px';
+  D.clone.style.transform = `translateX(${vis}px) scale(1.03)`;
+  D.strip.style.top = top + 'px';
+  D.layer.classList.toggle('focus', a > 14);
+  const p = Math.min(1, a / _M_DD_THRESH);
+  const dir = a > 6 ? sgn : 0;
+  if (dir !== D.dir) {
+    D.dir = dir;
+    D.strip.className = 'm-dd-strip' + (dir > 0 ? ' to-r' : dir < 0 ? ' to-l' : '');
+    D.strip.innerHTML = dir > 0 ? `${_M_DD_CHEV.r}<span>${D.lblNext}</span>` : dir < 0 ? `<span>${D.lblPrev}</span>${_M_DD_CHEV.l}` : '';
+  }
+  D.strip.style.opacity = dir ? String(0.25 + 0.75 * p) : '0';
+  const ready = a >= _M_DD_THRESH;
+  if (ready !== D.ready) {
+    D.ready = ready;
+    D.strip.classList.toggle('ready', ready);
+    if (ready) navigator.vibrate?.(10);
+  }
+}
+function _mDdCleanup(D) {
+  D.layer?.remove();
+  D.el.classList.remove('m-dd-ghost');
+}
+
+// Release past the threshold: the clone flies off in that direction, then the due date changes.
 function _mTodDragDayShift(dir) {
   const D = _mTodDrag;
   if (!D || !D.tid) return;
   const t = st.tasks.find(x => String(x.id) === String(D.tid));
-  if (!t) return;
-  const tid = D.tid, el = D.el;
+  if (!t) { _mTodDragEnd(true); return; }
+  const tid = D.tid;
   const fromDs = _mQuickAddTargetDsToday();
   const d = new Date(fromDs + 'T12:00:00'); d.setDate(d.getDate() + dir);
   const toDs = d2s(d);
   const origDue = (t.due_date || '').split('T')[0];
-  clearInterval(D.tick); _mTodEdgeHide();
+  document.removeEventListener('touchmove', _mTodDragMove);
   _mTodDrag = null;
   _mTodDragBlock = Date.now() + 600;
-  el.classList.remove('m-row-dragging');
-  navigator.vibrate?.(8);
-  el.style.transition = 'transform .26s cubic-bezier(.5,0,.9,.5), opacity .26s ease';
-  el.style.transform = `translateX(${dir * window.innerWidth}px)`;
-  el.style.opacity = '0';
+  D.clone.style.transition = 'transform .28s cubic-bezier(.5,0,.9,.5), opacity .28s ease';
+  D.clone.style.transform = `translateX(${dir * (window.innerWidth + 40)}px) scale(1.03)`;
+  D.clone.style.opacity = '0';
+  D.strip.classList.add('ready');
   setTimeout(() => {
+    _mDdCleanup(D);
     t.due_date = toDs;
     _mMoveTaskBlocks(tid, origDue, toDs);
     save();
@@ -2384,7 +2376,7 @@ function _mTodDragDayShift(dir) {
       save(); renderAll();
       sbReq('PATCH', 'tasks', {due_date: origDue}, `?id=eq.${tid}`);
     }, _mUn(t.name) + ' moved to ' + _mFmtAddDate(toDs));
-  }, 240);
+  }, 270);
 }
 
 function _mTodDragMove(e) {
@@ -2393,11 +2385,10 @@ function _mTodDragMove(e) {
   const list = document.getElementById('mTodayList');
   if (!list) return;
   const touch = e.touches[0];
-  const {el} = _mTodDrag;
-  _mTodDrag.x = touch.clientX;
-  el.style.pointerEvents = 'none';
+  const D = _mTodDrag, {el} = D;
+  D.x = touch.clientX; D.y = touch.clientY;
+  _mDdUpdate(D);
   const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.m-row-outer');
-  el.style.pointerEvents = '';
   if (!target || target === el || !list.contains(target)) return;
   const rect = target.getBoundingClientRect();
   const before = touch.clientY < rect.top + rect.height / 2;
@@ -2407,43 +2398,32 @@ function _mTodDragMove(e) {
 }
 
 function _mTodDragEnd(cancelled) {
-  const {el, origOrder, tid, origDue, tick} = _mTodDrag;
-  if (tick) clearInterval(tick);
-  _mTodEdgeHide();
+  const D = _mTodDrag;
+  const {el, origOrder} = D;
+  document.removeEventListener('touchmove', _mTodDragMove);
+  if (!cancelled && D.tid && Math.abs(D.x - D.startX) >= _M_DD_THRESH) { _mTodDragDayShift(D.x < D.startX ? -1 : 1); return; }
   _mTodDrag = null;
   _mTodDragBlock = Date.now() + 400;
-  document.removeEventListener('touchmove', _mTodDragMove);
-  el.classList.remove('m-row-dragging');
-  const moved = origDue !== null && origDue !== undefined;
-  if (cancelled) {
-    if (moved) { const t = st.tasks.find(x => String(x.id) === String(tid)); if (t) t.due_date = origDue; save(); }
-    mRenderToday(); return;
-  }
+  if (cancelled) { _mDdCleanup(D); mRenderToday(); return; }
+
+  // Settle: the clone glides into the slot the row now occupies, then the real row takes over.
+  const r = el.getBoundingClientRect();
+  D.strip.style.opacity = '0';
+  D.layer.classList.remove('focus');
+  D.clone.style.transition = 'top .22s cubic-bezier(.22,1,.36,1), transform .22s cubic-bezier(.22,1,.36,1)';
+  D.clone.style.top = r.top + 'px';
+  D.clone.style.transform = 'translateX(0) scale(1)';
+  setTimeout(() => _mDdCleanup(D), 230);
 
   const list = document.getElementById('mTodayList');
-  const newOrder = [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid);
-  // Dropped back exactly where it started — no-op, no toast. The task menu is owned by
-  // a plain tap (mInitTodayGestures, above), not a stalled drag attempt.
-  if (!moved && JSON.stringify(newOrder) === JSON.stringify(origOrder)) return;
-
+  const newOrder = [...list.querySelectorAll('.m-row-outer[data-rid]')].map(x => x.dataset.rid);
+  // Dropped back exactly where it started — nothing to save. Same-day reorder is silent
+  // (no undo toast): only moving a task to another day gets one.
+  if (JSON.stringify(newOrder) === JSON.stringify(origOrder)) return;
   const ds = _mQuickAddTargetDsToday();
   const m = _dayOrder();
-  const prevOrder = m[ds] ? [...m[ds]] : null;
   m[ds] = newOrder;
   _dayOrderSet(m);
-  if (moved) {
-    mRenderToday();
-    // Task changed day mid-drag: persist the final due_date and undo back to the original.
-    sbReq('PATCH', 'tasks', {due_date: ds}, `?id=eq.${tid}`);
-    pushUndo(() => {
-      const t2 = st.tasks.find(x => String(x.id) === String(tid));
-      if (t2) { t2.due_date = origDue; _mMoveTaskBlocks(tid, ds, origDue); }
-      const m2 = _dayOrder(); if (prevOrder) m2[ds] = prevOrder; else delete m2[ds]; _dayOrderSet(m2);
-      save(); renderAll();
-      sbReq('PATCH', 'tasks', {due_date: origDue}, `?id=eq.${tid}`);
-    }, _mUn((st.tasks.find(x => String(x.id) === String(tid)) || {}).name) + ' moved to ' + _mFmtAddDate(ds));
-    return;
-  }
 }
 
 // ── Task long-press menu (Edit/Duplicate/Flag/Delete) ────────────────────────────
