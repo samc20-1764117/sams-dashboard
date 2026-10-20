@@ -5313,7 +5313,11 @@ function _mMoWeekRowHtml(weekOff, forceLabel) {
     const badge = _mMonthDayBadge(mGetDayTasks(ds, weekOff));
     // Badge always sits in its own fixed-height slot (even when empty) so the day
     // number never shifts depending on whether that day has a badge or not.
-    return `<div class="m-mo-day${isToday ? ' is-today' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" data-ds="${ds}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d.getDate()}</span><div class="m-mo-badge-slot">${badge}</div></div>`;
+    // Alternate a soft tint per calendar month (desktop parity), mute weekends and past days.
+    const _alt = (d.getFullYear() * 12 + d.getMonth()) % 2 === 1;
+    const _we = d.getDay() === 0 || d.getDay() === 6;
+    const _cls = (_alt ? ' m-mo-alt' : '') + (_we ? ' m-mo-we' : '') + (!isToday && ds < today ? ' is-past' : '');
+    return `<div class="m-mo-day${_cls}${isToday ? ' is-today' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" data-ds="${ds}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d.getDate()}</span><div class="m-mo-badge-slot">${badge}</div></div>`;
   };
   const blankCell = () => '<div class="m-mo-day m-mo-day-empty"></div>';
   const monthLabel = d => `<div class="m-mo-month-divider">${d.toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}</div>`;
@@ -5572,6 +5576,16 @@ function _mUpdateMonthTitle() {
   _mMonthDisplayedMo = d.getMonth();
   _mMonthDisplayedYr = d.getFullYear();
   pillTxt.textContent = d.getFullYear();
+  // Floating month label: stays pinned while you scroll through the month (desktop's sticky
+  // month label), so you always know which month you're in. Pointer-events none, so it never
+  // blocks taps on the days under it.
+  const page = document.getElementById('mMonthPage');
+  if (page) {
+    let lbl = document.getElementById('mMonthStickyLbl');
+    if (!lbl) { lbl = document.createElement('div'); lbl.id = 'mMonthStickyLbl'; page.appendChild(lbl); }
+    lbl.style.top = (scroller.offsetTop + 8) + 'px';
+    lbl.textContent = d.toLocaleDateString('en-US', {month: 'long'});
+  }
 }
 
 // Default view is the START of the current month (day 1's row), not today's own row —
