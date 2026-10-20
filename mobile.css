@@ -917,4 +917,3 @@ body.dark .m-mo-day.m-mo-alt{background:rgba(255,255,255,.05)}
 .m-mo-day.is-past .m-mo-badge-slot{opacity:.55}
 .m-mo-day.is-today .m-mo-num{color:#fff;opacity:1}
 .m-mo-day.selected{background:rgba(124,106,247,.14)}
-#mMonthStickyLbl{position:absolute;left:12px;z-index:5;pointer-events:none;padding:3px 12px;border-radius:999px;background:var(--glass);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 1px 4px rgba(0,0,0,.1);font-size:13px;font-weight:800;color:var(--accent);letter-spacing:.2px}

@@ -5575,17 +5575,8 @@ function _mUpdateMonthTitle() {
   const d = new Date(row.dataset.mon + 'T12:00:00');
   _mMonthDisplayedMo = d.getMonth();
   _mMonthDisplayedYr = d.getFullYear();
-  pillTxt.textContent = d.getFullYear();
-  // Floating month label: stays pinned while you scroll through the month (desktop's sticky
-  // month label), so you always know which month you're in. Pointer-events none, so it never
-  // blocks taps on the days under it.
-  const page = document.getElementById('mMonthPage');
-  if (page) {
-    let lbl = document.getElementById('mMonthStickyLbl');
-    if (!lbl) { lbl = document.createElement('div'); lbl.id = 'mMonthStickyLbl'; page.appendChild(lbl); }
-    lbl.style.top = (scroller.offsetTop + 8) + 'px';
-    lbl.textContent = d.toLocaleDateString('en-US', {month: 'long'});
-  }
+  // Pinned in the header (always visible while scrolling): "October 2026", not just the year.
+  pillTxt.textContent = d.toLocaleDateString('en-US', {month: 'long'}) + ' ' + d.getFullYear();
 }
 
 // Default view is the START of the current month (day 1's row), not today's own row —
