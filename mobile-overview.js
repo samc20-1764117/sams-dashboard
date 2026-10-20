@@ -907,7 +907,7 @@ function mTaskRow(t) {
   else if (t._type === 'fin-cancel') onchange = `togFinCancelDone('${t._subId}',this.checked);renderAll()`;
   else if (!t._virtual) onchange = `toggleTask('${t.id}',this.checked)`;
 
-  const safeName = escHtml(t.name || '');
+  const safeName = escHtml(_mDispName(t));
   // Overdue regular/shopping tasks get a one-tap reschedule to today
   const canMv = ov && (canEdit || t._type === 'shop' || t._type === 'vidstep' || t._type === 'vid' || t._type === 'pup' || t._isWrec || t._isWrRule || (t._virtual && t._recId));
   const mvArgs = canMv ? _mMoveToTodayArgs(t) : null;
@@ -969,22 +969,28 @@ function _mIsOvMovable(t) {
 // circles instead of reading smaller (the previous 36-unit viewBox scaled the r=15.5
 // ring down to ~26px, visibly shy of the other circles' full 30px).
 const M_PROG_RING_C = 2 * Math.PI * 13.5;
+// Birthdays/holidays/travel have no checkbox, so they never count toward progress; birthday
+// names already carry a trailing cake emoji from core.js, but rows show a leading 🎂 icon.
+function _mNoCheck(t) { return t._type === 'travel' || t._type === 'birthday' || t._type === 'holiday'; }
+function _mDispName(t) { const n = String(t.name || ''); return t._type === 'birthday' ? n.replace(/\s*\u{1F382}\s*$/u, '') : n; }
+
 function mRenderToday() {
   const sorted = mGetTodayTasks();
-  const doneCount = sorted.filter(t => t.done).length;
+  const countable = sorted.filter(t => !_mNoCheck(t));
+  const doneCount = countable.filter(t => t.done).length;
   const progEl = document.getElementById('mProgress');
   if (progEl && _mCurTab === 'today') {
     // 0/0 counts as complete (green) too — yellow should mean "something's left to do
     // today," not just "the list happens to be non-empty." Was gated on sorted.length>0,
     // which left a 0-task day stuck yellow for no reason.
-    const complete = doneCount === sorted.length;
+    const complete = doneCount === countable.length;
     // Ring reads fully filled (not empty) on a 0-task day — matches the "all clear" green
     // state visually instead of an empty green outline, which would look unfinished.
-    const pct = sorted.length ? doneCount / sorted.length : 1;
+    const pct = countable.length ? doneCount / countable.length : 1;
     const fg = document.getElementById('mProgressFg');
     if (fg) fg.style.strokeDashoffset = M_PROG_RING_C * (1 - pct);
     const txt = document.getElementById('mProgressTxt');
-    if (txt) txt.textContent = doneCount + '/' + sorted.length;
+    if (txt) txt.textContent = doneCount + '/' + countable.length;
     progEl.classList.toggle('m-prog-complete', complete);
   }
   const el = document.getElementById('mTodayList');
@@ -997,8 +1003,9 @@ function mRenderToday() {
   const emptyIcon = `<div class="m-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>`;
   if (!sorted.length) {
     el.innerHTML = `<div class="m-empty">${emptyIcon}<div class="m-empty-txt"></div></div>`;
-  } else if (doneCount === sorted.length) {
-    el.innerHTML = `<div class="m-empty">${emptyIcon}<div class="m-empty-txt">All done for today</div></div>`;
+  } else if (countable.length && doneCount === countable.length) {
+    // Everything checkable is done — birthdays/holidays/travel stay visible above the message.
+    el.innerHTML = sorted.filter(_mNoCheck).map(mTaskRow).join('') + `<div class="m-empty">${emptyIcon}<div class="m-empty-txt">All done for today</div></div>`;
   } else {
     el.innerHTML = sorted.map(mTaskRow).join('');
   }
@@ -3768,7 +3775,7 @@ function mWkTaskRow(t) {
   // important color meaning, just moved to match Today's list convention.
   const band = `<span class="m-wk-band" style="background:${s.bg};border-color:${s.d}"></span>`;
   const chk = noCheck
-    ? `<span class="m-wk-icon">${t._type === 'holiday' ? '' : '\u{1F382}'}</span>`
+    ? `<span class="m-wk-icon">${t._type === 'holiday' ? '' : t._type === 'travel' ? '\u{1F4C5}' : '\u{1F382}'}</span>`
     : `<label class="m-chk-wrap"><input type="checkbox"${t.done ? ' checked' : ''}${onchange ? ` onchange="${onchange}"` : ''}></label>`;
 
   // "→ Today" one-tap reschedule for overdue rows — exact port of mTaskRow's own canMv/
@@ -3803,7 +3810,7 @@ function mWkTaskRow(t) {
   return `<div class="m-wk-row${t.done ? ' m-wk-done' : ''}${ov ? ' m-ov' : ''}" data-rid="${t.id}" data-rtype="${rtype}"${extraAttrs}>
     ${band}
     ${chk}
-    <span class="m-wk-task-name${t.done ? ' done' : ''}">${escHtml(t.name || '')}</span>
+    <span class="m-wk-task-name${t.done ? ' done' : ''}">${escHtml(_mDispName(t))}</span>
     ${mvBtn}
     <span class="m-grip" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg></span>
   </div>`;
