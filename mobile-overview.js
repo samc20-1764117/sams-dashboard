@@ -3869,7 +3869,7 @@ function mWrTrayRender() {
   el.style.display = '';
   const left = items.filter(i => !i.done).length;
   const n = _mWrT.sel.size;
-  const bar = `<div class="m-wrt-bar" onclick="mWrTrayToggle()"><span>Weekly Reset <em>${escHtml(_mWkLabel(off))}</em></span><span class="m-wrt-ct">${left ? left + ' left' : 'all done'} <i>${_mWrT.open ? '▾' : '▴'}</i></span></div>`;
+  const bar = `<div class="m-wrt-bar"><span>Weekly Reset <em>${escHtml(_mWkLabel(off))}</em></span><span class="m-wrt-ct">${left ? left + ' left' : 'all done'} <i>${_mWrT.open ? '▾' : '▴'}</i></span></div>`;
   let body = '';
   if (_mWrT.open) {
     const rows = items.map(({r, done}) => {
@@ -3892,7 +3892,12 @@ function mWrTrayRender() {
   el.innerHTML = bar + body;
 }
 
-function mWrTrayToggle() { _mWrT.open = !_mWrT.open; mWrTrayRender(); }
+let _mWrToggleAt = 0;
+function mWrTrayToggle() {
+  if (Date.now() - _mWrToggleAt < 400) return; // touchend + synthesized click both land here
+  _mWrToggleAt = Date.now();
+  _mWrT.open = !_mWrT.open; mWrTrayRender();
+}
 function mWrTraySelMode() { _mWrT.selMode = !_mWrT.selMode; if (!_mWrT.selMode) _mWrT.sel.clear(); mWrTrayRender(); }
 function mWrTraySelAll() {
   const wk = getWkKey(_mWrT.off);
@@ -4000,9 +4005,13 @@ function mInitWrTray() {
     if (moved) { e.preventDefault(); _mWrDragStart(press.row, t.clientX, t.clientY); press = null; }
   }, {passive: false});
 
-  el.addEventListener('touchend', () => {
+  // Bar toggles on click AND touchend (some iOS paths drop the synthesized click on this
+  // fixed layer); mWrTrayToggle dedupes the pair.
+  el.addEventListener('click', e => { if (e.target.closest('.m-wrt-bar')) mWrTrayToggle(); });
+  el.addEventListener('touchend', e => {
     if (timer) { clearTimeout(timer); timer = null; }
     if (_mWrT.drag) { _mWrDragEnd(false); return; }
+    if (e.target.closest('.m-wrt-bar')) { mWrTrayToggle(); return; }
     const p = press; press = null;
     if (p && !p.armed && _mWrT.selMode) {
       const id = p.row.dataset.ruleid;

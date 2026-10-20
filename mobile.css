@@ -912,3 +912,4 @@ input,textarea,select,[contenteditable="true"],[contenteditable=""]{-webkit-user
 #mMonthPage{position:relative}
 .m-mo-day.is-past > *{opacity:.45}
 .m-mo-day.selected{background:rgba(124,106,247,.14)}
+.m-wrt{pointer-events:auto;-webkit-tap-highlight-color:transparent}.m-wrt-bar{cursor:pointer;min-height:44px;box-sizing:border-box}
