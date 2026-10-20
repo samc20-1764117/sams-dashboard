@@ -3853,80 +3853,67 @@ function _mWkUnassignedWr(weekOff) {
 // outside #mWeekList, so the list's own gesture code doesn't see it).
 let _mWrT = {open: false, sel: new Set(), selMode: false, off: 0, drag: null};
 
-function _mWrTrayEl() { return document.getElementById('mWrTray'); }
-
-function mWrTrayRender() {
-  const el = _mWrTrayEl();
-  if (!el) return;
-  if (_mCurTab !== 'week') { el.style.display = 'none'; return; }
-  const off = _mWrT.off, wk = getWkKey(off);
+// Inline panel (lives in the week list, right under that week's divider — NOT a fixed layer).
+function _mWrPanelHtml(off) {
+  const wk = getWkKey(off);
   const items = _mWkUnassignedWr(off).map(r => ({r, done: isDoneWRRule(r.id, wk)}));
   items.sort((x, y) => x.done - y.done);
-  // drop stale selections
   const live = new Set(items.filter(i => !i.done).map(i => String(i.r.id)));
   _mWrT.sel.forEach(id => { if (!live.has(id)) _mWrT.sel.delete(id); });
-  if (!items.length) { _mWrT.open = false; el.style.display = 'none'; el.innerHTML = ''; return; }
-  if (!_mWrT.open) { el.style.display = 'none'; return; } // opened from the week divider's button
-  el.style.display = '';
+  if (!items.length) { _mWrT.open = false; return ''; }
   const left = items.filter(i => !i.done).length;
   const n = _mWrT.sel.size;
-  const bar = `<div class="m-wrt-bar"><span>Weekly Reset <em>${escHtml(_mWkLabel(off))}</em></span><span class="m-wrt-ct">${left ? left + ' left' : 'all done'} <i>✕</i></span></div>`;
-  let body = '';
-  if (_mWrT.open) {
-    const rows = items.map(({r, done}) => {
-      const sel = _mWrT.sel.has(String(r.id));
-      const s = (r.important && !done) ? IMP : gc('weekly_reset');
-      return `<div class="m-wrt-row${done ? ' m-wk-done' : ''}${sel ? ' is-sel' : ''}" data-ruleid="${r.id}" data-done="${done ? 1 : 0}">
-        <span class="m-wk-band" style="background:${s.bg};border-color:${s.d}"></span>
-        <label class="m-chk-wrap"><input type="checkbox"${done ? ' checked' : ''} onchange="togWrRule('${r.id}',this.checked,'${wk}')"></label>
-        <span class="m-wk-task-name${done ? ' done' : ''}">${escHtml(r.name || '')}</span>
-        ${done ? '' : (_mWrT.selMode ? `<span class="m-wrt-pick${sel ? ' on' : ''}"></span>` : `<button class="m-wr-assign" onclick="event.stopPropagation();mWrAssignPicker('${r.id}',${off})">Assign day</button>`)}
-      </div>`;
-    }).join('');
-    body = `<div class="m-wrt-tools">
-        <button class="m-wrt-btn${_mWrT.selMode ? ' on' : ''}" onclick="mWrTraySelMode()">${_mWrT.selMode ? 'Done' : 'Select'}</button>
-        ${_mWrT.selMode ? `<button class="m-wrt-btn" onclick="mWrTraySelAll()">All</button>` : ''}
-        ${n ? `<button class="m-wrt-btn primary" onclick="mWrAssignPicker('${[..._mWrT.sel].join(',')}',${off})">Assign ${n} to day</button>` : `<span class="m-wrt-hint">${_mWrT.selMode ? 'Tap to select, then hold + drag onto a day' : 'Hold + drag a task onto a day'}</span>`}
-      </div><div class="m-wrt-list">${rows}</div>`;
-  }
-  el.className = 'm-wrt' + (_mWrT.open ? ' open' : '');
-  el.innerHTML = bar + body;
+  const bar = `<div class="m-wrt-bar"><span>Weekly Reset</span><span class="m-wrt-ct">${left ? left + ' left' : 'all done'} <i>✕</i></span></div>`;
+  const rows = items.map(({r, done}) => {
+    const sel = _mWrT.sel.has(String(r.id));
+    const s = (r.important && !done) ? IMP : gc('weekly_reset');
+    return `<div class="m-wrt-row${done ? ' m-wk-done' : ''}${sel ? ' is-sel' : ''}" data-ruleid="${r.id}" data-done="${done ? 1 : 0}">
+      <span class="m-wk-band" style="background:${s.bg};border-color:${s.d}"></span>
+      <label class="m-chk-wrap"><input type="checkbox"${done ? ' checked' : ''} onchange="togWrRule('${r.id}',this.checked,'${wk}')"></label>
+      <span class="m-wk-task-name${done ? ' done' : ''}">${escHtml(r.name || '')}</span>
+      ${done ? '' : (_mWrT.selMode ? `<span class="m-wrt-pick${sel ? ' on' : ''}"></span>` : `<button class="m-wr-assign" onclick="event.stopPropagation();mWrAssignPicker('${r.id}',${off})">Assign day</button>`)}
+    </div>`;
+  }).join('');
+  return bar + `<div class="m-wrt-tools">
+      <button class="m-wrt-btn${_mWrT.selMode ? ' on' : ''}" onclick="mWrTraySelMode()">${_mWrT.selMode ? 'Done' : 'Select'}</button>
+      ${_mWrT.selMode ? `<button class="m-wrt-btn" onclick="mWrTraySelAll()">All</button>` : ''}
+      ${n ? `<button class="m-wrt-btn primary" onclick="mWrAssignPicker('${[..._mWrT.sel].join(',')}',${off})">Assign ${n} to day</button>` : `<span class="m-wrt-hint">${_mWrT.selMode ? 'Tap to select, then hold + drag onto a day' : 'Hold + drag a task onto a day'}</span>`}
+    </div><div class="m-wrt-list">${rows}</div>`;
 }
 
-// Divider button → open/close the tray for that week.
+// Targeted refresh of the open/closed state of every week's inline panel (no full list re-render).
+function mWrTrayRender() {
+  document.querySelectorAll('#mWeekList .m-wrt-inline').forEach(el => {
+    const off = +el.dataset.wk;
+    const on = _mWrT.open && _mWrT.off === off;
+    const html = on ? _mWrPanelHtml(off) : '';
+    el.classList.toggle('open', on && !!html);
+    el.innerHTML = html;
+  });
+  mWrTrayDividerSync();
+}
+
+// Divider button → open/close the panel for that week.
 function mWrTrayOpenFor(off) {
   if (_mWrT.open && _mWrT.off === off) { _mWrT.open = false; _mWrT.selMode = false; _mWrT.sel.clear(); }
   else { _mWrT.off = off; _mWrT.open = true; _mWrT.sel.clear(); _mWrT.selMode = false; }
   mWrTrayRender();
-  mWrTrayDividerSync();
 }
 function mWrTrayDividerSync() {
   document.querySelectorAll('.m-wr-open').forEach(b => b.classList.toggle('on', _mWrT.open && +b.dataset.wk === _mWrT.off));
 }
 let _mWrToggleAt = 0;
-function mWrTrayToggle() {
-  if (Date.now() - _mWrToggleAt < 400) return; // touchend + synthesized click both land here
+function mWrTrayToggle() { // panel's ✕ bar: touchend + synthesized click both land here
+  if (Date.now() - _mWrToggleAt < 400) return;
   _mWrToggleAt = Date.now();
-  _mWrT.open = !_mWrT.open; mWrTrayRender(); mWrTrayDividerSync();
+  _mWrT.open = false; _mWrT.selMode = false; _mWrT.sel.clear();
+  mWrTrayRender();
 }
 function mWrTraySelMode() { _mWrT.selMode = !_mWrT.selMode; if (!_mWrT.selMode) _mWrT.sel.clear(); mWrTrayRender(); }
 function mWrTraySelAll() {
   const wk = getWkKey(_mWrT.off);
   _mWkUnassignedWr(_mWrT.off).filter(r => !isDoneWRRule(r.id, wk)).forEach(r => _mWrT.sel.add(String(r.id)));
   mWrTrayRender();
-}
-
-// Which week is on screen — the week of the day docked at the top of the scroll view.
-let _mWrTrayRaf = 0;
-function mWrTrayTrack() {
-  if (_mWrTrayRaf || _mWrT.drag || _mWrT.open) return; // while open, the tray stays on the week it was opened for
-  _mWrTrayRaf = requestAnimationFrame(() => {
-    _mWrTrayRaf = 0;
-    const ds = _mWkCurrentViewDs();
-    const dayEl = ds && document.querySelector(`#mWeekList .m-wk-day[data-ds="${ds}"]`);
-    const off = dayEl ? parseInt(dayEl.dataset.wk, 10) : _mWrT.off;
-    if (off !== _mWrT.off && !isNaN(off)) { _mWrT.off = off; _mWrT.sel.clear(); mWrTrayRender(); }
-  });
 }
 
 // Pin several rules to one day in one go — single undo, one PATCH per rule.
@@ -3985,11 +3972,9 @@ function mWrAssignPick(idsCsv, wkKey, ds) {
 
 // ── Tray gestures: tap (select mode) toggles; hold + drag moves the row (or the whole selection)
 function mInitWrTray() {
-  const el = _mWrTrayEl();
-  if (!el || el._inited) return;
-  el._inited = true;
-  // keep Week's swipe-between-weeks handler off the tray
-  ['touchstart', 'touchmove', 'touchend'].forEach(ev => el.addEventListener(ev, e => e.stopPropagation(), {passive: ev !== 'touchmove'}));
+  const el = document.getElementById('mWeekList');
+  if (!el || el._wrtInited) return;
+  el._wrtInited = true;
   let press = null, timer = null;
 
   el.addEventListener('touchstart', e => {
@@ -4043,7 +4028,7 @@ function _mWrDragStart(row, x, y) {
   ghost.innerHTML = `${escHtml(name)}${ids.length > 1 ? `<b>+${ids.length - 1}</b>` : ''}`;
   document.body.appendChild(ghost);
   _mWrT.drag = {ids, ghost, x, y, raf: 0, target: null};
-  _mWrTrayEl().classList.add('dragging'); // slides the tray away so every day is reachable
+  document.querySelector('.m-wrt-inline.open')?.classList.add('dragging'); // dims the panel while dragging
   _mWrDragMove(x, y);
   _mWrDragScroll();
 }
@@ -4084,7 +4069,7 @@ function _mWrDragEnd(cancelled) {
   d.ghost.remove();
   _mWrT.drag = null;
   document.querySelectorAll('.m-wk-drop-target').forEach(el => el.classList.remove('m-wk-drop-target'));
-  _mWrTrayEl().classList.remove('dragging');
+  document.querySelector('.m-wrt-inline.dragging')?.classList.remove('dragging');
   if (!cancelled && d.target) _mWrPinMany_wrap(d);
   else mWrTrayRender();
 }
@@ -4096,7 +4081,10 @@ function _mWkRenderWeekHtml(weekOff) {
   const isCurrent = weekOff === 0;
   const _wkUn = _mWkUnassignedWr(weekOff).filter(r => !isDoneWRRule(r.id, getWkKey(weekOff))).length;
   const _wrBtn = _wkUn ? `<button class="m-wr-open${_mWrT.open && _mWrT.off === weekOff ? ' on' : ''}" data-wk="${weekOff}" onclick="mWrTrayOpenFor(${weekOff})">${_wkUn} unassigned weekly reset</button>` : '';
+  const _wrOn = _mWrT.open && _mWrT.off === weekOff;
+  const _wrPanel = _wrOn ? _mWrPanelHtml(weekOff) : '';
   let html = `<div class="m-wk-divider${isCurrent ? ' is-current' : ''}" data-wk="${weekOff}"><span>${_mWkLabel(weekOff)}</span>${_wrBtn}</div>`;
+  html += `<div class="m-wrt-inline${_wrPanel ? ' open' : ''}" data-wk="${weekOff}">${_wrPanel}</div>`;
 
   dates.forEach((d, i) => {
     const ds = d2s(d);
@@ -4178,8 +4166,6 @@ function mRenderWeek(reset = false) {
     _mWkScroller().scrollTop = prevScroll;
   }
   mInitWrTray();
-  mWrTrayTrack();
-  mWrTrayRender();
 }
 
 function _mWkLoadMore(direction) {
@@ -4210,7 +4196,6 @@ function mInitWeekScroll() {
     if (_mWkScrollLock || _mCurTab !== 'week') return;
     const sc = _mWkScroller();
     const threshold = 300;
-    mWrTrayTrack();
     if (sc.scrollHeight - sc.scrollTop - sc.clientHeight < threshold) _mWkLoadMore('down');
     if (sc.scrollTop < threshold) _mWkLoadMore('up');
   };
