@@ -5047,6 +5047,8 @@ window.addEventListener('resize', () => { if (_mCurTab === 'month') _mSyncMonthS
 
 // Jump to the month at monthOffset from the current real month, extending the rendered
 // week range if the target isn't loaded yet.
+// Height of the pinned month divider (sticky at the top of the scroller) so jumps land below it.
+function _mMoStickyH(scroller) { const d = scroller.querySelector('.m-mo-month-divider'); return d ? d.offsetHeight : 0; }
 function mMonthJumpToOffset(monthOffset) {
   const now = new Date();
   const targetDs = d2s(new Date(now.getFullYear(), now.getMonth() + monthOffset, 1));
@@ -5064,7 +5066,7 @@ function mMonthJumpToOffset(monthOffset) {
     const row = targetEl && targetEl.closest('.m-mo-week');
     const scroller = document.getElementById('mMonthScroll');
     // Direct scrollTop math instead of scrollIntoView — see _mMoScrollToMonthStart for why.
-    if (row && scroller) scroller.scrollTop += row.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+    if (row && scroller) scroller.scrollTop += row.getBoundingClientRect().top - scroller.getBoundingClientRect().top - _mMoStickyH(scroller);
     _mUpdateMonthTitle();
   });
 }
@@ -5315,10 +5317,7 @@ function _mMoWeekRowHtml(weekOff, forceLabel) {
     const badge = _mMonthDayBadge(mGetDayTasks(ds, weekOff));
     // Badge always sits in its own fixed-height slot (even when empty) so the day
     // number never shifts depending on whether that day has a badge or not.
-    // Alternate a soft tint per calendar month (desktop parity), mute weekends and past days.
-    const _alt = (d.getFullYear() * 12 + d.getMonth()) % 2 === 1;
-    const _we = d.getDay() === 0 || d.getDay() === 6;
-    const _cls = (_alt ? ' m-mo-alt' : '') + (_we ? ' m-mo-we' : '') + (!isToday && ds < today ? ' is-past' : '');
+    const _cls = !isToday && ds < today ? ' is-past' : '';
     return `<div class="m-mo-day${_cls}${isToday ? ' is-today' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" data-ds="${ds}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d.getDate()}</span><div class="m-mo-badge-slot">${badge}</div></div>`;
   };
   const blankCell = () => '<div class="m-mo-day m-mo-day-empty"></div>';
@@ -5571,14 +5570,18 @@ function _mUpdateMonthTitle() {
   const pillTxt = document.getElementById('mMonthYearPillTxt');
   if (!scroller || !pillTxt) return;
   const rect = scroller.getBoundingClientRect();
-  const el = document.elementFromPoint(rect.left + rect.width / 2, rect.top + 4);
-  const row = el && el.closest('.m-mo-week');
+  // The pinned month divider covers the top ~42px, so sample below it as well.
+  let row = null;
+  for (const dy of [4, 52, 76]) {
+    const el = document.elementFromPoint(rect.left + rect.width / 2, rect.top + dy);
+    row = el && el.closest('.m-mo-week');
+    if (row) break;
+  }
   if (!row) return;
   const d = new Date(row.dataset.mon + 'T12:00:00');
   _mMonthDisplayedMo = d.getMonth();
   _mMonthDisplayedYr = d.getFullYear();
-  // Pinned in the header (always visible while scrolling): "October 2026", not just the year.
-  pillTxt.textContent = d.toLocaleDateString('en-US', {month: 'long'}) + ' ' + d.getFullYear();
+  pillTxt.textContent = d.getFullYear();
 }
 
 // Default view is the START of the current month (day 1's row), not today's own row —
@@ -5596,7 +5599,7 @@ function _mMoScrollToMonthStart(attempt) {
     // scrollIntoView() can walk up and scroll ANY scrollable ancestor it finds along
     // the way (e.g. the document itself), which can visually shift the sticky header
     // relative to content. Setting scrollTop directly only ever touches this element.
-    scroller.scrollTop += row.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+    scroller.scrollTop += row.getBoundingClientRect().top - scroller.getBoundingClientRect().top - _mMoStickyH(scroller);
   }
   _mUpdateMonthTitle();
 }

@@ -716,7 +716,7 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
    never has to fight the day numbers below it for legibility/z-index. */
 .m-mo-trip-lane{position:relative;height:13px;margin-bottom:0}
 .m-mo-trip-label{position:absolute;top:0;height:13px;line-height:13px;font-size:8px;font-weight:700;padding:0 4px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-.m-mo-month-divider{font-size:16px;font-weight:800;color:var(--text);padding:14px 2px 6px}
+.m-mo-month-divider{font-size:16px;font-weight:800;color:var(--text);padding:14px 8px 6px;position:sticky;top:0;z-index:4;background:var(--bg);box-shadow:0 1px 0 var(--border)}
 .m-mo-hdr{font-size:10px;font-weight:700;color:var(--sub);padding:4px 0;text-transform:uppercase;letter-spacing:.05em}
 /* Fixed top-down layout (not centered) so the day number sits in the same spot
    whether or not that day has a badge below it. */
@@ -910,10 +910,5 @@ input,textarea,select,[contenteditable="true"],[contenteditable=""]{-webkit-user
 
 /* Month: alternating per-month tint, muted weekends/past days, pinned month label */
 #mMonthPage{position:relative}
-.m-mo-day.m-mo-alt{background:rgba(124,106,247,.07)}
-body.dark .m-mo-day.m-mo-alt{background:rgba(255,255,255,.05)}
-.m-mo-day.m-mo-we .m-mo-num{color:var(--sub)}
-.m-mo-day.is-past .m-mo-num{opacity:.5}
-.m-mo-day.is-past .m-mo-badge-slot{opacity:.55}
-.m-mo-day.is-today .m-mo-num{color:#fff;opacity:1}
+.m-mo-day.is-past > *{opacity:.45}
 .m-mo-day.selected{background:rgba(124,106,247,.14)}
