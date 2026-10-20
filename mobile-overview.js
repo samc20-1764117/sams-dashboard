@@ -3874,7 +3874,7 @@ function _mWrPanelHtml(off) {
   const left = items.filter(i => !i.done).length;
   const n = _mWrT.sel.size;
   const allOn = left > 0 && n === left;
-  const bar = `<div class="m-wrt-bar"><span class="m-wrt-title">Weekly Reset <em>${left ? left + ' left' : 'all done'}</em></span>
+  const bar = `<div class="m-wrt-bar"><span class="m-wrt-title">Weekly Reset</span>
     <span class="m-wrt-barbtns">
       ${left ? `<button class="m-wrt-link" onclick="mWrTraySelAll()">${allOn ? 'None' : 'Select all'}</button>` : ''}
       <button class="m-wrt-ico" aria-label="${_mWrT.min ? 'Expand' : 'Collapse'}" onclick="mWrTrayMin()">${_mWrT.min ? '▸' : '▾'}</button>
@@ -3888,20 +3888,20 @@ function _mWrPanelHtml(off) {
       <span class="m-wk-band" style="background:${s.bg};border-color:${s.d}"></span>
       <label class="m-chk-wrap"><input type="checkbox"${done ? ' checked' : ''} onchange="togWrRule('${r.id}',this.checked,'${wk}')"></label>
       <span class="m-wk-task-name${done ? ' done' : ''}">${escHtml(_mWrDisplayName(r, wk))}</span>
-      ${done ? '' : `<span class="m-wrt-pick${sel ? ' on' : ''}"></span>`}
+      ${done ? '' : `<span class="m-wrt-grip" aria-label="Drag to a day"><svg viewBox="0 0 12 18" width="12" height="18" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/><circle cx="3" cy="9" r="1.5"/><circle cx="9" cy="9" r="1.5"/><circle cx="3" cy="15" r="1.5"/><circle cx="9" cy="15" r="1.5"/></svg></span>`}
     </div>`;
   }).join('');
   let actions = '';
   if (n) {
     const selRules = [...(_mWrT.sel)].map(id => (st.wrRules || []).find(r => String(r.id) === id)).filter(Boolean);
     const anyInterval = selRules.some(_mWrIsInterval);
-    actions = `<div class="m-wrt-actions"><span class="m-wrt-nsel">${n} selected</span>
+    actions = `<div class="m-wrt-actions">
       <button class="m-wrt-btn primary" onclick="mWrBulk('pick')">Pick day</button>
       <button class="m-wrt-btn" onclick="mWrBulk('skip')">Skip this week</button>
       ${anyInterval ? `<button class="m-wrt-btn" onclick="mWrBulk('next')">This one → next wk</button><button class="m-wrt-btn" onclick="mWrBulk('future')">All future → next wk</button>` : ''}
       <button class="m-wrt-link" onclick="mWrTraySelClear()">Clear</button></div>`;
   }
-  return bar + actions + `<div class="m-wrt-list">${rows}</div>` + (n ? '' : `<div class="m-wrt-hint">Tap the circle to select · hold + drag onto a day</div>`);
+  return bar + actions + `<div class="m-wrt-list">${rows}</div>`;
 }
 
 // Targeted refresh of the open/closed state of every week's inline panel (no full list re-render).
@@ -4015,48 +4015,40 @@ function mWrAssignPick(idsCsv, wkKey, ds) {
   _mWrPinMany(String(idsCsv).split(','), wkKey, ds);
 }
 
-// ── Tray gestures: tap (select mode) toggles; hold + drag moves the row (or the whole selection)
+// ── Panel gestures. Three separate hit zones per row so nothing fights:
+//   left checkbox = complete · row body tap = select/deselect · right grip = drag (starts at once)
 function mInitWrTray() {
   const el = document.getElementById('mWeekList');
   if (!el || el._wrtInited) return;
   el._wrtInited = true;
-  let press = null, timer = null;
+  let press = null;
 
   el.addEventListener('touchstart', e => {
     const row = e.target.closest('.m-wrt-row');
-    if (!row || e.target.closest('.m-chk-wrap') || e.target.closest('.m-wr-assign')) return;
-    if (row.dataset.done === '1') return;
-    press = {row, x: e.touches[0].clientX, y: e.touches[0].clientY, armed: false};
-    timer = setTimeout(() => {
-      timer = null;
-      if (!press) return;
-      press.armed = true;
-      navigator.vibrate?.(8);
-      press.row.classList.add('m-row-bump');
-      setTimeout(() => press && press.row.classList.remove('m-row-bump'), 220);
-    }, 350);
+    if (!row || row.dataset.done === '1' || e.target.closest('.m-chk-wrap')) return;
+    press = {row, grip: !!e.target.closest('.m-wrt-grip'), x: e.touches[0].clientX, y: e.touches[0].clientY};
   }, {passive: true});
 
   el.addEventListener('touchmove', e => {
     const t = e.touches[0];
     if (_mWrT.drag) { e.preventDefault(); _mWrDragMove(t.clientX, t.clientY); return; }
     if (!press) return;
-    const moved = Math.abs(t.clientX - press.x) > 8 || Math.abs(t.clientY - press.y) > 8;
-    if (!press.armed) { if (moved) { clearTimeout(timer); timer = null; press = null; } return; }
-    if (moved) { e.preventDefault(); _mWrDragStart(press.row, t.clientX, t.clientY); press = null; }
+    const dist = Math.max(Math.abs(t.clientX - press.x), Math.abs(t.clientY - press.y));
+    if (press.grip) {
+      if (dist > 4) { e.preventDefault(); const r = press.row; press = null; _mWrDragStart(r, t.clientX, t.clientY); }
+    } else if (dist > 8) press = null; // it's a scroll, not a tap
   }, {passive: false});
 
-  el.addEventListener('touchend', e => {
-    if (timer) { clearTimeout(timer); timer = null; }
+  el.addEventListener('touchend', () => {
     if (_mWrT.drag) { _mWrDragEnd(false); return; }
     const p = press; press = null;
-    if (p && !p.armed) {
+    if (p && !p.grip) {
       const id = p.row.dataset.ruleid;
       if (_mWrT.sel.has(id)) _mWrT.sel.delete(id); else _mWrT.sel.add(id);
       mWrTrayRender();
     }
   }, {passive: true});
-  el.addEventListener('touchcancel', () => { if (timer) clearTimeout(timer); press = null; if (_mWrT.drag) _mWrDragEnd(true); }, {passive: true});
+  el.addEventListener('touchcancel', () => { press = null; if (_mWrT.drag) _mWrDragEnd(true); }, {passive: true});
 }
 
 function _mWrDragStart(row, x, y) {

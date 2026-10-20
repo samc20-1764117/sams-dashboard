@@ -932,3 +932,7 @@ input,textarea,select,[contenteditable="true"],[contenteditable=""]{-webkit-user
 .m-wrt-row .m-wk-task-name{flex:1;min-width:0;font-size:13px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .m-wrt-hint{padding:6px 14px 8px;font-size:11px;color:var(--text-muted,#888);flex-shrink:0}
 .m-wrt-actions .m-wrt-btn.primary{margin-left:0}
+
+/* Panel v3: grip handle on the right (drag), row-body tap selects, no counts/hints */
+.m-wrt-grip{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:34px;height:34px;margin:-6px -6px -6px 0;color:var(--text-muted,#888);touch-action:none;-webkit-user-select:none;user-select:none}
+.m-wrt-row.is-sel{background:rgba(120,120,255,.14);box-shadow:inset 3px 0 0 var(--accent)}
