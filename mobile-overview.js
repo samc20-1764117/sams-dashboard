@@ -5080,6 +5080,7 @@ function mMonthJumpToOffset(monthOffset) {
     while (targetWeekOff < _mMoRenderedLo) { _mMoRenderedLo--; _mMoDropForcedLabel(wrap); wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, true)); }
     while (targetWeekOff > _mMoRenderedHi) { _mMoRenderedHi++; wrap.insertAdjacentHTML('beforeend', _mMoWeekRowHtml(_mMoRenderedHi, false)); }
   }
+  _mMoObserveLazy();
   requestAnimationFrame(() => {
     // Target the specific date's cell, not "the row for this weekOff" — a week that
     // spans a month boundary now renders as two partial rows (see _mMoWeekRowHtml), so
@@ -5326,7 +5327,35 @@ function _mMonthDayBadge(tasks) {
 // stay full 7-column grids (blank cells for the days that belong to the other row) so
 // they still line up under the M/T/W/T/F/S/S header. Each day's badge is built from
 // mGetDayTasks — the exact same source the tap-to-detail panel uses.
+// Weeks far from today render as cheap shells (badges filled in later by an IntersectionObserver
+// as they approach the viewport) — that lets a big range (2 years back) exist up front, so
+// scrolling back never has to prepend rows and correct scrollTop mid-fling (the upward glitch).
+const _M_MO_EAGER = 6;
+let _mMoLazyIO = null;
+function _mMoObserveLazy() {
+  const scroller = document.getElementById('mMonthScroll');
+  if (!scroller) return;
+  if (!_mMoLazyIO) {
+    _mMoLazyIO = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        if (!en.isIntersecting) return;
+        const row = en.target;
+        _mMoLazyIO.unobserve(row);
+        if (!row.dataset.lazy) return;
+        const wk = parseInt(row.dataset.wk, 10);
+        row.querySelectorAll('.m-mo-day[data-ds]').forEach(c => {
+          const slot = c.querySelector('.m-mo-badge-slot');
+          if (slot && !slot.firstChild) slot.innerHTML = _mMonthDayBadge(mGetDayTasks(c.dataset.ds, wk));
+        });
+        delete row.dataset.lazy;
+      });
+    }, {root: scroller, rootMargin: '1800px 0px'});
+  }
+  scroller.querySelectorAll('.m-mo-week[data-lazy]').forEach(r => { if (!r._lzObs) { r._lzObs = true; _mMoLazyIO.observe(r); } });
+}
 function _mMoWeekRowHtml(weekOff, forceLabel) {
+  const lazy = Math.abs(weekOff) > _M_MO_EAGER;
+  const lz = lazy ? ' data-lazy="1"' : '';
   const dates = getWkDates(weekOff);
   const today = d2s(getDayDate(0));
   let splitIdx = -1;
@@ -5336,7 +5365,7 @@ function _mMoWeekRowHtml(weekOff, forceLabel) {
   const cellHtml = d => {
     const ds = d2s(d);
     const isToday = ds === today;
-    const badge = _mMonthDayBadge(mGetDayTasks(ds, weekOff));
+    const badge = lazy ? '' : _mMonthDayBadge(mGetDayTasks(ds, weekOff));
     // Badge always sits in its own fixed-height slot (even when empty) so the day
     // number never shifts depending on whether that day has a badge or not.
     const _cls = !isToday && ds < today ? ' is-past' : '';
@@ -5348,16 +5377,16 @@ function _mMoWeekRowHtml(weekOff, forceLabel) {
   if (splitIdx === -1) {
     const divider = (dates[0].getDate() === 1 || forceLabel) ? monthLabel(dates[0], forceLabel && dates[0].getDate() !== 1) : '';
     const cells = dates.map(cellHtml).join('');
-    return `${divider}${_mMoTravelLabelsHtml(dates, 0, 6)}<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${cells}${_mMoTravelBarsHtml(dates, 0, 6)}</div>`;
+    return `${divider}${_mMoTravelLabelsHtml(dates, 0, 6)}<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}"${lz}>${cells}${_mMoTravelBarsHtml(dates, 0, 6)}</div>`;
   }
   let html = (dates[0].getDate() === 1 || forceLabel) ? monthLabel(dates[0], forceLabel && dates[0].getDate() !== 1) : '';
   html += _mMoTravelLabelsHtml(dates, 0, splitIdx - 1);
   const firstCells = dates.slice(0, splitIdx).map(cellHtml).join('') + Array(7 - splitIdx).fill(0).map(blankCell).join('');
-  html += `<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${firstCells}${_mMoTravelBarsHtml(dates, 0, splitIdx - 1)}</div>`;
+  html += `<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}"${lz}>${firstCells}${_mMoTravelBarsHtml(dates, 0, splitIdx - 1)}</div>`;
   html += monthLabel(dates[splitIdx]);
   html += _mMoTravelLabelsHtml(dates, splitIdx, 6);
   const secondCells = Array(splitIdx).fill(0).map(blankCell).join('') + dates.slice(splitIdx).map(cellHtml).join('');
-  html += `<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[splitIdx])}">${secondCells}${_mMoTravelBarsHtml(dates, splitIdx, 6)}</div>`;
+  html += `<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[splitIdx])}"${lz}>${secondCells}${_mMoTravelBarsHtml(dates, splitIdx, 6)}</div>`;
   return html;
 }
 
@@ -5439,13 +5468,14 @@ function _mRenderMonthWeeks(reset) {
   // Background sync re-renders (reset=false) must not yank the view while the user is
   // scrolled off to a past/future month — only an explicit tab-open resets position.
   const prevScroll = scroller ? scroller.scrollTop : 0;
-  if (reset) { _mMoRenderedLo = -16; _mMoRenderedHi = 8; }
+  if (reset) { _mMoRenderedLo = -104; _mMoRenderedHi = 52; }
   let html = '';
   for (let w = _mMoRenderedLo; w <= _mMoRenderedHi; w++) {
     html += _mMoWeekRowHtml(w, w === _mMoRenderedLo);
   }
   wrap.innerHTML = html;
   if (!reset && scroller) scroller.scrollTop = prevScroll;
+  _mMoObserveLazy();
   _mUpdateMonthTitle();
 }
 
@@ -5472,10 +5502,12 @@ function _mMoLoadMore(direction) {
     }
     wrap.insertAdjacentHTML('afterbegin', html);
     scroller.scrollTop += wrap.scrollHeight - prevHeight;
+    _mMoObserveLazy();
   } else {
     let html = '';
     for (let i = 0; i < _M_MO_BATCH; i++) { _mMoRenderedHi++; html += _mMoWeekRowHtml(_mMoRenderedHi, false); }
     wrap.insertAdjacentHTML('beforeend', html);
+    _mMoObserveLazy();
   }
   setTimeout(() => { _mMoScrollLock = false; }, 200);
 }
