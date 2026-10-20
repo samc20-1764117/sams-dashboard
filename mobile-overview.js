@@ -2128,6 +2128,8 @@ function _mRowEdit(outer) {
 // touchmove that starts the drag can also preventDefault immediately — a separate,
 // later-attached document listener (the previous approach) missed that first event, which
 // is what let the page visibly scroll for a frame before the drag "caught up."
+// Quick-drag: moving after 220ms starts a drag (no menu); holding still until 400ms opens the menu.
+const _M_DRAG_ARM_MS = 220, _M_MENU_HOLD_MS = 400;
 let _mTodDrag = null;   // set only once a real drag is confirmed — {el, origOrder}
 let _mTodPress = null;  // transient arm/tap state — {outer, armed}
 function mInitTodayGestures() {
@@ -2153,7 +2155,7 @@ function mInitTodayGestures() {
     if (e.target.closest('.m-mv-today')) return;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
-    _mTodPress = {outer, armed: false};
+    _mTodPress = {outer, armed: false, t0: Date.now()};
     pressTimer = setTimeout(() => {
       pressTimer = null;
       if (!_mTodPress) return;
@@ -2167,7 +2169,7 @@ function mInitTodayGestures() {
       outer.classList.add('m-row-bump');
       setTimeout(() => outer.classList.remove('m-row-bump'), 220);
       _mShowTaskMenu(outer);
-    }, 480);
+    }, _M_MENU_HOLD_MS);
   }, {passive: true});
 
   list.addEventListener('touchmove', e => {
@@ -2175,10 +2177,15 @@ function mInitTodayGestures() {
     if (!_mTodPress) return;
     if (Math.abs(e.touches[0].clientX - touchStartX) <= 8 && Math.abs(e.touches[0].clientY - touchStartY) <= 8) return;
     if (!_mTodPress.armed) {
-      // Moved before the hold threshold fired — a scroll, not our gesture.
+      // Moved before the quick-drag window (220ms) — a scroll, not our gesture. Moved after
+      // it but before the menu hold (400ms) — the user means to drag: arm now, no menu.
+      if (Date.now() - _mTodPress.t0 < _M_DRAG_ARM_MS) {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        _mTodPress = null;
+        return;
+      }
       if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-      _mTodPress = null;
-      return;
+      _mTodPress.armed = true;
     }
     // Menu is already open (armed) but the finger kept moving — close it and hand off to
     // drag-reorder, processing this SAME event immediately (not just future ones) so the
@@ -4051,7 +4058,7 @@ function mInitWeekGestures() {
     if (e.target.closest('.m-mv-today')) return; // "→ Today" button owns its own tap
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
-    _mWkPress = {outer: row, armed: false};
+    _mWkPress = {outer: row, armed: false, t0: Date.now()};
     pressTimer = setTimeout(() => {
       pressTimer = null;
       if (!_mWkPress) return;
@@ -4063,7 +4070,7 @@ function mInitWeekGestures() {
       outer.classList.add('m-row-bump');
       setTimeout(() => outer.classList.remove('m-row-bump'), 220);
       _mShowTaskMenu(outer);
-    }, 480);
+    }, _M_MENU_HOLD_MS);
   }, {passive: true});
 
   // Registered non-passive (not the old separate document-level listener) so the SAME
@@ -4075,9 +4082,13 @@ function mInitWeekGestures() {
     if (!_mWkPress) return;
     if (Math.abs(e.touches[0].clientX - touchStartX) <= 8 && Math.abs(e.touches[0].clientY - touchStartY) <= 8) return;
     if (!_mWkPress.armed) {
+      if (Date.now() - _mWkPress.t0 < _M_DRAG_ARM_MS) {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        _mWkPress = null;
+        return;
+      }
       if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-      _mWkPress = null;
-      return;
+      _mWkPress.armed = true;
     }
     // Menu is already open — moving further means "actually wanted to drag": close it and
     // hand off, processing this SAME event immediately so the row starts tracking the
