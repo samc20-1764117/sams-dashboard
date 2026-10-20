@@ -2880,6 +2880,7 @@ function mShowTab(tab) {
   main.style.overflow = (tab === 'week' || tab === 'tb' || tab === 'month') ? 'hidden' : '';
   main.scrollTop = 0;
 
+  if (tab !== 'week') mWrTrayRender(); // hides the Weekly Reset tray off the Week tab
   if (tab === 'tb')   { _mTBOffset = 0; mRenderTB(); _mScrollNow(); }
   else if (tab === 'week') { mRenderWeek(true); mInitWeekScroll(); }
   else if (tab === 'month') { mOpenMonth(); }
@@ -3857,6 +3858,7 @@ function _mWrTrayEl() { return document.getElementById('mWrTray'); }
 function mWrTrayRender() {
   const el = _mWrTrayEl();
   if (!el) return;
+  if (_mCurTab !== 'week') { el.style.display = 'none'; return; }
   const off = _mWrT.off, wk = getWkKey(off);
   const items = _mWkUnassignedWr(off).map(r => ({r, done: isDoneWRRule(r.id, wk)}));
   items.sort((x, y) => x.done - y.done);
