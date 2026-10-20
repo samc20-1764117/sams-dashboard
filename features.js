@@ -1423,9 +1423,7 @@ function scrollMoToday(){
   if(!tc||!mgrid)return;
   const mdow=document.getElementById('mDow');
   const mdowH=mdow?mdow.offsetHeight:0;
-  let top=0,el=tc;
-  while(el&&el!==mgrid){top+=el.offsetTop;el=el.offsetParent;}
-  mgrid.scrollTop=top-mdowH-56;
+  mgrid.scrollTop+=tc.getBoundingClientRect().top-mgrid.getBoundingClientRect().top-mdowH-56;
 }
 function moGoToday(){
   _moNavYear=new Date().getFullYear();const yrSel2=document.getElementById('moYearSel');if(yrSel2)yrSel2.value=String(_moNavYear);
