@@ -6150,6 +6150,9 @@ function renderGuidePage(){
   const cats=CATS;const imp=IMP;const ov=OV;
   const pupS=typeof _pupSessStyle==='function'?_pupSessStyle():{bg:'#f6fafd',b:'rgba(56,170,210,.16)',t:'#18577a',d:'#38aad2'};
   const vidS={bg:'rgba(34,197,94,.1)',t:'#15803d',d:'#22c55e',b:'rgba(34,197,94,.2)'};
+  // Matches .chk-personal (styles.css) — the purple personal-maintenance/beauty WR flag, added
+  // 2026-10-16 as a second flag/color alongside Pup (see rules/wr-system.md).
+  const personalS={bg:'rgba(168,85,247,.1)',t:'#7e22ce',d:'#a855f7',b:'rgba(168,85,247,.2)'};
   // Dark-mode category colors (match CSS vars)
   const dkCats={
     'home':{bg:'rgba(59,130,246,.14)',t:'#93c5fd',d:'#3b82f6',b:'rgba(59,130,246,.18)'},
@@ -6171,8 +6174,9 @@ function renderGuidePage(){
   const dkOv={bg:'rgba(239,68,68,.12)',t:'#fca5a5',d:'#ef4444',b:'rgba(239,68,68,.20)'};
   const dkPupS={bg:'rgba(56,170,210,.10)',t:'#67e8f9',d:'#38aad2',b:'rgba(56,170,210,.18)'};
   const dkVidS={bg:'rgba(34,197,94,.12)',t:'#86efac',d:'#22c55e',b:'rgba(34,197,94,.18)'};
+  const dkPersonalS={bg:'rgba(168,85,247,.12)',t:'#d8b4fe',d:'#a855f7',b:'rgba(168,85,247,.18)'};
   const _c=dk?dkCats:cats;const _imp=dk?dkImp:imp;const _ov=dk?dkOv:ov;
-  const _pupS=dk?dkPupS:pupS;const _vidS=dk?dkVidS:vidS;
+  const _pupS=dk?dkPupS:pupS;const _vidS=dk?dkVidS:vidS;const _personalS=dk?dkPersonalS:personalS;
   const card=(label,s)=>`<div style="background:${s.bg};color:${s.t};border:1px solid ${s.b};border-radius:8px;padding:6px 12px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:${s.d};flex-shrink:0"></span>${label}</div>`;
   const secT=(t)=>`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 8px">${t}</div>`;
   const _bdr=dk?'rgba(255,255,255,.04)':'rgba(0,0,0,.04)';const _bdr2=dk?'rgba(255,255,255,.06)':'rgba(0,0,0,.08)';
@@ -6206,6 +6210,7 @@ function renderGuidePage(){
       ${card('Videos',_vidS)}
       ${card('Weekly Goals',_c['weekly goals'])}
       ${card('Pup Skills',_pupS)}
+      ${card('Personal (WR)',_personalS)}
     </div>
   </div>
   <div style="${panel}">
