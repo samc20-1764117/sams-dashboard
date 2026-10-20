@@ -3851,9 +3851,19 @@ function _mWkUnassignedWr(weekOff) {
 // scroll view). Check off in place, "Assign day" for one, or Select → pick several → drag any
 // selected row (or tap Assign) onto a day. Drag uses a ghost clone + hit-test (the tray is
 // outside #mWeekList, so the list's own gesture code doesn't see it).
-let _mWrT = {open: false, sel: new Set(), selMode: false, off: 0, drag: null};
+let _mWrT = {open: false, min: false, sel: new Set(), off: 0, drag: null};
 
-// Inline panel (lives in the week list, right under that week's divider — NOT a fixed layer).
+// Inline panel (lives in the week list, right under that week's divider — NOT a fixed layer;
+// position:sticky keeps it pinned while you scroll the days underneath, so you can scroll then drag).
+// Display name honors a per-week 'edit' override's custom_name, like desktop's _wrItemsForWeek.
+function _mWrDisplayName(r, wk) {
+  const ov = (st.wrOverrides || []).find(o => o.override_type === 'edit' && o.wk_key === wk && String(o.rule_id) === String(r.id));
+  return (ov && ov.custom_name) || r.name || '';
+}
+// Interval cadences only — desktop's WR menu offers move-next/all-future ONLY for these; weekly/other
+// already fire every week so "move to next week" is meaningless for them.
+function _mWrIsInterval(r) { return ['biweekly', 'monthly', 'quarterly', 'biannual', 'annual'].includes(r.cadence); }
+
 function _mWrPanelHtml(off) {
   const wk = getWkKey(off);
   const items = _mWkUnassignedWr(off).map(r => ({r, done: isDoneWRRule(r.id, wk)}));
@@ -3863,22 +3873,35 @@ function _mWrPanelHtml(off) {
   if (!items.length) { _mWrT.open = false; return ''; }
   const left = items.filter(i => !i.done).length;
   const n = _mWrT.sel.size;
-  const bar = `<div class="m-wrt-bar"><span>Weekly Reset</span><span class="m-wrt-ct">${left ? left + ' left' : 'all done'} <i>✕</i></span></div>`;
+  const allOn = left > 0 && n === left;
+  const bar = `<div class="m-wrt-bar"><span class="m-wrt-title">Weekly Reset <em>${left ? left + ' left' : 'all done'}</em></span>
+    <span class="m-wrt-barbtns">
+      ${left ? `<button class="m-wrt-link" onclick="mWrTraySelAll()">${allOn ? 'None' : 'Select all'}</button>` : ''}
+      <button class="m-wrt-ico" aria-label="${_mWrT.min ? 'Expand' : 'Collapse'}" onclick="mWrTrayMin()">${_mWrT.min ? '▸' : '▾'}</button>
+      <button class="m-wrt-ico" aria-label="Close" onclick="mWrTrayClose()">✕</button>
+    </span></div>`;
+  if (_mWrT.min) return bar;
   const rows = items.map(({r, done}) => {
     const sel = _mWrT.sel.has(String(r.id));
     const s = (r.important && !done) ? IMP : gc('weekly_reset');
     return `<div class="m-wrt-row${done ? ' m-wk-done' : ''}${sel ? ' is-sel' : ''}" data-ruleid="${r.id}" data-done="${done ? 1 : 0}">
       <span class="m-wk-band" style="background:${s.bg};border-color:${s.d}"></span>
       <label class="m-chk-wrap"><input type="checkbox"${done ? ' checked' : ''} onchange="togWrRule('${r.id}',this.checked,'${wk}')"></label>
-      <span class="m-wk-task-name${done ? ' done' : ''}">${escHtml(r.name || '')}</span>
-      ${done ? '' : (_mWrT.selMode ? `<span class="m-wrt-pick${sel ? ' on' : ''}"></span>` : `<button class="m-wr-assign" onclick="event.stopPropagation();mWrAssignPicker('${r.id}',${off})">Assign day</button>`)}
+      <span class="m-wk-task-name${done ? ' done' : ''}">${escHtml(_mWrDisplayName(r, wk))}</span>
+      ${done ? '' : `<span class="m-wrt-pick${sel ? ' on' : ''}"></span>`}
     </div>`;
   }).join('');
-  return bar + `<div class="m-wrt-tools">
-      <button class="m-wrt-btn${_mWrT.selMode ? ' on' : ''}" onclick="mWrTraySelMode()">${_mWrT.selMode ? 'Done' : 'Select'}</button>
-      ${_mWrT.selMode ? `<button class="m-wrt-btn" onclick="mWrTraySelAll()">All</button>` : ''}
-      ${n ? `<button class="m-wrt-btn primary" onclick="mWrAssignPicker('${[..._mWrT.sel].join(',')}',${off})">Assign ${n} to day</button>` : `<span class="m-wrt-hint">${_mWrT.selMode ? 'Tap to select, then hold + drag onto a day' : 'Hold + drag a task onto a day'}</span>`}
-    </div><div class="m-wrt-list">${rows}</div>`;
+  let actions = '';
+  if (n) {
+    const selRules = [...(_mWrT.sel)].map(id => (st.wrRules || []).find(r => String(r.id) === id)).filter(Boolean);
+    const anyInterval = selRules.some(_mWrIsInterval);
+    actions = `<div class="m-wrt-actions"><span class="m-wrt-nsel">${n} selected</span>
+      <button class="m-wrt-btn primary" onclick="mWrBulk('pick')">Pick day</button>
+      <button class="m-wrt-btn" onclick="mWrBulk('skip')">Skip this week</button>
+      ${anyInterval ? `<button class="m-wrt-btn" onclick="mWrBulk('next')">This one → next wk</button><button class="m-wrt-btn" onclick="mWrBulk('future')">All future → next wk</button>` : ''}
+      <button class="m-wrt-link" onclick="mWrTraySelClear()">Clear</button></div>`;
+  }
+  return bar + actions + `<div class="m-wrt-list">${rows}</div>` + (n ? '' : `<div class="m-wrt-hint">Tap the circle to select · hold + drag onto a day</div>`);
 }
 
 // Targeted refresh of the open/closed state of every week's inline panel (no full list re-render).
@@ -3889,30 +3912,52 @@ function mWrTrayRender() {
     const html = on ? _mWrPanelHtml(off) : '';
     el.classList.toggle('open', on && !!html);
     el.innerHTML = html;
+    // Pin just below the header (the scroller starts partly under it).
+    if (on && html) {
+      const hdr = document.getElementById('mHeader'), sc = document.getElementById('mWeekPage');
+      el.style.top = (hdr && sc ? Math.max(0, Math.round(hdr.getBoundingClientRect().bottom - sc.getBoundingClientRect().top)) : 0) + 'px';
+    }
   });
   mWrTrayDividerSync();
 }
 
 // Divider button → open/close the panel for that week.
 function mWrTrayOpenFor(off) {
-  if (_mWrT.open && _mWrT.off === off) { _mWrT.open = false; _mWrT.selMode = false; _mWrT.sel.clear(); }
-  else { _mWrT.off = off; _mWrT.open = true; _mWrT.sel.clear(); _mWrT.selMode = false; }
+  if (_mWrT.open && _mWrT.off === off) { _mWrT.open = false; _mWrT.sel.clear(); }
+  else { _mWrT.off = off; _mWrT.open = true; _mWrT.min = false; _mWrT.sel.clear(); }
   mWrTrayRender();
 }
 function mWrTrayDividerSync() {
   document.querySelectorAll('.m-wr-open').forEach(b => b.classList.toggle('on', _mWrT.open && +b.dataset.wk === _mWrT.off));
 }
-let _mWrToggleAt = 0;
-function mWrTrayToggle() { // panel's ✕ bar: touchend + synthesized click both land here
-  if (Date.now() - _mWrToggleAt < 400) return;
-  _mWrToggleAt = Date.now();
-  _mWrT.open = false; _mWrT.selMode = false; _mWrT.sel.clear();
-  mWrTrayRender();
-}
-function mWrTraySelMode() { _mWrT.selMode = !_mWrT.selMode; if (!_mWrT.selMode) _mWrT.sel.clear(); mWrTrayRender(); }
+function mWrTrayMin() { _mWrT.min = !_mWrT.min; mWrTrayRender(); }
+function mWrTrayClose() { _mWrT.open = false; _mWrT.min = false; _mWrT.sel.clear(); mWrTrayRender(); }
+function mWrTraySelClear() { _mWrT.sel.clear(); mWrTrayRender(); }
 function mWrTraySelAll() {
   const wk = getWkKey(_mWrT.off);
-  _mWkUnassignedWr(_mWrT.off).filter(r => !isDoneWRRule(r.id, wk)).forEach(r => _mWrT.sel.add(String(r.id)));
+  const ids = _mWkUnassignedWr(_mWrT.off).filter(r => !isDoneWRRule(r.id, wk)).map(r => String(r.id));
+  if (ids.length && ids.every(id => _mWrT.sel.has(id))) _mWrT.sel.clear(); else ids.forEach(id => _mWrT.sel.add(id));
+  mWrTrayRender();
+}
+
+// Bulk actions on the selection — same writers the single-row menu / desktop's multi-select
+// context menu loop over (one undo entry per item). Move-next/all-future apply to interval
+// cadences only (desktop rule); weekly/other items in the selection are left alone.
+function mWrBulk(kind) {
+  const off = _mWrT.off, wk = getWkKey(off);
+  const ids = [..._mWrT.sel];
+  if (!ids.length) return;
+  if (kind === 'pick') { mWrAssignPicker(ids.join(','), off); return; }
+  const rules = ids.map(id => (st.wrRules || []).find(r => String(r.id) === id)).filter(Boolean);
+  _mWrT.sel.clear();
+  if (kind === 'skip') {
+    rules.forEach(r => _mWriteWrOverride(r.id, wk, {override_type: 'skip'}, {undoLabel: 'Skipped ' + _mWrDisplayName(r, wk)}));
+  } else {
+    const iv = rules.filter(_mWrIsInterval);
+    const fixed = rules.length - iv.length;
+    iv.forEach(r => kind === 'next' ? _mWrShiftThisWeek('wrrule', r.id, wk, 1) : _mWrShiftAllFuture('wrrule', r.id, wk, 1));
+    if (fixed) showToast(fixed + ' weekly task' + (fixed > 1 ? 's' : '') + ' left as is — they already repeat every week', '#6b7280', 2600);
+  }
   mWrTrayRender();
 }
 
@@ -4001,15 +4046,11 @@ function mInitWrTray() {
     if (moved) { e.preventDefault(); _mWrDragStart(press.row, t.clientX, t.clientY); press = null; }
   }, {passive: false});
 
-  // Bar toggles on click AND touchend (some iOS paths drop the synthesized click on this
-  // fixed layer); mWrTrayToggle dedupes the pair.
-  el.addEventListener('click', e => { if (e.target.closest('.m-wrt-bar')) mWrTrayToggle(); });
   el.addEventListener('touchend', e => {
     if (timer) { clearTimeout(timer); timer = null; }
     if (_mWrT.drag) { _mWrDragEnd(false); return; }
-    if (e.target.closest('.m-wrt-bar')) { mWrTrayToggle(); return; }
     const p = press; press = null;
-    if (p && !p.armed && _mWrT.selMode) {
+    if (p && !p.armed) {
       const id = p.row.dataset.ruleid;
       if (_mWrT.sel.has(id)) _mWrT.sel.delete(id); else _mWrT.sel.add(id);
       mWrTrayRender();
@@ -4021,7 +4062,7 @@ function mInitWrTray() {
 function _mWrDragStart(row, x, y) {
   const id = row.dataset.ruleid;
   let ids;
-  if (_mWrT.selMode && _mWrT.sel.size) { _mWrT.sel.add(id); ids = [..._mWrT.sel]; } else ids = [id];
+  if (_mWrT.sel.size) { _mWrT.sel.add(id); ids = [..._mWrT.sel]; } else ids = [id];
   const ghost = document.createElement('div');
   ghost.className = 'm-wrt-ghost';
   const name = row.querySelector('.m-wk-task-name')?.textContent || '';
@@ -4054,7 +4095,8 @@ function _mWrDragScroll() {
   const d = _mWrT.drag; if (!d) return;
   const sc = _mWkScroller();
   const hdr = document.getElementById('mHeader');
-  const topLimit = Math.max(hdr ? hdr.getBoundingClientRect().bottom : 0, 0);
+  const pnl = document.querySelector('.m-wrt-inline.open');
+  const topLimit = Math.max(hdr ? hdr.getBoundingClientRect().bottom : 0, pnl ? pnl.getBoundingClientRect().bottom : 0, 0);
   const botLimit = window.innerHeight - 80, EDGE = 56, MAXSPD = 16;
   let v = 0;
   if (d.y > botLimit - EDGE) { const f = Math.min(1, (d.y - (botLimit - EDGE)) / EDGE); v = f * f * MAXSPD; }
