@@ -933,6 +933,7 @@ function mTaskRow(t) {
     }
     <span class="m-row-name${t.done ? ' done' : ''}">${safeName}</span>
     ${mvBtn}
+    <span class="m-grip" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg></span>
   </div>`;
 
   // data-rid: every row, any type — lets drag-reorder capture the FULL day order (matches
@@ -2130,6 +2131,12 @@ function _mRowEdit(outer) {
 // is what let the page visibly scroll for a frame before the drag "caught up."
 // Quick-drag: moving after 220ms starts a drag (no menu); holding still until 400ms opens the menu.
 const _M_DRAG_ARM_MS = 220, _M_MENU_HOLD_MS = 400;
+function _mTodBeginDrag(list, outer, t0) {
+  _mTodDrag = {el: outer, origOrder: [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid),
+    tid: outer.dataset.tid || null, x: t0.clientX, y: t0.clientY, startX: t0.clientX, ready: false, dir: 0};
+  _mDdBuild(_mTodDrag);
+  _mTodDragBlock = Infinity; // keep #mMain's own day-swipe from also firing on this same horizontal drag
+}
 let _mTodDrag = null;   // set only once a real drag is confirmed — {el, origOrder}
 let _mTodPress = null;  // transient arm/tap state — {outer, armed}
 function mInitTodayGestures() {
@@ -2140,7 +2147,12 @@ function mInitTodayGestures() {
   let pressTimer = null;
   let touchStartX = 0, touchStartY = 0;
 
+  // Grip handle (right edge of each row): touch-action:none, so dragging from it starts the
+  // moment the finger moves a few px — no hold, no pressure, no scroll fight.
+  let grip = null;
   list.addEventListener('touchstart', e => {
+    const g = e.target.closest('.m-grip');
+    if (g) { const o = g.closest('.m-row-outer[data-rid]'); if (o) { grip = {outer: o, x: e.touches[0].clientX, y: e.touches[0].clientY}; return; } }
     // data-rid (every row, any type) — not data-tid (real tasks only) — so hold-and-drag
     // reordering works uniformly across the whole list, matching the manual _dayOrder
     // capture below which already covers every row.
@@ -2173,6 +2185,13 @@ function mInitTodayGestures() {
   }, {passive: true});
 
   list.addEventListener('touchmove', e => {
+    if (grip && !_mTodDrag) {
+      const t = e.touches[0];
+      if (Math.abs(t.clientX - grip.x) <= 4 && Math.abs(t.clientY - grip.y) <= 4) return;
+      const o = grip.outer; grip = null;
+      mCloseTaskMenu();
+      _mTodBeginDrag(list, o, t);
+    }
     if (_mTodDrag) { _mTodDragMove(e); return; } // already dragging — _mTodDragMove preventDefaults itself
     if (!_mTodPress) return;
     if (Math.abs(e.touches[0].clientX - touchStartX) <= 8 && Math.abs(e.touches[0].clientY - touchStartY) <= 8) return;
@@ -2193,15 +2212,12 @@ function mInitTodayGestures() {
     const outer = _mTodPress.outer;
     _mTodPress = null;
     mCloseTaskMenu();
-    const t0 = e.touches[0];
-    _mTodDrag = {el: outer, origOrder: [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid),
-      tid: outer.dataset.tid || null, x: t0.clientX, y: t0.clientY, startX: t0.clientX, ready: false, dir: 0};
-    _mDdBuild(_mTodDrag);
-    _mTodDragBlock = Infinity; // keep #mMain's own day-swipe from also firing on this same horizontal drag
+    _mTodBeginDrag(list, outer, e.touches[0]);
     _mTodDragMove(e);
   }, {passive: false});
 
   list.addEventListener('touchend', () => {
+    grip = null;
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     if (_mTodDrag) { _mTodDragEnd(); return; }
     const press = _mTodPress;
@@ -2211,6 +2227,7 @@ function mInitTodayGestures() {
     if (press && !press.armed) _mRowEdit(press.outer);
   }, {passive: true});
   list.addEventListener('touchcancel', () => {
+    grip = null;
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     _mTodPress = null;
     if (_mTodDrag) _mTodDragEnd(true);
@@ -3769,6 +3786,7 @@ function mWkTaskRow(t) {
     ${chk}
     <span class="m-wk-task-name${t.done ? ' done' : ''}">${escHtml(t.name || '')}</span>
     ${mvBtn}
+    <span class="m-grip" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg></span>
   </div>`;
 }
 
@@ -4115,7 +4133,23 @@ function mInitWeekGestures() {
   let pressTimer = null;
   let touchStartX = 0, touchStartY = 0;
 
+  function beginWkDrag(rowEl, t0) {
+    const wrSec = rowEl.closest('.m-wk-wr');
+    const dayEl = rowEl.closest('.m-wk-day[data-ds]') || wrSec;
+    const origDs = dayEl?.dataset.ds || (wrSec ? '__wr__' : undefined);
+    if (!origDs) return false;
+    // Snapshot this day's row order BEFORE the drag starts moving anything, so drop can
+    // tell "landed back where it started" (no-op) from "actually reordered".
+    const origOrder = [...dayEl.querySelectorAll('.m-wk-row[data-rid]')].map(r => r.dataset.rid);
+    rowEl.classList.add('m-wk-row-dragging');
+    _mWkDrag = {tid: rowEl.dataset.tid, moveArgs: _mWkMoveArgs(rowEl), el: rowEl, origDs, origOrder, x: t0.clientX, y: t0.clientY, raf: 0};
+    return true;
+  }
+  // Grip handle: drag starts as soon as the finger moves a few px — no hold needed.
+  let grip = null;
   list.addEventListener('touchstart', e => {
+    const g = e.target.closest('.m-grip');
+    if (g) { const r = g.closest('.m-wk-row[data-rid]'); if (r) { grip = {row: r, x: e.touches[0].clientX, y: e.touches[0].clientY}; return; } }
     const row = e.target.closest('.m-wk-row[data-rid]');
     if (!row) return;
     if (e.target.closest('.m-chk-wrap')) return; // checkbox owns its own tap
@@ -4142,6 +4176,12 @@ function mInitWeekGestures() {
   // approach attached its blocking listener a tick late, missing that first event, which
   // is what let the page visibly scroll for a frame before the drag "caught up."
   list.addEventListener('touchmove', e => {
+    if (grip && !_mWkDrag) {
+      const t = e.touches[0];
+      if (Math.abs(t.clientX - grip.x) <= 4 && Math.abs(t.clientY - grip.y) <= 4) return;
+      const r = grip.row; grip = null;
+      if (beginWkDrag(r, t)) navigator.vibrate?.(8);
+    }
     if (_mWkDrag) { _mWkDragMove(e); return; } // _mWkDragMove preventDefaults itself
     if (!_mWkPress) return;
     if (Math.abs(e.touches[0].clientX - touchStartX) <= 8 && Math.abs(e.touches[0].clientY - touchStartY) <= 8) return;
@@ -4160,15 +4200,7 @@ function mInitWeekGestures() {
     const rowEl = _mWkPress.outer;
     _mWkPress = null;
     mCloseTaskMenu();
-    const wrSec = rowEl.closest('.m-wk-wr');
-    const dayEl = rowEl.closest('.m-wk-day[data-ds]') || wrSec;
-    const origDs = dayEl?.dataset.ds || (wrSec ? '__wr__' : undefined);
-    if (!origDs) return;
-    // Snapshot this day's row order BEFORE the drag starts moving anything, so drop can
-    // tell "landed back where it started" (no-op) from "actually reordered".
-    const origOrder = [...dayEl.querySelectorAll('.m-wk-row[data-rid]')].map(r => r.dataset.rid);
-    rowEl.classList.add('m-wk-row-dragging');
-    _mWkDrag = {tid: rowEl.dataset.tid, moveArgs: _mWkMoveArgs(rowEl), el: rowEl, origDs, origOrder, x: e.touches[0].clientX, y: e.touches[0].clientY, raf: 0};
+    if (!beginWkDrag(rowEl, e.touches[0])) return;
     _mWkDragMove(e);
   }, {passive: false});
 
@@ -4238,6 +4270,7 @@ function mInitWeekGestures() {
   }
 
   list.addEventListener('touchend', () => {
+    grip = null;
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     if (_mWkDrag) { endDrag(false); return; }
     const press = _mWkPress;
@@ -4247,6 +4280,7 @@ function mInitWeekGestures() {
     if (press && !press.armed) _mRowEdit(press.outer);
   }, {passive: true});
   list.addEventListener('touchcancel', () => {
+    grip = null;
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     _mWkPress = null;
     endDrag(true);
