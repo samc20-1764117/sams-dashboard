@@ -5439,7 +5439,7 @@ function _mRenderMonthWeeks(reset) {
   // Background sync re-renders (reset=false) must not yank the view while the user is
   // scrolled off to a past/future month — only an explicit tab-open resets position.
   const prevScroll = scroller ? scroller.scrollTop : 0;
-  if (reset) { _mMoRenderedLo = -6; _mMoRenderedHi = 6; }
+  if (reset) { _mMoRenderedLo = -16; _mMoRenderedHi = 8; }
   let html = '';
   for (let w = _mMoRenderedLo; w <= _mMoRenderedHi; w++) {
     html += _mMoWeekRowHtml(w, w === _mMoRenderedLo);
@@ -5453,6 +5453,7 @@ function _mRenderMonthWeeks(reset) {
 // prepended that label is stale (the real month divider now sits above it) — drop it, or the
 // same month shows twice.
 function _mMoDropForcedLabel(wrap) { wrap.querySelectorAll('.m-mo-month-divider.forced').forEach(n => n.remove()); }
+const _M_MO_BATCH = 4;
 function _mMoLoadMore(direction) {
   if (_mMoScrollLock) return;
   _mMoScrollLock = true;
@@ -5460,14 +5461,21 @@ function _mMoLoadMore(direction) {
   const scroller = document.getElementById('mMonthScroll');
   if (!wrap || !scroller) { _mMoScrollLock = false; return; }
   if (direction === 'up') {
-    _mMoRenderedLo--;
+    // Prepend a BATCH in one go: every scrollTop correction interrupts iOS momentum
+    // scrolling, so one correction per 4 weeks (not per week) keeps upward flings smooth.
     const prevHeight = wrap.scrollHeight;
     _mMoDropForcedLabel(wrap);
-    wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, true));
+    let html = '';
+    for (let i = 0; i < _M_MO_BATCH; i++) {
+      _mMoRenderedLo--;
+      html = _mMoWeekRowHtml(_mMoRenderedLo, i === _M_MO_BATCH - 1) + html;
+    }
+    wrap.insertAdjacentHTML('afterbegin', html);
     scroller.scrollTop += wrap.scrollHeight - prevHeight;
   } else {
-    _mMoRenderedHi++;
-    wrap.insertAdjacentHTML('beforeend', _mMoWeekRowHtml(_mMoRenderedHi, false));
+    let html = '';
+    for (let i = 0; i < _M_MO_BATCH; i++) { _mMoRenderedHi++; html += _mMoWeekRowHtml(_mMoRenderedHi, false); }
+    wrap.insertAdjacentHTML('beforeend', html);
   }
   setTimeout(() => { _mMoScrollLock = false; }, 200);
 }
@@ -5580,7 +5588,7 @@ function mInitMonthScroll() {
       _mMoTitleRaf = false;
       _mUpdateMonthTitle();
       if (_mMoScrollLock) return;
-      const threshold = 900;
+      const threshold = 2200; // load well before the edge so a fling never reaches it
       if (scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < threshold) _mMoLoadMore('down');
       if (scroller.scrollTop < threshold) _mMoLoadMore('up');
     });
