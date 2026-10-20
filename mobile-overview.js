@@ -2111,6 +2111,25 @@ function _mRowEdit(outer) {
   // a tap intentionally no-ops for it.
 }
 
+// Row tap: single tap opens the quick-actions menu, double tap opens edit. The menu waits
+// 260ms so a second tap can cancel it (otherwise the menu would pop up under the 2nd tap).
+// Shared by Today, Week, Shop and Month's day panel.
+let _mTapSt = {rid: null, timer: null};
+function _mRowTap(outer) {
+  const rid = outer.dataset.rid;
+  if (_mTapSt.timer && _mTapSt.rid === rid) {
+    clearTimeout(_mTapSt.timer); _mTapSt = {rid: null, timer: null};
+    _mRowEdit(outer);
+    return;
+  }
+  clearTimeout(_mTapSt.timer);
+  _mTapSt.rid = rid;
+  _mTapSt.timer = setTimeout(() => {
+    _mTapSt = {rid: null, timer: null};
+    if (outer.isConnected) _mShowTaskMenu(outer);
+  }, 260);
+}
+
 // ── Today: unified row gestures — tap=edit, hold=menu (shows live, not on release),
 // hold+drag=reorder ────────────────────────────────────────────────────────────────
 // Standard iOS list convention: tap is the primary action (open/edit), long-press reveals
@@ -2224,7 +2243,7 @@ function mInitTodayGestures() {
     _mTodPress = null;
     // Armed-but-never-dragged: the menu is already open from the hold itself — nothing
     // more to do on release, it stays open until a menu option is tapped or dismissed.
-    if (press && !press.armed) _mRowEdit(press.outer);
+    if (press && !press.armed) _mRowTap(press.outer);
   }, {passive: true});
   list.addEventListener('touchcancel', () => {
     grip = null;
@@ -4277,7 +4296,7 @@ function mInitWeekGestures() {
     _mWkPress = null;
     // Armed-but-never-dragged: the menu is already open from the hold itself — nothing
     // more to do on release, it stays open until a menu option is tapped or dismissed.
-    if (press && !press.armed) _mRowEdit(press.outer);
+    if (press && !press.armed) _mRowTap(press.outer);
   }, {passive: true});
   list.addEventListener('touchcancel', () => {
     grip = null;
@@ -4459,7 +4478,7 @@ function _mInitTapHoldMenu(containerId, excludeSelectors) {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     const p = press;
     press = null;
-    if (p && !p.armed) _mRowEdit(p.outer);
+    if (p && !p.armed) _mRowTap(p.outer);
   }, {passive: true});
 }
 function mInitShopGestures() { _mInitTapHoldMenu('mShopList', ['.m-chk-wrap']); }

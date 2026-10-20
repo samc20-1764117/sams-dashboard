@@ -884,7 +884,7 @@ input,textarea,select,[contenteditable="true"],[contenteditable=""]{-webkit-user
 .m-wr-assign-skip{width:100%;margin-top:12px;padding:10px;border:0;background:transparent;color:var(--text-muted,#888);font-family:inherit;font-size:13px}
 
 /* Drag grip: immediate-drag handle at each row's right edge (Today + Week lists only) */
-.m-grip{display:none;touch-action:none !important;align-self:stretch;align-items:center;justify-content:center;width:36px;margin:-8px -10px -8px 0;flex-shrink:0;color:var(--sub);opacity:.45}
+.m-grip{display:none;touch-action:none !important;align-self:stretch;align-items:center;justify-content:center;width:36px;margin:-8px -10px -8px 0;flex-shrink:0;color:var(--sub);opacity:.2}
 .m-grip svg{pointer-events:none}
 #mTodayList .m-grip,#mWeekList .m-grip{display:flex}
-.m-grip:active{opacity:.9;color:var(--accent)}
+.m-grip:active{opacity:.7;color:var(--accent)}
