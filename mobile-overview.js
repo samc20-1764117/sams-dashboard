@@ -3785,11 +3785,73 @@ function _mWkLabel(off) {
   return dates[0].toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) + ' – ' + dates[6].toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
 }
 
+// Weekly Reset rules due this week with NO day pinned yet — mirrors desktop's Weekly Reset
+// card, where unassigned items live until dragged onto a day. Pinned/skipped/moved-away
+// rules are excluded (they show under their day / the skipped popup instead).
+function _mWkUnassignedWr(weekOff) {
+  const wk = getWkKey(weekOff);
+  const ovs = st.wrOverrides || [];
+  return (st.wrRules || []).filter(r => {
+    const pin = r._dateOverrides && r._dateOverrides[wk];
+    if (pin) return false; // pinned to a day (or legacy '__skip__')
+    const id = String(r.id);
+    if (ovs.some(o => String(o.rule_id) === id && o.wk_key === wk && (o.override_type === 'skip' || o.override_type === 'move'))) return false;
+    const movedIn = ovs.some(o => o.override_type === 'move' && o.moved_to_wk_key === wk && String(o.rule_id) === id);
+    return movedIn || isWRRuleDueThisWeek(r, weekOff);
+  }).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+}
+
+function _mWkWrSectionHtml(weekOff) {
+  const wk = getWkKey(weekOff);
+  const items = _mWkUnassignedWr(weekOff).map(r => ({r, done: isDoneWRRule(r.id, wk)}));
+  if (!items.length) return '';
+  items.sort((a, b) => a.done - b.done);
+  const left = items.filter(i => !i.done).length;
+  const rows = items.map(({r, done}) => {
+    const s = (r.important && !done) ? IMP : gc('weekly_reset');
+    return `<div class="m-wk-row${done ? ' m-wk-done' : ''}" data-rid="wrrule-virt-${r.id}" data-rtype="wrrule" data-ruleid="${r.id}" data-wkkey="${wk}">
+      <span class="m-wk-band" style="background:${s.bg};border-color:${s.d}"></span>
+      <label class="m-chk-wrap"><input type="checkbox"${done ? ' checked' : ''} onchange="togWrRule('${r.id}',this.checked,'${wk}')"></label>
+      <span class="m-wk-task-name${done ? ' done' : ''}">${escHtml(r.name || '')}</span>
+      ${done ? '' : `<button class="m-wr-assign" onclick="event.stopPropagation();mWrAssignPicker('${r.id}','${wk}',${weekOff})">Assign day</button>`}
+    </div>`;
+  }).join('');
+  return `<div class="m-wk-wr" data-wk="${weekOff}">
+    <div class="m-wk-wr-hd">Weekly Reset <span class="m-wk-wr-ct">${left ? left + ' left' : 'all done'}</span></div>${rows}</div>`;
+}
+
+// Day-picker for an unassigned WR rule — Mon–Sun chips for the rule's own week; pins via the
+// same mMoveToToday('wrrule') path drag-to-day uses (undo toast included).
+function mWrAssignPicker(ruleId, wkKey, weekOff) {
+  document.getElementById('mWrAssignSheet')?.remove();
+  const r = (st.wrRules || []).find(x => String(x.id) === String(ruleId));
+  if (!r) return;
+  const today = d2s(getDayDate(0));
+  const chips = getWkDates(weekOff).map((d, i) => {
+    const ds = d2s(d);
+    return `<button class="m-wr-chip${ds === today ? ' is-today' : ''}${ds < today ? ' is-past' : ''}" onclick="mWrAssignPick('${ruleId}','${wkKey}','${ds}')"><b>${_WK_DAYS[i]}</b><span>${d.getDate()}</span></button>`;
+  }).join('');
+  const el = document.createElement('div');
+  el.id = 'mWrAssignSheet';
+  el.className = 'm-wr-assign-bg';
+  el.onclick = e => { if (e.target === el) el.remove(); };
+  el.innerHTML = `<div class="m-wr-assign-card"><div class="m-wr-assign-title">${escHtml(r.name || '')}</div><div class="m-wr-chips">${chips}</div>
+    <button class="m-wr-assign-skip" onclick="document.getElementById('mWrAssignSheet')?.remove();_mWriteWrOverride('${ruleId}','${wkKey}',{override_type:'skip'},{undoLabel:'Skipped this week'})">Skip this week</button></div>`;
+  document.body.appendChild(el);
+}
+
+function mWrAssignPick(ruleId, wkKey, ds) {
+  document.getElementById('mWrAssignSheet')?.remove();
+  mMoveToToday(ruleId, 'wrrule', wkKey, ds);
+  mRenderWeek();
+}
+
 function _mWkRenderWeekHtml(weekOff) {
   const dates = getWkDates(weekOff);
   const today = d2s(getDayDate(0));
   const isCurrent = weekOff === 0;
   let html = `<div class="m-wk-divider${isCurrent ? ' is-current' : ''}" data-wk="${weekOff}">${_mWkLabel(weekOff)}</div>`;
+  html += _mWkWrSectionHtml(weekOff);
 
   dates.forEach((d, i) => {
     const ds = d2s(d);
@@ -4006,12 +4068,14 @@ function _mWkDragHit() {
   if (!targetDay || !list.contains(targetDay)) return;
   // Non-task rows (recurring/WR/shop/etc.) can reorder within their own day but not change day.
   if (!_mWkDrag.moveArgs && targetDay.dataset.ds !== _mWkDrag.origDs) return;
+  // A WR rule's pin is per-week: only days of the rule's own week are valid drop targets.
+  if (_mWkDrag.el.dataset.rtype === 'wrrule' && _mWkDrag.el.dataset.wkkey && dsToWkKey(targetDay.dataset.ds) !== _mWkDrag.el.dataset.wkkey) return;
   const targetRow = hit?.closest('.m-wk-row[data-rid]');
   // Only the origin day (before this move) and the target day can have any rows actually
   // shift position — scoping _mFlipReflow's measurement to just those two (not the whole
   // week list, which can span many rendered weeks) keeps it cheap enough to run on every
   // touchmove.
-  const origDay = el.closest('.m-wk-day[data-ds]');
+  const origDay = el.closest('.m-wk-day[data-ds]') || el.closest('.m-wk-wr');
 
   if (targetRow && targetRow !== el && targetDay.contains(targetRow)) {
     const rect = targetRow.getBoundingClientRect();
@@ -4096,8 +4160,9 @@ function mInitWeekGestures() {
     const rowEl = _mWkPress.outer;
     _mWkPress = null;
     mCloseTaskMenu();
-    const dayEl = rowEl.closest('.m-wk-day[data-ds]');
-    const origDs = dayEl?.dataset.ds;
+    const wrSec = rowEl.closest('.m-wk-wr');
+    const dayEl = rowEl.closest('.m-wk-day[data-ds]') || wrSec;
+    const origDs = dayEl?.dataset.ds || (wrSec ? '__wr__' : undefined);
     if (!origDs) return;
     // Snapshot this day's row order BEFORE the drag starts moving anything, so drop can
     // tell "landed back where it started" (no-op) from "actually reordered".

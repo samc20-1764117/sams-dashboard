@@ -867,3 +867,18 @@ input,textarea,select,[contenteditable="true"],[contenteditable=""]{-webkit-user
 .m-dd-strip.to-l{justify-content:flex-end}
 .m-dd-strip.ready{background:var(--accent);color:#fff}
 .m-dd-clone{position:absolute !important;margin:0 !important;background:var(--bg-elevated);border-radius:var(--rs,14px);box-shadow:0 14px 34px rgba(0,0,0,.28);will-change:transform,top;-webkit-user-select:none;user-select:none}
+
+/* Week: unassigned Weekly Reset section (above each week's days) */
+.m-wk-wr{margin:0 0 10px;border:1px solid var(--border);border-radius:var(--r,12px);overflow:hidden;background:var(--card,transparent)}
+.m-wk-wr-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font-size:13px;font-weight:700;color:var(--text)}
+.m-wk-wr-ct{font-size:11px;font-weight:600;color:var(--text-muted,#888)}
+.m-wr-assign{flex-shrink:0;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:var(--rs);font-size:11px;font-weight:600;padding:4px 9px;margin-left:4px;font-family:inherit;white-space:nowrap}
+.m-wr-assign-bg{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center}
+.m-wr-assign-card{width:100%;max-width:480px;background:var(--bg,#fff);border-radius:16px 16px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.m-wr-assign-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px}
+.m-wr-chips{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.m-wr-chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text);font-family:inherit;font-size:11px}
+.m-wr-chip b{font-weight:700}.m-wr-chip span{font-size:15px}
+.m-wr-chip.is-today{border-color:var(--accent);color:var(--accent)}
+.m-wr-chip.is-past{opacity:.5}
+.m-wr-assign-skip{width:100%;margin-top:12px;padding:10px;border:0;background:transparent;color:var(--text-muted,#888);font-family:inherit;font-size:13px}
