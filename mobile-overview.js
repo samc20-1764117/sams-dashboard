@@ -1493,8 +1493,11 @@ function _mMoveToTodayArgs(t) {
   return [t.id, 'task'];
 }
 
-function mMoveToToday(id, type, extra) {
-  const today = d2s(getDayDate(0));
+function mMoveToToday(id, type, extra, targetDs) {
+  // targetDs (optional): move to that day instead of today — used by Week's drag-to-another-day.
+  const today = targetDs || d2s(getDayDate(0));
+  const _lbl = targetDs ? 'Moved to ' + _mFmtAddDate(today) : _lbl;
+  const _dayWord = targetDs ? _mFmtAddDate(today) : 'Today';
   if (type === 'shop') {
     const s = st.shopping.find(x => String(x.id) === String(id));
     if (!s) return;
@@ -1502,7 +1505,7 @@ function mMoveToToday(id, type, extra) {
     s.due_date = today;
     save();
     sbReq('PATCH', 'shopping_list', {due_date: today}, `?id=eq.${id}`);
-    pushUndo(() => { const s2 = st.shopping.find(x => String(x.id) === String(id)); if (s2) s2.due_date = prev; save(); renderAll(); sbReq('PATCH', 'shopping_list', {due_date: prev}, `?id=eq.${id}`); }, 'Moved to today');
+    pushUndo(() => { const s2 = st.shopping.find(x => String(x.id) === String(id)); if (s2) s2.due_date = prev; save(); renderAll(); sbReq('PATCH', 'shopping_list', {due_date: prev}, `?id=eq.${id}`); }, _lbl);
   } else if (type === 'pup') {
     const s = (st.pupSessions || []).find(x => String(x.id) === String(id));
     if (!s) return;
@@ -1510,14 +1513,14 @@ function mMoveToToday(id, type, extra) {
     s.day_date = today;
     save();
     sbReqSilent('PATCH', 'pup_skill_sessions', {day_date: today}, `?id=eq.${id}`);
-    pushUndo(() => { const s2 = (st.pupSessions || []).find(x => String(x.id) === String(id)); if (s2) s2.day_date = prev; save(); renderAll(); sbReqSilent('PATCH', 'pup_skill_sessions', {day_date: prev}, `?id=eq.${id}`); }, 'Moved to today');
+    pushUndo(() => { const s2 = (st.pupSessions || []).find(x => String(x.id) === String(id)); if (s2) s2.day_date = prev; save(); renderAll(); sbReqSilent('PATCH', 'pup_skill_sessions', {day_date: prev}, `?id=eq.${id}`); }, _lbl);
   } else if (type === 'vid') {
     const m = _mVidDayMap();
     const prev = m[String(id)];
     m[String(id)] = today;
     _mVidDayMapSet(m);
     save();
-    pushUndo(() => { const m2 = _mVidDayMap(); if (prev) m2[String(id)] = prev; else delete m2[String(id)]; _mVidDayMapSet(m2); save(); renderAll(); }, 'Moved to today');
+    pushUndo(() => { const m2 = _mVidDayMap(); if (prev) m2[String(id)] = prev; else delete m2[String(id)]; _mVidDayMapSet(m2); save(); renderAll(); }, _lbl);
   } else if (type === 'vidstep') {
     const [step, day] = String(extra).split('::');
     const m = _mVidStepMap();
@@ -1542,7 +1545,7 @@ function mMoveToToday(id, type, extra) {
       prevBlocks.forEach(({id: bid, ds}) => { const bl = st.blocks.find(x => x.id === bid); if (bl) { bl.ds = ds; sbUpdateBlock(bid, {day_date: ds}); } });
       if (entry && prevEntry) { entry.ds = prevEntry.ds; entry.extraDays = prevEntry.extraDays; _mVidStepMapSet(m); }
       save(); renderAll();
-    }, 'Moved to today');
+    }, _lbl);
   } else if (type === 'rec' || type === 'wrec') {
     const r = st.recurring.find(x => String(x.id) === String(id));
     if (!r) return;
@@ -1556,7 +1559,7 @@ function mMoveToToday(id, type, extra) {
       if (r2) { if (prev) r2._dateOverrides[extra] = prev; else delete r2._dateOverrides[extra]; }
       save(); renderAll();
       sbReq('PATCH', 'wr_recurring_rules', {date_overrides: r2 ? r2._dateOverrides : {}}, `?id=eq.${id}`);
-    }, _mUn(r.name) + ' moved to Today');
+    }, _mUn(r.name) + ' moved to ' + _dayWord);
   } else if (type === 'wrrule') {
     const r = st.wrRules.find(x => String(x.id) === String(id));
     if (!r) return;
@@ -1570,7 +1573,7 @@ function mMoveToToday(id, type, extra) {
       if (r2) { if (prev) r2._dateOverrides[extra] = prev; else delete r2._dateOverrides[extra]; }
       save(); renderAll();
       sbReqSilent('PATCH', 'wr_recurring_rules', {date_overrides: r2 ? r2._dateOverrides : {}}, `?id=eq.${id}`);
-    }, _mUn(r.name) + ' moved to Today');
+    }, _mUn(r.name) + ' moved to ' + _dayWord);
   } else {
     const t = st.tasks.find(x => String(x.id) === String(id));
     if (!t) return;
@@ -1579,7 +1582,7 @@ function mMoveToToday(id, type, extra) {
     _mMoveTaskBlocks(id, from, today);
     save();
     sbReq('PATCH', 'tasks', {due_date: today}, `?id=eq.${id}`);
-    pushUndo(() => { const t2 = st.tasks.find(x => String(x.id) === String(id)); if (t2) { t2.due_date = from; _mMoveTaskBlocks(id, today, from); } save(); renderAll(); sbReq('PATCH', 'tasks', {due_date: from}, `?id=eq.${id}`); }, _mUn(t.name) + ' moved to Today');
+    pushUndo(() => { const t2 = st.tasks.find(x => String(x.id) === String(id)); if (t2) { t2.due_date = from; _mMoveTaskBlocks(id, today, from); } save(); renderAll(); sbReq('PATCH', 'tasks', {due_date: from}, `?id=eq.${id}`); }, _mUn(t.name) + ' moved to ' + _dayWord);
   }
   renderAll();
 }
@@ -3748,6 +3751,7 @@ function mWkTaskRow(t) {
   const extraAttrs = [
     canEdit ? ` data-tid="${t.id}" data-tname="${escHtml(t.name || '')}"` : '',
     rtype === 'shop' ? ` data-shopid="${t._shopId}"` : '',
+    rtype === 'pup' && t._pupSessId !== undefined ? ` data-pupid="${t._pupSessId}"` : '',
     (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') && ruleId !== undefined ? ` data-ruleid="${ruleId}" data-wkkey="${t._wkKey || ''}"` : '',
     rtype === 'vid' && t._vidId !== undefined ? ` data-vidid="${t._vidId}"` : '',
     rtype === 'vidstep' && t._vidId !== undefined ? ` data-vidid="${t._vidId}" data-vidstep="${t._vidStep}" data-day="${t.due_date}"` : ''
@@ -3939,6 +3943,19 @@ function mWeekGoToday() {
 // below) since _mWkDragMove needs it at module scope.
 let _mWkDrag = null;
 
+// Args for mMoveToToday(id, type, extra, targetDs) from a Week row's data-* attrs, or null
+// when the row can't change day (birthdays/holidays/travel/etc.).
+function _mWkMoveArgs(row) {
+  const d = row.dataset;
+  if (d.tid) return [d.tid, 'task'];
+  if (d.rtype === 'shop' && d.shopid) return [d.shopid, 'shop'];
+  if (d.rtype === 'pup' && d.pupid) return [d.pupid, 'pup'];
+  if (d.rtype === 'vid' && d.vidid) return [d.vidid, 'vid'];
+  if (d.rtype === 'vidstep' && d.vidid) return [d.vidid, 'vidstep', d.vidstep + '::' + d.day];
+  if ((d.rtype === 'wrrule' || d.rtype === 'wrec' || d.rtype === 'rec') && d.ruleid) return [d.ruleid, d.rtype, d.wkkey];
+  return null;
+}
+
 function _mWkDragMove(e) {
   if (!_mWkDrag) return;
   e.preventDefault(); // block scroll while dragging
@@ -3981,7 +3998,7 @@ function _mWkDragHit() {
   const targetDay = hit?.closest('.m-wk-day[data-ds]');
   if (!targetDay || !list.contains(targetDay)) return;
   // Non-task rows (recurring/WR/shop/etc.) can reorder within their own day but not change day.
-  if (!el.dataset.tid && targetDay.dataset.ds !== _mWkDrag.origDs) return;
+  if (!_mWkDrag.moveArgs && targetDay.dataset.ds !== _mWkDrag.origDs) return;
   const targetRow = hit?.closest('.m-wk-row[data-rid]');
   // Only the origin day (before this move) and the target day can have any rows actually
   // shift position — scoping _mFlipReflow's measurement to just those two (not the whole
@@ -4075,14 +4092,14 @@ function mInitWeekGestures() {
     // tell "landed back where it started" (no-op) from "actually reordered".
     const origOrder = [...dayEl.querySelectorAll('.m-wk-row[data-rid]')].map(r => r.dataset.rid);
     rowEl.classList.add('m-wk-row-dragging');
-    _mWkDrag = {tid: rowEl.dataset.tid, el: rowEl, origDs, origOrder, x: e.touches[0].clientX, y: e.touches[0].clientY, raf: 0};
+    _mWkDrag = {tid: rowEl.dataset.tid, moveArgs: _mWkMoveArgs(rowEl), el: rowEl, origDs, origOrder, x: e.touches[0].clientX, y: e.touches[0].clientY, raf: 0};
     _mWkDragMove(e);
   }, {passive: false});
 
   function endDrag(cancelled) {
     if (!_mWkDrag) return;
     document.removeEventListener('touchmove', _mWkDragMove);
-    const {tid, el, origDs, origOrder, raf} = _mWkDrag;
+    const {tid, el, origDs, origOrder, raf, moveArgs} = _mWkDrag;
     if (raf) cancelAnimationFrame(raf);
     _mWkDrag = null;
     el.classList.remove('m-wk-row-dragging');
@@ -4110,6 +4127,17 @@ function mInitWeekGestures() {
     // landed within the target day's order (dropping it at a specific spot should stick,
     // same as a plain same-day reorder — otherwise it'd land there visually during the
     // drag and then jump on the next render once the natural sort re-runs).
+    if (!tid) {
+      // Non-task rows (recurring, weekly reset, shopping, pup, video…): reuse the exact
+      // per-type move logic (and undo toast) behind the "→ Today" button, aimed at this day.
+      if (!moveArgs) { mRenderWeek(); return; }
+      const mo = _dayOrder();
+      mo[targetDs] = newOrder;
+      _dayOrderSet(mo);
+      mMoveToToday(moveArgs[0], moveArgs[1], moveArgs[2], targetDs);
+      mRenderWeek();
+      return;
+    }
     const t = st.tasks.find(x => String(x.id) === String(tid));
     if (!t) { mRenderWeek(); return; }
     const _prevDue = (t.due_date || '').split('T')[0];
