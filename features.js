@@ -1423,7 +1423,9 @@ function scrollMoToday(){
   if(!tc||!mgrid)return;
   const mdow=document.getElementById('mDow');
   const mdowH=mdow?mdow.offsetHeight:0;
-  mgrid.scrollTop+=tc.getBoundingClientRect().top-mgrid.getBoundingClientRect().top-mdowH-56;
+  const sep=mgrid.querySelector('.mo-sep');
+  // sticky stack = weekday header (sep's top:22px) + month label height
+  mgrid.scrollTop+=tc.getBoundingClientRect().top-mgrid.getBoundingClientRect().top-22-(sep?sep.offsetHeight:34)-3;
 }
 function moGoToday(){
   _moNavYear=new Date().getFullYear();const yrSel2=document.getElementById('moYearSel');if(yrSel2)yrSel2.value=String(_moNavYear);
