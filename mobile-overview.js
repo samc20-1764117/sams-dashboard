@@ -5064,7 +5064,7 @@ function mMonthJumpToOffset(monthOffset) {
   const targetWeekOff = _mWkGetWeekOff(targetDs);
   if (targetWeekOff < _mMoRenderedLo || targetWeekOff > _mMoRenderedHi) {
     const wrap = document.getElementById('mMonthWeeks');
-    while (targetWeekOff < _mMoRenderedLo) { _mMoRenderedLo--; wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, false)); }
+    while (targetWeekOff < _mMoRenderedLo) { _mMoRenderedLo--; _mMoDropForcedLabel(wrap); wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, true)); }
     while (targetWeekOff > _mMoRenderedHi) { _mMoRenderedHi++; wrap.insertAdjacentHTML('beforeend', _mMoWeekRowHtml(_mMoRenderedHi, false)); }
   }
   requestAnimationFrame(() => {
@@ -5330,14 +5330,14 @@ function _mMoWeekRowHtml(weekOff, forceLabel) {
     return `<div class="m-mo-day${_cls}${isToday ? ' is-today' : ''}${_mMonthSelectedDs === ds ? ' selected' : ''}" data-ds="${ds}" onclick="mMonthSelectDay('${ds}')"><span class="m-mo-num">${d.getDate()}</span><div class="m-mo-badge-slot">${badge}</div></div>`;
   };
   const blankCell = () => '<div class="m-mo-day m-mo-day-empty"></div>';
-  const monthLabel = d => `<div class="m-mo-month-divider">${d.toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}</div>`;
+  const monthLabel = (d, forced) => `<div class="m-mo-month-divider${forced ? ' forced' : ''}">${d.toLocaleDateString('en-US', {month: 'long', year: 'numeric'})}</div>`;
 
   if (splitIdx === -1) {
-    const divider = (dates[0].getDate() === 1 || forceLabel) ? monthLabel(dates[0]) : '';
+    const divider = (dates[0].getDate() === 1 || forceLabel) ? monthLabel(dates[0], forceLabel && dates[0].getDate() !== 1) : '';
     const cells = dates.map(cellHtml).join('');
     return `${divider}${_mMoTravelLabelsHtml(dates, 0, 6)}<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${cells}${_mMoTravelBarsHtml(dates, 0, 6)}</div>`;
   }
-  let html = (dates[0].getDate() === 1 || forceLabel) ? monthLabel(dates[0]) : '';
+  let html = (dates[0].getDate() === 1 || forceLabel) ? monthLabel(dates[0], forceLabel && dates[0].getDate() !== 1) : '';
   html += _mMoTravelLabelsHtml(dates, 0, splitIdx - 1);
   const firstCells = dates.slice(0, splitIdx).map(cellHtml).join('') + Array(7 - splitIdx).fill(0).map(blankCell).join('');
   html += `<div class="m-mo-week" data-wk="${weekOff}" data-mon="${d2s(dates[0])}">${firstCells}${_mMoTravelBarsHtml(dates, 0, splitIdx - 1)}</div>`;
@@ -5436,6 +5436,10 @@ function _mRenderMonthWeeks(reset) {
   _mUpdateMonthTitle();
 }
 
+// The top row gets a "forced" month label when it starts mid-month; once earlier weeks are
+// prepended that label is stale (the real month divider now sits above it) — drop it, or the
+// same month shows twice.
+function _mMoDropForcedLabel(wrap) { wrap.querySelectorAll('.m-mo-month-divider.forced').forEach(n => n.remove()); }
 function _mMoLoadMore(direction) {
   if (_mMoScrollLock) return;
   _mMoScrollLock = true;
@@ -5445,7 +5449,8 @@ function _mMoLoadMore(direction) {
   if (direction === 'up') {
     _mMoRenderedLo--;
     const prevHeight = wrap.scrollHeight;
-    wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, false));
+    _mMoDropForcedLabel(wrap);
+    wrap.insertAdjacentHTML('afterbegin', _mMoWeekRowHtml(_mMoRenderedLo, true));
     scroller.scrollTop += wrap.scrollHeight - prevHeight;
   } else {
     _mMoRenderedHi++;
@@ -5574,6 +5579,7 @@ function mInitMonthScroll() {
 // that was forcing a layout read per row on every scroll frame (dozens of times a
 // second with 13+ weeks rendered), which is exactly the kind of layout-thrashing that
 // makes scrolling feel stuck/broken on a real device.
+let _mMoLastTitleRow = null;
 function _mUpdateMonthTitle() {
   const scroller = document.getElementById('mMonthScroll');
   const pillTxt = document.getElementById('mMonthYearPillTxt');
@@ -5581,12 +5587,14 @@ function _mUpdateMonthTitle() {
   const rect = scroller.getBoundingClientRect();
   // The pinned month divider covers the top ~42px, so sample below it as well.
   let row = null;
-  for (const dy of [4, 52, 76]) {
+  for (const dy of [60, 4, 90]) {
     const el = document.elementFromPoint(rect.left + rect.width / 2, rect.top + dy);
     row = el && el.closest('.m-mo-week');
     if (row) break;
   }
   if (!row) return;
+  if (row === _mMoLastTitleRow) return; // same row as last frame — nothing to update
+  _mMoLastTitleRow = row;
   const d = new Date(row.dataset.mon + 'T12:00:00');
   _mMonthDisplayedMo = d.getMonth();
   _mMonthDisplayedYr = d.getFullYear();

@@ -704,7 +704,7 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
 /* transform:translateZ(0) forces its own GPU compositing layer — this scroller sits nested
    inside #mMain's own scroll context, and without this hint iOS Safari can fall back to
    software-composited scrolling here, which reads as janky/stuttery during a fling. */
-#mMonthScroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;overscroll-behavior:contain;transform:translateZ(0)}
+#mMonthScroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;overscroll-behavior:contain}
 #mMonthWeeks{display:flex;flex-direction:column;padding-bottom:8px}
 .m-mo-week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;position:relative;border-top:1px solid var(--border)}
 /* Full-height, semi-transparent, and behind the day cells (z-index:0 vs .m-mo-day's
@@ -716,7 +716,7 @@ body.dark .m-wk-day.is-today{border-color:rgba(255,255,255,.14);box-shadow:0 8px
    never has to fight the day numbers below it for legibility/z-index. */
 .m-mo-trip-lane{position:relative;height:13px;margin-bottom:0}
 .m-mo-trip-label{position:absolute;top:0;height:13px;line-height:13px;font-size:8px;font-weight:700;padding:0 4px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-.m-mo-month-divider{font-size:16px;font-weight:800;color:var(--text);padding:14px 8px 6px;position:sticky;top:0;z-index:4;background:var(--bg);box-shadow:0 1px 0 var(--border)}
+.m-mo-month-divider{font-size:16px;font-weight:800;color:var(--text);padding:14px 8px 6px;position:sticky;top:0;z-index:4;background:var(--bg);box-shadow:0 1px 0 var(--border);-webkit-transform:translateZ(0)}
 .m-mo-hdr{font-size:10px;font-weight:700;color:var(--sub);padding:4px 0;text-transform:uppercase;letter-spacing:.05em}
 /* Fixed top-down layout (not centered) so the day number sits in the same spot
    whether or not that day has a badge below it. */
