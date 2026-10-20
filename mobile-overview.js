@@ -3865,11 +3865,12 @@ function mWrTrayRender() {
   // drop stale selections
   const live = new Set(items.filter(i => !i.done).map(i => String(i.r.id)));
   _mWrT.sel.forEach(id => { if (!live.has(id)) _mWrT.sel.delete(id); });
-  if (!items.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  if (!items.length) { _mWrT.open = false; el.style.display = 'none'; el.innerHTML = ''; return; }
+  if (!_mWrT.open) { el.style.display = 'none'; return; } // opened from the week divider's button
   el.style.display = '';
   const left = items.filter(i => !i.done).length;
   const n = _mWrT.sel.size;
-  const bar = `<div class="m-wrt-bar"><span>Weekly Reset <em>${escHtml(_mWkLabel(off))}</em></span><span class="m-wrt-ct">${left ? left + ' left' : 'all done'} <i>${_mWrT.open ? '▾' : '▴'}</i></span></div>`;
+  const bar = `<div class="m-wrt-bar"><span>Weekly Reset <em>${escHtml(_mWkLabel(off))}</em></span><span class="m-wrt-ct">${left ? left + ' left' : 'all done'} <i>✕</i></span></div>`;
   let body = '';
   if (_mWrT.open) {
     const rows = items.map(({r, done}) => {
@@ -3892,11 +3893,21 @@ function mWrTrayRender() {
   el.innerHTML = bar + body;
 }
 
+// Divider button → open/close the tray for that week.
+function mWrTrayOpenFor(off) {
+  if (_mWrT.open && _mWrT.off === off) { _mWrT.open = false; _mWrT.selMode = false; _mWrT.sel.clear(); }
+  else { _mWrT.off = off; _mWrT.open = true; _mWrT.sel.clear(); _mWrT.selMode = false; }
+  mWrTrayRender();
+  mWrTrayDividerSync();
+}
+function mWrTrayDividerSync() {
+  document.querySelectorAll('.m-wr-open').forEach(b => b.classList.toggle('on', _mWrT.open && +b.dataset.wk === _mWrT.off));
+}
 let _mWrToggleAt = 0;
 function mWrTrayToggle() {
   if (Date.now() - _mWrToggleAt < 400) return; // touchend + synthesized click both land here
   _mWrToggleAt = Date.now();
-  _mWrT.open = !_mWrT.open; mWrTrayRender();
+  _mWrT.open = !_mWrT.open; mWrTrayRender(); mWrTrayDividerSync();
 }
 function mWrTraySelMode() { _mWrT.selMode = !_mWrT.selMode; if (!_mWrT.selMode) _mWrT.sel.clear(); mWrTrayRender(); }
 function mWrTraySelAll() {
@@ -3908,7 +3919,7 @@ function mWrTraySelAll() {
 // Which week is on screen — the week of the day docked at the top of the scroll view.
 let _mWrTrayRaf = 0;
 function mWrTrayTrack() {
-  if (_mWrTrayRaf || _mWrT.drag) return;
+  if (_mWrTrayRaf || _mWrT.drag || _mWrT.open) return; // while open, the tray stays on the week it was opened for
   _mWrTrayRaf = requestAnimationFrame(() => {
     _mWrTrayRaf = 0;
     const ds = _mWkCurrentViewDs();
@@ -4083,7 +4094,9 @@ function _mWkRenderWeekHtml(weekOff) {
   const dates = getWkDates(weekOff);
   const today = d2s(getDayDate(0));
   const isCurrent = weekOff === 0;
-  let html = `<div class="m-wk-divider${isCurrent ? ' is-current' : ''}" data-wk="${weekOff}">${_mWkLabel(weekOff)}</div>`;
+  const _wkUn = _mWkUnassignedWr(weekOff).filter(r => !isDoneWRRule(r.id, getWkKey(weekOff))).length;
+  const _wrBtn = _wkUn ? `<button class="m-wr-open${_mWrT.open && _mWrT.off === weekOff ? ' on' : ''}" data-wk="${weekOff}" onclick="mWrTrayOpenFor(${weekOff})">${_wkUn} unassigned weekly reset</button>` : '';
+  let html = `<div class="m-wk-divider${isCurrent ? ' is-current' : ''}" data-wk="${weekOff}"><span>${_mWkLabel(weekOff)}</span>${_wrBtn}</div>`;
 
   dates.forEach((d, i) => {
     const ds = d2s(d);

@@ -913,3 +913,6 @@ input,textarea,select,[contenteditable="true"],[contenteditable=""]{-webkit-user
 .m-mo-day.is-past > *{opacity:.45}
 .m-mo-day.selected{background:rgba(124,106,247,.14)}
 .m-wrt{pointer-events:auto;-webkit-tap-highlight-color:transparent}.m-wrt-bar{cursor:pointer;min-height:44px;box-sizing:border-box}
+
+.m-wr-open{margin-left:auto;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:var(--rs);font-family:inherit;font-size:11px;font-weight:600;padding:5px 10px;white-space:nowrap}
+.m-wr-open.on{background:var(--accent);color:#fff}
