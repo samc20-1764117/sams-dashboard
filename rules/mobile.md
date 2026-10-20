@@ -17,8 +17,12 @@
 | `mobile.css` | All mobile styles. CSS vars match desktop (`--accent:#7c6af7`, `--bg`, `--glass`, etc.) |
 | `mobile-overview.js` | All mobile logic. Loaded after `core.js` + `features.js`. Sets `window._mobileMode = true` |
 | `mobile-manifest.json` | PWA manifest with `start_url: /mobile.html` (separate from desktop `manifest.json`) |
+| `mobile-today.html` / `mobile-month.html` / `mobile-shop.html` | Dedicated home-screen entry points — see "Home Screen Icons" below. Plain file copies of mobile.html; only the `<head>` tags + one inline var differ. Keep body/script-include changes mirrored across all four when editing mobile.html's shell. |
+| `mobile-today-manifest.json` / `mobile-month-manifest.json` / `mobile-shop-manifest.json` | One manifest per dedicated entry point, same shape as `mobile-manifest.json` |
 | `mobile-sw.js` | Network-first service worker — always fetches from network, no caching. Registered in mobile.html |
 | `_headers` | Cloudflare Pages cache-control: `no-cache, no-store, must-revalidate` for all mobile files |
+| `icons/icon-{today,month,shop}-{180,192,512}.png` | Per-icon home-screen assets — see "Home Screen Icons" below |
+| `icons/source/*.png` | User-provided source art for Today/Month's icons, kept in-repo (not Downloads) so it survives a Downloads cleanup |
 
 ### Script load order (mobile.html)
 ```
@@ -150,7 +154,99 @@ Toggle lives on the **More tab** (`#mExtrasPage`, a `.m-extras-btn` row — NOT 
 - Forces a reflow on `#mHeader` and `#mNav` after the toggle — a sticky-positioned element on iOS Safari can keep its previous composited background on-screen when only a CSS custom property changes with no accompanying layout trigger; `void el.offsetHeight` fixes it immediately rather than waiting for the next repaint.
 - `mInit()` applies `cfg.dark` the same way (flat `--bg`, not `toggleDark()`'s desktop-oriented path) right after `load()`, mirroring desktop's own `init()` ordering.
 - All mobile CSS uses the same `:root` / `html.init-dark` two-block variable pattern as desktop (`rules/dark-mode.md`) — new mobile-only elements (e.g. the Liquid Glass nav's `--nav-*` vars) follow that same pattern, just scoped to mobile.css.
-- **Build stamp** (`.m-build-stamp`, on the login screen + More tab): self-populates from `window._BUILD` (set inline in mobile.html's `<head>`) on every `mInit()` — a permanent diagnostic, not removed after use. Lets a "did my change actually load" question be answered by looking at the screen instead of guessing at PWA cache state.
+- **Build stamp** (`.m-build-stamp`, **More tab only** — removed from the login screen 2026-10-16, it read as "random text" right under the login prompt): self-populates from `window._BUILD` (set inline in each entry file's `<head>`) on every `mInit()` — a permanent diagnostic, not removed after use. Lets a "did my change actually load" question be answered by looking at the screen instead of guessing at PWA cache state — this is how the Today/Month icon staleness bugs below got diagnosed.
+
+---
+
+## Home Screen Icons (four separate PWA entry points, one codebase)
+
+Dashboard (`mobile.html`), Today, Month, and Shop are each their own installable
+home-screen icon, added independently via Safari's Share → Add to Home Screen —
+but all four load the exact same `mobile-overview.js`/`core.js`/`features.js`/
+`mobile.css`. Only three things differ per entry point, all static in the
+dedicated file's `<head>` (no JS swap — see "Why static, not dynamic" below):
+`<link rel="manifest">`, `<link rel="apple-touch-icon">`, and one inline
+`window._mForceTab = 'today'|'month'|'shop'` line (Dashboard sets none — it
+keeps the normal last-tab-restore behavior).
+
+### Why static files, not a dynamic swap (don't try this again)
+Two earlier approaches were tried and ruled out by real testing, in order:
+1. **Client-side JS swap** — one shared `mobile.html`, with a `<head>` script
+   reading `?tab=today` and rewriting the manifest/icon/title tags before the
+   user taps Add to Home Screen. Worked perfectly as a normal page load, but
+   the *installed icon* never picked up the swap — confirmed by visiting the
+   URL directly (shows Today correctly) vs. adding it to the home screen
+   (installs with the default icon/manifest regardless). iOS appears to
+   resolve the manifest for "Add to Home Screen" independent of this JS.
+2. **Server-side rewrite via a Cloudflare Pages Function** (`functions/mobile.js`,
+   using `HTMLRewriter` to rewrite the same three tags before the HTML left
+   the server) — this caused a real production outage: it created an infinite
+   redirect loop on `/mobile` (confirmed via `curl -v` trace: `/mobile` → 308 →
+   `/mobile` forever), because it conflicted with Cloudflare Pages' own
+   automatic `.html`-stripping redirect for that same path. Reverted
+   immediately. **Do not add a Function at a path Cloudflare's automatic
+   clean-URL redirect already owns** (any bare `.html` file's clean path).
+
+What actually works: a plain static file per icon, each with the three tags
+already correct in the raw HTML from byte one — nothing to race, nothing to
+rewrite server-side, no competing redirect rule (each is a brand-new path, not
+one Cloudflare was already handling). `mobile-today.html` etc. are just file
+copies of `mobile.html` with those tags + `window._mForceTab` changed.
+
+### Making the right tab stick
+`mInit()`'s tab-restore line checks `window._mForceTab` before `_mLastTab`:
+```js
+const _mTabParam = window._mForceTab || new URLSearchParams(location.search).get('tab');
+mShowTab(_mValidTabs.includes(_mTabParam) ? _mTabParam : (_mValidTabs.includes(localStorage._mLastTab) ? localStorage._mLastTab : 'today'));
+```
+This alone only fires on a genuine page load. **Standalone iOS apps usually
+resume a suspended webview instead of reloading when you tap the icon again**
+— so `_mForegroundSync` (already existed for the data-resync-on-foreground
+behavior, see PWA & Caching) also re-checks `_mTabParam` on `visibilitychange`/
+`pageshow`/`focus` and snaps back with `mShowTab(_mTabParam)` if it's drifted.
+
+**Tried and reverted: do not add a periodic/every-touch re-snap.** An earlier
+version also force-checked on every `touchstart` and every 30s interval tick,
+meant as a backstop in case the foreground events didn't fire reliably. It
+couldn't tell "just resumed from background" apart from "user is normally
+tapping to another tab" — so inside the Today app, tapping Week or Month
+immediately snapped back to Today, making navigation away from the forced tab
+impossible. Removed; only the `visibilitychange`/`pageshow`/`focus` listener
+remains, which doesn't fire on ordinary in-app taps.
+
+### Icon image requirements (No Color / Tinted appearance)
+Confirmed against the user's real device screenshots, under iOS's "No Color"
+(Tinted) icon appearance — these are hard requirements, not style preferences:
+- **Transparent background, not a solid fill.** A flat painted background
+  (even white) renders as an opaque flat sticker instead of blending into the
+  system's glass material — every other icon on the home screen (including
+  third-party apps) renders as translucent glass; a solid-background icon
+  visibly doesn't. `icons/icon-{today,month,shop}-*.png` all have real alpha
+  (`sips -g hasAlpha` → yes). **`icons/icon-180/192/512.png` (Dashboard) was
+  never migrated to this** — still a flat solid-background "S" from earlier
+  in the session. Known inconsistency; fix if Dashboard's icon is revisited.
+- **Fold luminance into alpha, don't just threshold alpha**, when processing
+  source art that encodes detail as shading rather than transparency (true of
+  the ChatGPT-generated Today/Month art in `icons/source/`): a plain "zero out
+  low-alpha pixels" cleanup flattens darker-but-still-opaque grooves (grid
+  lines, ring openings) into one solid blob, since that detail was never in
+  the alpha channel to begin with. Converting luminance to alpha (`newAlpha =
+  origAlpha * pow(luminance/255, ~1.8)`) turns those darker areas into real
+  transparent gaps instead, which survives small icon size.
+- Background color choice doesn't matter for No Color rendering (it's
+  discarded either way) — darkening or shrinking a painted background was
+  tried first and made no visible difference, confirming color/brightness was
+  never the actual variable; transparency was.
+- Shop's bag glyph was hand-built as a simple flat SVG (not sourced from a
+  ChatGPT image) — same bold, single-weight style as Today's sun.
+
+### Clean URLs
+Manifests' `start_url` point at the clean path directly (`/mobile-today`, not
+`/mobile-today.html?tab=today`) — Cloudflare Pages' automatic `.html`-stripping
+redirect handles each of `/mobile`, `/mobile-today`, `/mobile-month`,
+`/mobile-shop` identically and safely; skipping the `.html` hop in the
+manifest avoids depending on that redirect being followed by whatever resolves
+`start_url` at install time.
 
 ---
 
@@ -236,6 +332,56 @@ Floating inset pill, NOT the old edge-to-edge bar: `#mNav{left:14px;right:14px;b
 - **Gotcha: measuring while `#mApp` is hidden gives zero rects.** `#mApp{display:none}` until `hideLoginOverlay()` adds `.ready` (see Boot loading below) — `getBoundingClientRect()` on anything inside it collapses to all-zero until then, so a `_mNavMoveHighlight()` call before that point silently lands the pill near Today's slot (x≈-6) no matter which tab is actually active, even though the active button's own `.active`-class color is unaffected (that doesn't depend on layout) — looks like "two tabs selected at once." `mInit()` re-snaps with `_mNavMoveHighlight(false)` right after `hideLoginOverlay()` to fix this up once the nav is actually measurable — needed because `mShowTab(lastTab)` (which calls `_mNavMoveHighlight` itself) now runs earlier, before that point, see Init Flow below.
 - Active-icon distinction is a bolder stroke (`stroke-width:2.5` vs `2`), not a filled variant — the icon set (Feather-style) is outline-only by design, no matching filled icons to swap to.
 - Icons: Today=sun (not a clock — that belongs to Timeblock), Week/Month=calendar pair (must share the exact same rect `y`/height — Month previously sat 1px off from Week's true center, a copy-paste bug), Shop=bag, More=2×2 grid. All five spans `y:2`→`22` on the `viewBox="0 0 24 24"` — verified via a temporary 3-line debug overlay (icon-top/icon-bottom/label-center, removed once confirmed) after "they look inconsistent" reports; keep any future icon edit within that same box.
+
+---
+
+## Undo
+
+Mobile shares desktop's `undoStack`/`pushUndo`/`doUndo` (core.js) — the toast +
+Undo button work identically; mobile's own `mUndo()` (wraps `doUndo()` +
+`_mSnack`) and `#mTaskMenuSheet`'s types are the only mobile-specific pieces.
+
+**`_mUn(name)`** (mobile-overview.js): wraps an item's name in quotes,
+truncated to 22 chars — `"Milk" added`, `"Dentist appt" edited`. Use this for
+any new undo label that names a specific item; generic labels ("Added item")
+predate this convention and were upgraded where found, but don't add new ones.
+
+**Coverage as of 2026-10-17** — add, edit, AND delete all push undo for tasks,
+shopping items, and timeblocks (previously only some toggles/moves had it;
+delete in particular had none at all, confirmed and fixed after a real "no
+undo option appeared" report on Week's delete). Also covered: trips, WR/
+recurring add+edit+skip+shift, move-to-today (all types), duplicate task,
+resize block, schedule task. **Deliberately NOT wrapped**: grocery-list items
+(HEB meal planner) — desktop's own `togGroceryItem`/`delGroceryItem`
+(features.js) don't have undo either, so mobile matches that existing choice
+rather than diverging. Before adding undo to anything new, check whether
+desktop's equivalent function already has (or deliberately lacks) it and match
+that, rather than deciding fresh each time.
+
+**Task-delete's undo re-POSTs and gets a new id** (mirrors desktop's `delTask`,
+features.js — the real DELETE already happened, so undo recreates the row
+rather than just restoring local state). This silently orphaned the task's
+position in that day's manual drag-order (`_dayOrder`, keyed by id, shared by
+Today/Week/Month) until fixed: `mDeleteById` now captures the task's index in
+`_dayOrder()[due_date]` before deleting and rewrites that slot to the new id
+once the repost resolves. **Any other undo that re-creates a row with a new id
+needs the same check** — anywhere a localStorage map is keyed by an item's id,
+re-POSTing on undo orphans that entry unless it's explicitly carried over.
+
+**Shop-delete's undo does NOT re-POST** (`mDeleteShopDirect`) — mirrors
+desktop's `delShop` (features.js) exactly, including that gap: it restores the
+local copy with its old id but never recreates the server row. This is an
+existing desktop quirk, kept for parity rather than "fixed" to behave
+differently on mobile only.
+
+**Shake-to-undo was built, confirmed working, then removed** (2026-10-19) —
+full reasoning in the code comment at the top of where it used to live
+(mobile-overview.js, just above `mSaveEditTask`). Short version: iOS doesn't
+persist the DeviceMotion permission grant across standalone-app sessions (a
+deliberate WebKit choice, not a bug — see the W3C spec discussion), so it
+meant a recurring system "Allow Motion & Orientation" prompt with no code-side
+fix. Explicitly declined back once that tradeoff was confirmed. Don't rebuild
+this without a real answer to the permission-persistence problem first.
 
 ---
 
@@ -502,6 +648,15 @@ Same live-reparent technique Today's own drag-reorder uses — drags the actual 
 
 ## Shop (HEB Grocery merged in — no separate tab any more)
 
+**Completed items are hidden entirely** (2026-10-16, explicit request) —
+`mRenderShop()` filters `st.shopping` to `!s.done` before grouping, unlike
+desktop's `renderShopFull` (features.js) which sinks done items to the bottom
+of their store group, struck-through, still visible. This is a deliberate
+mobile-only divergence, not a bug to "fix" back toward desktop parity.
+Checking a box re-renders immediately (`togShop` → `renderShopFull()` →
+mobile's override → `mRenderShop()`), so the item disappears the moment it's
+checked, no separate removal step.
+
 ### Layout
 ```
 #mShopPage
@@ -656,7 +811,7 @@ Real sub-page (not a sheet/popup — a popup was tried first and its backdrop co
 - `mobile-sw.js` — network-first service worker. Always fetches from network; deletes all caches on activate. Solves iOS standalone PWA aggressive caching. Registration (bottom of mobile.html) now calls `reg.update()` on load AND on `visibilitychange` (re-checks for a new worker on every foreground).
 - **Self-update mechanism** (inline `<head>` version-checker): fetches `mobile-version.json` (no-store) and, on mismatch, does `location.replace(pathname+'?b='+ver)` — a NEW url iOS has never cached. Do NOT use `location.reload()`: iOS serves a reload straight from the standalone PWA app-shell cache, so it never actually updates (can loop). Guard: if `?b` already equals the server version, stop (no loop).
 - `_headers` sets `no-cache` on all mobile files so Cloudflare Pages doesn't cache stale versions
-- Script tags use `?v=YYYYMMDDx` cache-busting params (`x` = a/b/c... letter suffix for multiple deploys on the same day — common during an iterative session). **Every deploy bump ALL of, to the exact same string:** `_BUILD` const in mobile.html + `mobile-version.json` + every asset `?v=` query (css/core.js/features.js/mobile-overview.js) + `mobile-sw.js` VERSION. This lets a stuck installed PWA self-heal on next foreground — **no reinstall needed** (fully close + reopen on wifi, may take 2 opens). The build stamp (Dark Mode section above) is the fast way to confirm which build a device is actually running before debugging further.
+- Script tags use `?v=YYYYMMDDx` cache-busting params (`x` = a/b/c... letter suffix for multiple deploys on the same day — common during an iterative session). **Every deploy bump ALL of, to the exact same string, across all 9 mobile files now that there are four entry points:** `_BUILD` const + every asset `?v=` query (css/core.js/features.js/mobile-overview.js) in **each of** `mobile.html`/`mobile-today.html`/`mobile-month.html`/`mobile-shop.html`, plus `mobile-version.json`, plus the `start_url` version param in **each of** the 4 manifests (`mobile-manifest.json`/`mobile-today-manifest.json`/`mobile-month-manifest.json`/`mobile-shop-manifest.json`), plus `mobile-sw.js` VERSION. A one-line `sed -i` across all of them at once is the reliable way — missing even one manifest's `start_url` version was a real recurring bug source while building the 4-icon setup. This lets a stuck installed PWA self-heal on next foreground — **no reinstall needed** (fully close + reopen on wifi, may take 2 opens). The build stamp (Dark Mode section above, More tab) is the fast way to confirm which build a device is actually running before debugging further — repeatedly caught "fix isn't live yet" vs. "fix doesn't work" confusion during the icon/undo work.
 - **Vendored assets** (see core.md): `supabase.min.js` and `fonts/dmsans.css` load same-origin — never from a CDN (blocked on this user's devices; caused `supabase is not defined` login failures + broken fonts).
 
 ## Deployment
