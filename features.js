@@ -9039,14 +9039,14 @@ async function openFlightsModal(){
   _flRender();
   try{
     const s=await _flApi('status');
-    if(s&&s.connected===false)_flRender(`Gmail isn't connected yet. <a href="/api/flights?mode=auth-start" target="_blank" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);
+    if(s&&s.connected===false)_flRender(`Gmail isn't connected yet. <a href="/api/flights?mode=auth-start" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);
   }catch(e){}
 }
 async function _flCheck(manual){
   const btn=document.getElementById('flCheckBtn');if(btn){btn.disabled=true;btn.textContent='Checking…';}
   try{
     const r=await _flApi('sync','&today='+tod()+(manual?'&force=1':''),'POST');
-    if(r.error==='not_connected'){_flRender(`Gmail isn't connected yet. <a href="/api/flights?mode=auth-start" target="_blank" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);return;}
+    if(r.error==='not_connected'){_flRender(`Gmail isn't connected yet. <a href="/api/flights?mode=auth-start" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);return;}
     if(r.error){_flRender('Check failed: '+r.error+' (it will wait 10 min before trying again).');return;}
     await _flReload();_flBadge();renderAll();
     _flRender(r.skipped?(r.skipped==='cooldown'?'Just checked — try again in a couple of minutes.':'Already checked today.'):

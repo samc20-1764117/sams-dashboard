@@ -112,7 +112,7 @@ export async function onRequest(context) {
     const td = await tr.json();
     if (!td.refresh_token) return new Response('<h2>No refresh token returned</h2><p>Try again from the dashboard.</p>', { headers: { 'Content-Type': 'text/html' } });
     await KV.put('gmail-oauth-refresh', td.refresh_token);
-    return new Response('<h2>Gmail connected</h2><p>You can close this tab and press "Check for flights".</p><script>setTimeout(()=>window.close(),2000)</script>', { headers: { 'Content-Type': 'text/html' } });
+    return new Response('<h2>Gmail connected</h2><p>Taking you back to the dashboard…</p><script>setTimeout(()=>{location.href="/"},1200)</script>', { headers: { 'Content-Type': 'text/html' } });
   }
 
   // Everything below requires a signed-in dashboard user (Supabase JWT) — this endpoint can read
