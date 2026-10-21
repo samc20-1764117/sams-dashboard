@@ -775,6 +775,7 @@ async function removePupSession(sessId){
 let _pupRecSeeded=false;
 async function seedPupReviewTask(){
   if(_pupRecSeeded)return;_pupRecSeeded=true;
+  return; // disabled 2026-10-21: dismissal flag was per-origin (localStorage), so every new origin/cleared storage re-created the task
   // User explicitly deleted this seeded task — never resurrect it (delRec sets this flag).
   if(localStorage.getItem('_pupPrepSeedDismissed')==='1')return;
   // Rename existing "Prep pup training" → "Prep pups"
