@@ -19,7 +19,9 @@ STRICT — these override all defaults:
 
 Auto-commit after every turn via Stop hook (pushes to `dev`). No manual action needed.
 
-**"push to production"** → follow steps in `rules/deploy.md`.
+**"push" / "push to production" / "push to prd"** → ALL mean production now (since 2026-10-21): follow steps in `rules/deploy.md`. Never treat "push" as dev-only. Dev (`dev.sams-dashboard.pages.dev`) keeps working via the auto-commit hook; do not change it.
+
+**Why prd is the daily-use site (2026-10-21):** Gmail flights OAuth redirect (`https://sams-dashboard.pages.dev/api/flights?mode=auth-callback`) and YouTube OAuth only work on prd. Homescreen PWA must use the prd link `https://sams-dashboard.pages.dev`.
 
 ---
 

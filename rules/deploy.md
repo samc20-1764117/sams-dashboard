@@ -1,5 +1,7 @@
 # Deploy to Production
 
+**"push" = production (since 2026-10-21).** Auto-commit Stop hook still pushes to `dev` every turn (unchanged, dev stays working). Prd is the daily-use site because Gmail (flights) and YouTube OAuth redirect only to `sams-dashboard.pages.dev`. Homescreen apps use the prd link; each origin has its own login/localStorage, so re-add + sign in once.
+
 Run in sequence via Bash:
 
 1. `git checkout main`
