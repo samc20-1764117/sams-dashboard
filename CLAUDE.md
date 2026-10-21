@@ -17,9 +17,9 @@ STRICT — these override all defaults:
 
 ## Git Workflow
 
-Auto-commit after every turn via Stop hook (pushes to `dev`). No manual action needed.
+Auto-commit after every turn via Stop hook (pushes to `main` = PRODUCTION, `sams-dashboard.pages.dev`, since 2026-10-21). No manual action needed. Dev is no longer used; never use or mention it.
 
-**"push" / "push to production" / "push to prd"** → ALL mean production now (since 2026-10-21): follow steps in `rules/deploy.md`. Never treat "push" as dev-only. Dev (`dev.sams-dashboard.pages.dev`) keeps working via the auto-commit hook; do not change it.
+**"push" / "push to production" / "push to prd"** → ALL mean production (since 2026-10-21). Every turn already auto-pushes to prd; "push" = confirm it's live (`git fetch origin main && git log origin/main..HEAD` empty, curl `sams-dashboard.pages.dev/version.json`). Manual steps in `rules/deploy.md`.
 
 **Why prd is the daily-use site (2026-10-21):** Gmail flights OAuth redirect (`https://sams-dashboard.pages.dev/api/flights?mode=auth-callback`) and YouTube OAuth only work on prd. Homescreen PWA must use the prd link `https://sams-dashboard.pages.dev`.
 

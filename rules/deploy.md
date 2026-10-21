@@ -1,6 +1,6 @@
 # Deploy to Production
 
-**"push" = production (since 2026-10-21).** Auto-commit Stop hook still pushes to `dev` every turn (unchanged, dev stays working). Prd is the daily-use site because Gmail (flights) and YouTube OAuth redirect only to `sams-dashboard.pages.dev`. Homescreen apps use the prd link; each origin has its own login/localStorage, so re-add + sign in once.
+**PRODUCTION ONLY (since 2026-10-21).** "push" always = prd (`sams-dashboard.pages.dev`, branch `main`). The Stop hook in `.claude/settings.json` auto-commits and pushes `HEAD:main` every turn (repointed from `dev`); dev is unused/stale. Prd is the daily-use site because Gmail (flights) and YouTube OAuth redirect only to it. Homescreen apps use the prd link; each origin has its own login/localStorage (theme etc. are per-origin). Steps below are the manual fallback; the "dev" gotchas further down are historical — read `dev` as `main`/prd and the dev URL as the prd URL.
 
 Run in sequence via Bash:
 

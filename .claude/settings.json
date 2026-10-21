@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/samanthacohn/Documents/sams-dashboard && git add -A && git diff --cached --quiet || (git commit -m \"Auto-commit [$(date '+%b %d %H:%M')]\" && git push origin HEAD:dev && nohup /Users/samanthacohn/Documents/sams-dashboard/.claude/watch-deploy.sh $(git rev-parse --short HEAD) >/dev/null 2>&1 & disown)"
+            "command": "cd /Users/samanthacohn/Documents/sams-dashboard && git add -A && git diff --cached --quiet || (git commit -m \"Auto-commit [$(date '+%b %d %H:%M')]\" && git push origin HEAD:main && nohup /Users/samanthacohn/Documents/sams-dashboard/.claude/watch-deploy.sh $(git rev-parse --short HEAD) >/dev/null 2>&1 & disown)"
           }
         ]
       }
