@@ -1129,7 +1129,7 @@ function openMModal(){
   const modal=document.getElementById('mModal');
   const bg=document.querySelector('.bg-canvas');if(bg)bg.classList.add('orbs-paused');
   modal.classList.add('open');
-  requestAnimationFrame(()=>{renderMoCal();scrollMoToday();});
+  requestAnimationFrame(()=>{renderMoCal();scrollMoToday();setTimeout(scrollMoToday,260);});
 }
 function moYearStep(dir){
   const inp=document.getElementById('moYearSel');
@@ -1425,7 +1425,10 @@ function scrollMoToday(){
   const mdowH=mdow?mdow.offsetHeight:0;
   const sep=mgrid.querySelector('.mo-sep');
   // sticky stack = weekday header (sep's top:22px) + month label height
-  mgrid.scrollTop+=tc.getBoundingClientRect().top-mgrid.getBoundingClientRect().top-22-(sep?sep.offsetHeight:34)-3;
+  // offsetTop chain (not getBoundingClientRect) so the open animation's transform scale can't skew the distance
+  let y=0,n=tc;while(n&&n!==mgrid){y+=n.offsetTop;n=n.offsetParent;}
+  if(n!==mgrid)y=tc.offsetTop-mgrid.offsetTop;
+  mgrid.scrollTop=y-22-(sep?sep.offsetHeight:34)-3;
 }
 function moGoToday(){
   _moNavYear=new Date().getFullYear();const yrSel2=document.getElementById('moYearSel');if(yrSel2)yrSel2.value=String(_moNavYear);
