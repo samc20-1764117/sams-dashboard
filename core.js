@@ -900,9 +900,22 @@ function _fetchHolidays(){
     }).catch(()=>{});
   });
 }
+// ── Flights (read-only calendar items from the `flights` table) ─────────────
+// Rendered through the existing read-only 'holiday' path (no edit/delete/pack buttons, not
+// draggable) with Travel colors, so a flight can never trigger a trip action. Only accepted,
+// non-cancelled flights show; pending ones live in the review modal (openFlightsModal).
+function mkFlightTask(f){
+  const ds=String(f.depart_local).slice(0,10);
+  const tm=new Date(String(f.depart_local).slice(0,16)).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  return{id:'fl-'+f.id,name:`✈ ${f.flight_number} ${f.origin}→${f.destination} ${tm}`,category:'Travel',
+    due_date:ds,done:false,_srcId:f.id,_virtual:true,_type:'holiday',_flight:true};
+}
+function _flightsShown(){return(st.flights||[]).filter(f=>f.review_state==='accepted'&&f.status!=='cancelled');}
+function getFlightTasks(ds){return _flightsShown().filter(f=>String(f.depart_local).slice(0,10)===ds).map(mkFlightTask);}
+function getFlightsInRange(a,b){return _flightsShown().filter(f=>{const d=String(f.depart_local).slice(0,10);return d>=a&&d<=b;}).map(mkFlightTask);}
 // Get all virtual extras for a given date string
 function getExtrasForDate(ds){
-  return[...getTravelTasks(ds),...getBirthdayTasks(ds),...getHolidayTasks(ds)];
+  return[...getTravelTasks(ds),...getBirthdayTasks(ds),...getHolidayTasks(ds),...getFlightTasks(ds)];
 }
 // Get all virtual extras for a week (used in week summary list)
 // Travel shown ONCE (on start date), birthdays once on their day
@@ -926,7 +939,7 @@ function getExtrasForWeek(off=0){
   const bEnd=new Date(dates[6]);bEnd.setDate(bEnd.getDate()+3);
   const bdayItems=getBirthdaysInRange(d2s(bStart),d2s(bEnd));
   const holidayItems=getHolidaysInRange(d2s(bStart),d2s(bEnd));
-  return[...travelItems,...bdayItems,...holidayItems];
+  return[...travelItems,...bdayItems,...holidayItems,...getFlightsInRange(wkDss[0],wkDss[6])];
 }
 
 // Stable key for a given week offset

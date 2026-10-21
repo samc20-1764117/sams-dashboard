@@ -8976,3 +8976,91 @@ document.addEventListener('mouseout',e=>{
   clearTimeout(_noteTipTimer);
   if(_noteTipEl)_noteTipEl.classList.remove('show');
 });
+
+// ── Flights: review modal + Gmail check (backend: functions/api/flights.js, table: flights) ──
+// Self-contained: builds its own overlay (no index.html markup), reads/writes only st.flights.
+// Pending flights wait here for Accept/Ignore; accepted ones render via getFlightTasks (core.js).
+function _flApi(mode,extra,method){
+  return fetch('/api/flights?mode='+mode+(extra||''),{method:method||'GET',headers:{'Authorization':'Bearer '+_getAuthToken(),'apikey':cfg.key}}).then(r=>r.json());
+}
+async function _flReload(){
+  const rows=await sbReqSilent('GET','flights',null,'?review_state=neq.ignored&depart_local=gte.'+tod()+'T00:00:00&order=depart_local.asc&select=*');
+  if(rows)st.flights=rows;
+}
+function _flBadge(){
+  const n=(st.flights||[]).filter(f=>f.review_state==='pending').length;
+  const b=document.getElementById('flBtn');if(b)b.textContent=n?'✈ '+n:'✈';
+}
+function _flFmt(f){
+  const d=new Date(String(f.depart_local).slice(0,16));
+  const day=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const tm=x=>x?new Date(String(x).slice(0,16)).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'';
+  return`${day} · ${tm(f.depart_local)}${f.arrive_local?' → '+tm(f.arrive_local):''}`;
+}
+async function _flSetState(id,state){
+  const f=(st.flights||[]).find(x=>x.id===id);if(!f)return;
+  f.review_state=state;
+  await sbReqSilent('PATCH','flights',{review_state:state,updated_at:new Date().toISOString()},recQs(id));
+  if(state==='ignored')st.flights=st.flights.filter(x=>x.id!==id);
+  _flBadge();renderAll();_flRender();
+}
+async function _flAcceptAll(){
+  for(const f of (st.flights||[]).filter(x=>x.review_state==='pending'))await _flSetState(f.id,'accepted');
+}
+function closeFlightsModal(){const m=document.getElementById('flModal');if(m)m.remove();document.removeEventListener('keydown',_flEsc,true);}
+function _flEsc(e){if(e.key==='Escape'){e.stopPropagation();closeFlightsModal();}}
+function _flRender(msg){
+  const box=document.getElementById('flBody');if(!box)return;
+  const all=st.flights||[];
+  const row=(f,pending)=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--border,rgba(0,0,0,.12));border-radius:8px;margin-bottom:5px">
+    <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${f.flight_number} · ${f.origin} → ${f.destination}${f.status==='cancelled'?' <span style="color:#dc2626">(cancelled)</span>':''}</div>
+    <div style="font-size:11px;color:var(--muted)">${_flFmt(f)}${f.seat?' · seat '+f.seat:''}${f.confirmation_code?' · '+f.confirmation_code:''}</div></div>
+    ${pending?`<button class="btn btn-xs" onclick="_flSetState('${f.id}','accepted')">Accept</button>`:''}
+    <button class="btn btn-ghost btn-xs" onclick="_flSetState('${f.id}','ignored')">${pending?'Ignore':'Remove'}</button></div>`;
+  const pend=all.filter(f=>f.review_state==='pending'),acc=all.filter(f=>f.review_state==='accepted');
+  box.innerHTML=(msg?`<div style="font-size:12px;margin-bottom:8px;color:var(--muted)">${msg}</div>`:'')+
+    `<div style="display:flex;align-items:center;margin:4px 0 6px"><b style="font-size:12px">Needs review (${pend.length})</b>${pend.length>1?`<button class="btn btn-ghost btn-xs" style="margin-left:auto" onclick="_flAcceptAll()">Accept all</button>`:''}</div>`+
+    (pend.length?pend.map(f=>row(f,true)).join(''):'<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Nothing new.</div>')+
+    `<b style="font-size:12px;display:block;margin:10px 0 6px">On your calendar (${acc.length})</b>`+
+    (acc.length?acc.map(f=>row(f,false)).join(''):'<div style="font-size:12px;color:var(--muted)">No upcoming flights yet.</div>');
+}
+async function openFlightsModal(){
+  closeFlightsModal();
+  const m=document.createElement('div');m.id='flModal';
+  m.style.cssText='position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center';
+  m.onclick=e=>{if(e.target===m)closeFlightsModal();};
+  m.innerHTML=`<div style="background:var(--bg);color:var(--text);border-radius:14px;padding:16px;width:min(460px,92vw);max-height:80vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><b style="font-size:15px">✈ Flights</b>
+    <button class="btn btn-xs" id="flCheckBtn" style="margin-left:auto" onclick="_flCheck(true)">Check for flights</button>
+    <button class="btn btn-ghost btn-xs" onclick="closeFlightsModal()">✕</button></div>
+    <div id="flBody"></div></div>`;
+  document.body.appendChild(m);
+  document.addEventListener('keydown',_flEsc,true);
+  _flRender();
+  try{
+    const s=await _flApi('status');
+    if(s&&s.connected===false)_flRender(`Gmail isn't connected yet. <a href="/api/flights?mode=auth-start" target="_blank" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);
+  }catch(e){}
+}
+async function _flCheck(manual){
+  const btn=document.getElementById('flCheckBtn');if(btn){btn.disabled=true;btn.textContent='Checking…';}
+  try{
+    const r=await _flApi('sync','&today='+tod()+(manual?'&force=1':''),'POST');
+    if(r.error==='not_connected'){_flRender(`Gmail isn't connected yet. <a href="/api/flights?mode=auth-start" target="_blank" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);return;}
+    if(r.error){_flRender('Check failed: '+r.error+' (it will wait 10 min before trying again).');return;}
+    await _flReload();_flBadge();renderAll();
+    _flRender(r.skipped?(r.skipped==='cooldown'?'Just checked — try again in a couple of minutes.':'Already checked today.'):
+      `Scanned ${r.scanned} email${r.scanned===1?'':'s'}: ${r.added} new, ${r.updated} updated${r.unreadable?`, ${r.unreadable} couldn't be read (add manually)`:''}.`);
+    if(!r.skipped)try{localStorage._flAutoDay=tod();}catch(e){}
+  }catch(e){_flRender('Check failed: '+e.message);}
+  finally{const b=document.getElementById('flCheckBtn');if(b){b.disabled=false;b.textContent='Check for flights';}}
+}
+// Once-a-day automatic check (server also enforces a 20h freshness marker + error cooldown).
+setTimeout(function _flAuto(){
+  try{
+    if(typeof _firstSyncDone==='undefined'||!_firstSyncDone){setTimeout(_flAuto,5000);return;}
+    _flBadge();
+    if(localStorage._flAutoDay===tod())return;
+    _flCheck(false);
+  }catch(e){}
+},8000);

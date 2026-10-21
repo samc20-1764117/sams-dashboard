@@ -16,14 +16,14 @@
 <link rel="stylesheet" href="fonts/dmsans.css?v=1">
 <title>Sam's Dashboard</title>
 <script>
-window._BUILD='20261021a';var BUILD=window._BUILD;
+window._BUILD='20261021b';var BUILD=window._BUILD;
 if(sessionStorage._mReloaded===BUILD);else{
   fetch('/version.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
     if(d.v&&d.v!==BUILD){sessionStorage._mReloaded=d.v;location.reload();}
   }).catch(function(){});
 }
 </script>
-<link rel="stylesheet" href="styles.css?v=20261021a">
+<link rel="stylesheet" href="styles.css?v=20261021b">
 <script>(function(){try{var s=JSON.parse(localStorage.getItem('samdash_v7')||'{}');var d=document.documentElement;var isDk=!!(s.cfg&&s.cfg.dark);if(isDk)d.classList.add('init-dark');
   /* Body colors mirrored from THEMES[key].body in features.js (~line 7850) — duplicated here
      since this runs before features.js loads, purely so the native title bar / PWA chrome
@@ -128,6 +128,7 @@ if(sessionStorage._mReloaded===BUILD);else{
           <span style="display:none" id="liveClock"></span>
         </div>
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <button class="btn btn-ghost btn-xs" id="flBtn" onclick="openFlightsModal()" title="Flights">✈</button>
           <button class="btn btn-ghost btn-xs" onclick="goToday()">Today</button>
           <button class="btn btn-ghost btn-xs" onclick="shiftDay(1)" style="flex-shrink:0">→</button>
         </div>
@@ -1063,9 +1064,9 @@ if(sessionStorage._mReloaded===BUILD);else{
 </div>
 
 <script src="supabase.min.js?v=2110"></script>
-<script src="core.js?v=20261021a"></script>
-<script src="overview.js?v=20261021a"></script>
-<script src="features.js?v=20261021a"></script>
+<script src="core.js?v=20261021b"></script>
+<script src="overview.js?v=20261021b"></script>
+<script src="features.js?v=20261021b"></script>
 <script src="pup-skills.js?v=20260608b"></script>
 <script src="videos.js?v=20260922a"></script>
 
