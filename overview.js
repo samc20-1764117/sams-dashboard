@@ -3167,6 +3167,11 @@ function _wrWeekMisses(){
   const out=[];
   st.wrRules.filter(r=>r.is_enabled).forEach(r=>{
     if(curItems.some(x=>String(x.id)===String(r.id)))return;
+    // Handled THIS week (skip/move override, '__skip__' pin, or an "all future" shift made this week) also
+    // supersedes last week's miss — curItems drops skipped/moved rules, so without this they read as "due nowhere".
+    const _curWk=getWkKey(0);
+    if(r._dateOverrides&&(r._dateOverrides[_curWk]==='__skip__'||(r._dateOverrides.__priorScheds__||[]).some(s=>s.before===_curWk)))return;
+    if((st.wrOverrides||[]).some(o=>String(o.rule_id)===String(r.id)&&o.wk_key===_curWk&&(o.override_type==='skip'||o.override_type==='move')))return;
     const _startMon=r.starting_date?(()=>{const sd=new Date(r.starting_date+'T12:00');const dw=sd.getDay();const m=new Date(sd);m.setDate(sd.getDate()-(dw===0?6:dw-1));m.setHours(0,0,0,0);return m;})():null;
     for(let w=-1;w>=-8;w--){
       const pwk=getWkKey(w);
