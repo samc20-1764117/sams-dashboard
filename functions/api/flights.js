@@ -8,6 +8,7 @@ const ORIGINS = ['https://sams-dashboard.pages.dev', 'https://dev.sams-dashboard
 const REDIRECT = 'https://sams-dashboard.pages.dev/api/flights?mode=auth-callback';
 const LABEL_MATCH = /travel/i;            // the "✈️ Travel" label
 const FROM_Q = 'from:(united.com OR southwest.com OR ifly.southwest.com)';
+const OWNER_ID = '6bc98cc0-da5f-4ae2-b83b-b2423592238c'; // the only dashboard user; any other Supabase account is refused
 const MAX_MSGS = 25;                      // CPU guard (Cloudflare free plan has a tight per-request cap)
 
 const TZ = {};
@@ -191,6 +192,8 @@ export async function onRequest(context) {
   const apikey = request.headers.get('apikey') || '';
   const who = auth && apikey ? await fetch(SB_URL + '/auth/v1/user', { headers: { Authorization: auth, apikey } }) : null;
   if (!who || !who.ok) return json({ error: 'unauthorized' }, cors, 401);
+  const me = await who.json();
+  if (!me || me.id !== OWNER_ID) return json({ error: 'forbidden' }, cors, 403);
 
   if (mode === 'status') {
     return json({ connected: !!(KV && await KV.get('gmail-oauth-refresh')), lastSync: KV ? await KV.get('fl-last') : null, lastError: KV ? await KV.get('fl-err') : null }, cors);
