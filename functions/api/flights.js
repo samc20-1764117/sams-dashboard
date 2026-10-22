@@ -137,17 +137,14 @@ export async function onRequest(context) {
   });
 
   // ── OAuth start/callback (always via production, like yt.js) ──
-  if (mode === 'auth-start') {
-    const { cid } = await creds();
-    if (!cid) return Response.redirect('https://sams-dashboard.pages.dev/api/flights?mode=auth-start', 302);
-    return Response.redirect('https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
-      client_id: cid, redirect_uri: REDIRECT, response_type: 'code',
-      scope: 'https://www.googleapis.com/auth/gmail.readonly', access_type: 'offline', prompt: 'consent',
-    }), 302);
-  }
+  // Connect links are minted only for a signed-in dashboard session (mode=auth-link below); a bare
+  // /auth-start URL no longer exists, so nobody else can attach a different Gmail account.
+  if (mode === 'auth-start') return new Response('Use the dashboard to connect Gmail.', { status: 410 });
   if (mode === 'auth-callback') {
-    const code = url.searchParams.get('code');
-    if (url.searchParams.get('error') || !code || !KV) return new Response('<h2>Gmail connection was not completed</h2>', { headers: { 'Content-Type': 'text/html' } });
+    const code = url.searchParams.get('code'), state = url.searchParams.get('state');
+    const stateOk = !!(state && KV && await KV.get('fl-state-' + state));
+    if (stateOk) await KV.delete('fl-state-' + state);
+    if (url.searchParams.get('error') || !code || !KV || !stateOk) return new Response('<h2>Gmail connection was not completed</h2>', { headers: { 'Content-Type': 'text/html' } });
     const { cid, csec } = await creds();
     const tr = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -156,6 +153,7 @@ export async function onRequest(context) {
     const td = await tr.json();
     if (!td.refresh_token) return new Response('<h2>No refresh token returned</h2><p>Try again from the dashboard.</p>', { headers: { 'Content-Type': 'text/html' } });
     await KV.put('gmail-oauth-refresh', td.refresh_token);
+    await KV.delete('fl-err'); await KV.delete('fl-cron-cool');
     return new Response('<h2>Gmail connected</h2><p>Taking you back to the dashboard…</p><script>setTimeout(()=>{location.href="/"},1200)</script>', { headers: { 'Content-Type': 'text/html' } });
   }
 
@@ -196,6 +194,16 @@ export async function onRequest(context) {
 
   if (mode === 'status') {
     return json({ connected: !!(KV && await KV.get('gmail-oauth-refresh')), lastSync: KV ? await KV.get('fl-last') : null, lastError: KV ? await KV.get('fl-err') : null }, cors);
+  }
+  if (mode === 'auth-link') {
+    const { cid } = await creds();
+    if (!cid || !KV) return json({ error: 'not configured' }, cors, 500);
+    const state = crypto.randomUUID();
+    await KV.put('fl-state-' + state, '1', { expirationTtl: 600 });
+    return json({ url: 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
+      client_id: cid, redirect_uri: REDIRECT, response_type: 'code', state,
+      scope: 'https://www.googleapis.com/auth/gmail.readonly', access_type: 'offline', prompt: 'consent',
+    }) }, cors);
   }
   if (mode !== 'sync' || request.method !== 'POST') return json({ error: 'bad request' }, cors, 400);
   if (!KV) return json({ error: 'KV not bound' }, cors, 500);

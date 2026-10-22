@@ -8991,6 +8991,7 @@ document.addEventListener('mouseout',e=>{
 function _flApi(mode,extra,method){
   return fetch('/api/flights?mode='+mode+(extra||''),{method:method||'GET',headers:{'Authorization':'Bearer '+_getAuthToken(),'apikey':cfg.key}}).then(r=>r.json());
 }
+async function _flConnect(){try{const r=await _flApi('auth-link');if(r&&r.url)location.href=r.url;}catch(e){}}
 async function _flReload(){
   const rows=await sbReqSilent('GET','flights',null,'?review_state=neq.ignored&depart_local=gte.'+tod()+'T00:00:00&order=depart_local.asc&select=*');
   if(rows)st.flights=rows;
@@ -9047,14 +9048,14 @@ async function openFlightsModal(){
   _flRender();
   try{
     const s=await _flApi('status');
-    if(s&&s.connected===false)_flRender(`Gmail isn't connected yet. <a href="/api/flights?mode=auth-start" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);
+    if(s&&s.connected===false)_flRender(`Gmail isn't connected yet. <a href="#" onclick="_flConnect();return false" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);
   }catch(e){}
 }
 async function _flCheck(manual){
   const btn=document.getElementById('flCheckBtn');if(btn){btn.disabled=true;btn.textContent='Checking…';}
   try{
     const r=await _flApi('sync','&today='+tod()+(manual?'&force=1':''),'POST');
-    if(r.error==='not_connected'){_flRender(`Gmail isn't connected yet. <a href="/api/flights?mode=auth-start" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);return;}
+    if(r.error==='not_connected'){_flRender(`Gmail isn't connected yet. <a href="#" onclick="_flConnect();return false" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);return;}
     if(r.error){_flRender('Check failed: '+r.error+' (it will wait 10 min before trying again).');return;}
     await _flReload();_flBadge();renderAll();
     _flRender(r.skipped?(r.skipped==='cooldown'?'Just checked — try again in a couple of minutes.':'Already checked today.'):
@@ -9086,16 +9087,42 @@ function _flStart(){
   if(!m.classList.contains('open'))openMModal();
   _flGuideShow();
 }
-function _flGuideEnd(){const g=document.getElementById('flGuide');if(g)g.remove();document.querySelectorAll('.fl-focus').forEach(x=>x.classList.remove('fl-focus'));_flBadge();}
+let _flWatch=null;
+function _flGuideEnd(){clearInterval(_flWatch);_flWatch=null;const g=document.getElementById('flGuide');if(g)g.remove();document.querySelectorAll('.fl-focus').forEach(x=>x.classList.remove('fl-focus'));_flBadge();}
 function _flGoto(f){
   const ds=String(f.depart_local).slice(0,10),yr=+ds.slice(0,4);
   if(yr!==_moNavYear&&typeof jumpMoYear==='function'){jumpMoYear(yr);}
   setTimeout(()=>{
     const cell=document.querySelector('#mCells .mcell[data-ds="'+ds+'"]'),mg=document.querySelector('#mModal .mgrid');
-    if(cell&&mg)mg.scrollTop+=cell.getBoundingClientRect().top-mg.getBoundingClientRect().top-80;
     document.querySelectorAll('.fl-focus').forEach(x=>x.classList.remove('fl-focus'));
     const chip=document.querySelector('#mCells .mcell-t[data-flid="'+f.id+'"]');if(chip)chip.classList.add('fl-focus');
-  },yr!==_moNavYear?120:40);
+    if(cell&&mg){
+      // This flight's week becomes the TOP week (same math as scrollMoToday); user can still scroll freely
+      let y=0,n=cell;while(n&&n!==mg){y+=n.offsetTop;n=n.offsetParent;}
+      if(n!==mg)y=cell.offsetTop-mg.offsetTop;
+      const sep=mg.querySelector('.mo-sep');
+      mg.scrollTo({top:y-22-(sep?sep.offsetHeight:34)-3,behavior:'smooth'});
+      if(!mg._flScroll){mg._flScroll=1;mg.addEventListener('scroll',()=>requestAnimationFrame(_flPlace),{passive:true});}
+    }
+    _flPlace();setTimeout(_flPlace,350);
+  },yr!==_moNavYear?120:30);
+}
+// Keep the review card docked beside the flight chip being reviewed (follows it while scrolling)
+function _flPlace(){
+  const g=document.getElementById('flGuide');if(!g)return;
+  const chip=document.querySelector('#mCells .mcell-t.fl-focus'),mg=document.querySelector('#mModal .mgrid');
+  const gw=g.offsetWidth,gh=g.offsetHeight,vw=innerWidth,vh=innerHeight;
+  if(!chip||!mg){g.style.left=Math.max(10,(vw-gw)/2)+'px';g.style.top=Math.max(10,(vh-gh)/2)+'px';g.classList.remove('flg-l','flg-r');return;}
+  const r=chip.getBoundingClientRect(),mr=mg.getBoundingClientRect();
+  const vis=r.bottom>mr.top&&r.top<mr.bottom;
+  let side='r',left=r.right+12;
+  if(left+gw>vw-10){side='l';left=r.left-gw-12;}
+  left=Math.max(10,Math.min(left,vw-gw-10));
+  const cy=Math.max(mr.top+8,Math.min(r.top+r.height/2,mr.bottom-8));
+  let top=Math.max(10,Math.min(cy-48,vh-gh-10));
+  g.style.left=left+'px';g.style.top=top+'px';
+  g.classList.toggle('flg-r',vis&&side==='r');g.classList.toggle('flg-l',vis&&side==='l');
+  g.style.setProperty('--ay',Math.max(16,Math.min(cy-top-6,gh-28))+'px');
 }
 function _flGuideShow(){
   _flQ=_flQ.filter(id=>(st.flights||[]).some(f=>f.id===id&&f.review_state==='pending'));
@@ -9103,21 +9130,29 @@ function _flGuideShow(){
   if(_flQi>=_flQ.length)_flQi=0;
   const f=st.flights.find(x=>x.id===_flQ[_flQi]);
   let g=document.getElementById('flGuide');
-  if(!g){g=document.createElement('div');g.id='flGuide';document.body.appendChild(g);}
-  const bt=(c,l,fn)=>`<button class="btn btn-xs ${c}" onclick="${fn}">${l}</button>`;
+  if(!g){g=document.createElement('div');g.id='flGuide';document.body.appendChild(g);
+    _flWatch=setInterval(()=>{const m=document.getElementById('mModal');if(!m||!m.classList.contains('open'))_flGuideEnd();},500);}
   if(_flEditing){
     const d=String(f.depart_local),a=f.arrive_local?String(f.arrive_local):'';
-    g.innerHTML=`<div class="flg-top"><b>Edit flight</b></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
-      <label>Flight<input id="flE_no" value="${f.flight_number}"></label><label>From<input id="flE_o" value="${f.origin}"></label><label>To<input id="flE_d" value="${f.destination}"></label>
-      <label>Date<input id="flE_dt" type="date" value="${d.slice(0,10)}"></label><label>Departs<input id="flE_t1" type="time" value="${d.slice(11,16)}"></label><label>Arrives<input id="flE_t2" type="time" value="${a.slice(11,16)}"></label></div>
-      <div class="flg-btns">${bt('','Save','_flEditSave()')}${bt('btn-ghost','Cancel','_flEditing=false;_flGuideShow()')}</div>`;
-    return;
+    g.innerHTML=`<div class="flg-top"><b>Edit flight</b><span class="flg-x" onclick="_flEditing=false;_flGuideShow()" title="Cancel">✕</span></div>
+      <div class="flg-edit">
+      <label>From<input id="flE_o" value="${f.origin}"></label><label>To<input id="flE_d" value="${f.destination}"></label>
+      <label style="grid-column:1/3">Date<input id="flE_dt" type="date" value="${d.slice(0,10)}"></label>
+      <label>Departs<input id="flE_t1" type="time" value="${d.slice(11,16)}"></label><label>Arrives<input id="flE_t2" type="time" value="${a.slice(11,16)}"></label>
+      <label style="grid-column:1/3">Flight<input id="flE_no" value="${f.flight_number}"></label></div>
+      <div class="flg-btns"><button class="flg-ok" onclick="_flEditSave()">Save</button><button class="flg-ghost" onclick="_flEditing=false;_flGuideShow()">Cancel</button></div>`;
+    _flPlace();return;
   }
-  g.innerHTML=`<div class="flg-top"><span>✈ Flight ${_flQi+1} of ${_flQ.length} to review</span><span style="margin-left:auto;cursor:pointer" onclick="_flGuideEnd()" title="Close">✕</span></div>
-    <div class="flg-main">${f.flight_number} · ${f.origin} → ${f.destination}</div>
-    <div class="flg-sub">${_flFmt(f)}${f.seat?' · seat '+f.seat:''}${f.passenger?' · '+f.passenger:''}${f.confirmation_code?' · '+f.confirmation_code:''}</div>
-    <div class="flg-btns">${bt('','✓ Approve',"_flGuideAct('accepted')")}${bt('btn-ghost','✕ Reject',"_flGuideAct('ignored')")}${bt('btn-ghost','✎ Edit','_flEditing=true;_flGuideShow()')}${_flQ.length>1?bt('btn-ghost','Skip →','_flQi++;_flGuideShow()'):''}</div>`;
+  const meta=[f.flight_number,f.seat?'Seat '+f.seat:'',f.cabin||'',f.passenger||'',f.confirmation_code||''].filter(Boolean).join(' · ');
+  g.innerHTML=`<div class="flg-top"><span>✈ ${_flQi+1} of ${_flQ.length} to review</span><span class="flg-x" onclick="_flGuideEnd()" title="Close">✕</span></div>
+    <div class="flg-route"><span>${f.origin}</span><i>→</i><span>${f.destination}</span></div>
+    <div class="flg-when">${_flFmt(f)}</div>
+    <div class="flg-btns">
+      <button class="flg-ok" onclick="_flGuideAct('accepted')">✓ Approve</button>
+      <button class="flg-no" onclick="_flGuideAct('ignored')">✕ Reject</button>
+      <button class="flg-ghost" onclick="_flEditing=true;_flGuideShow()">✎ Edit</button>
+      ${_flQ.length>1?'<button class="flg-ghost" onclick="_flQi++;_flGuideShow()">Skip →</button>':''}</div>
+    <div class="flg-meta">${meta}</div>`;
   _flGoto(f);
 }
 async function _flGuideAct(state){
