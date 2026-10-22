@@ -4,13 +4,17 @@ name: flights-cron
 on:
   schedule:
     - cron: '0 11 * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      full:
+        description: 'Rescan the last 365 days of the Travel label'
+        default: 'false'
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - name: Check Gmail for new flights
         run: |
-          out=$(curl -sS -m 60 -X POST -H "X-Cron-Secret: ${{ secrets.FLIGHTS_CRON_SECRET }}" "https://sams-dashboard.pages.dev/api/flights?mode=cron")
+          out=$(curl -sS -m 60 -X POST -H "X-Cron-Secret: ${{ secrets.FLIGHTS_CRON_SECRET }}" "https://sams-dashboard.pages.dev/api/flights?mode=cron${{ github.event.inputs.full == 'true' && '&full=1' || '' }}")
           echo "$out"
           echo "$out" | grep -q '"error"' && exit 1 || exit 0

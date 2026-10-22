@@ -78,7 +78,7 @@ function parseSouthwest(t, subject) {
 
 // Reads new mail from the Travel label and returns today-forward legs (shared by the manual
 // button and the 6am cron). Throws on any Gmail/token error; callers set their own cooldown.
-async function scanGmail(KV, cid, csec, refresh, today) {
+async function scanGmail(KV, cid, csec, refresh, today, full) {
     const tr = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ client_id: cid, client_secret: csec, refresh_token: refresh, grant_type: 'refresh_token' }),
@@ -96,7 +96,7 @@ async function scanGmail(KV, cid, csec, refresh, today) {
       labelId = l.id; await KV.put('fl-label', labelId);
     }
     // Only mail newer than the last check (first run: a year back — flights are booked ahead)
-    const last = await KV.get('fl-last');
+    const last = full ? null : await KV.get('fl-last');
     const since = last ? new Date(new Date(last).getTime() - 2 * 86400000) : new Date(Date.now() - 365 * 86400000);
     const q = `${FROM_Q} after:${since.getUTCFullYear()}/${pad(since.getUTCMonth() + 1)}/${pad(since.getUTCDate())}`;
     const list = await G(`messages?labelIds=${encodeURIComponent(labelId)}&q=${encodeURIComponent(q)}&maxResults=${MAX_MSGS}`);
@@ -165,13 +165,13 @@ export async function onRequest(context) {
     const rpc = (fn, args) => fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' }, body: JSON.stringify(args) }).then(r => r.json());
     if (!secret || (await rpc('flights_cron_ok', { p_secret: secret })) !== true) return json({ error: 'unauthorized' }, cors, 401);
     if (!KV) return json({ error: 'KV not bound' }, cors, 500);
-    if (await KV.get('fl-cron-cool')) return json({ skipped: 'cooldown' }, cors);
+    if (url.searchParams.get('full') !== '1' && await KV.get('fl-cron-cool')) return json({ skipped: 'cooldown' }, cors);
     const refresh = await KV.get('gmail-oauth-refresh');
     if (!refresh) { await KV.put('fl-err', 'not_connected'); return json({ error: 'not_connected' }, cors, 409); }
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
     try {
       const { cid, csec } = await creds();
-      const r = await scanGmail(KV, cid, csec, refresh, today);
+      const r = await scanGmail(KV, cid, csec, refresh, today, url.searchParams.get('full') === '1');
       const res = await rpc('flights_cron_apply', { p_secret: secret, p_legs: r.fresh });
       if (res && res.message) throw new Error('apply: ' + res.message);
       await KV.put('fl-last', new Date().toISOString());
