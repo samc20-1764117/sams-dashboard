@@ -2262,23 +2262,29 @@ body.theme-modern.dark .cat-sel-trigger span:last-child{background-image:url("da
 .fl-acts{display:none;margin-left:auto;gap:4px;flex-shrink:0}.ti:hover .fl-acts{display:inline-flex}
 .fl-acts button{border:none;background:none;cursor:pointer;font-size:11px;padding:0 3px;color:inherit}.fl-acts .fl-ok:hover{color:#16a34a}.fl-acts button:hover{color:#ef4444}
 #flBtn.fl-has{color:var(--accent);font-weight:700}
-.mcell-t.fl-focus{outline:2px solid var(--accent,#7c3aed);outline-offset:1px;animation:flpulse 1.3s ease-in-out infinite}
-@keyframes flpulse{50%{outline-offset:3px;outline-color:transparent}}
-#flGuide{position:fixed;z-index:720;width:268px;background:var(--bg,#fff);color:var(--text);border:1px solid var(--border,rgba(0,0,0,.14));border-radius:16px;box-shadow:0 14px 44px rgba(0,0,0,.3);padding:14px;font-size:12px}
+.mcell-t.fl-focus{outline:2px solid #8b5cf6;outline-offset:1px;animation:flpulse 1.6s ease-in-out infinite}
+@keyframes flpulse{50%{outline-color:rgba(139,92,246,.25);box-shadow:0 0 10px rgba(139,92,246,.55)}}
+#flGuide{transition:left .25s ease,top .25s ease;position:fixed;z-index:720;width:268px;background:var(--bg,#fff);color:var(--text);border:1px solid var(--border,rgba(0,0,0,.14));border-radius:16px;box-shadow:0 14px 44px rgba(0,0,0,.3);padding:14px;font-size:12px}
 #flGuide::before{content:'';display:none;position:absolute;top:var(--ay,30px);width:12px;height:12px;background:var(--bg,#fff);border:1px solid var(--border,rgba(0,0,0,.14));transform:rotate(45deg)}
 #flGuide.flg-r::before{display:block;left:-7px;border-right:none;border-top:none}
 #flGuide.flg-l::before{display:block;right:-7px;border-left:none;border-bottom:none}
-#flGuide .flg-top{display:flex;align-items:center;font-size:11px;color:var(--muted);margin-bottom:8px}
-#flGuide .flg-x{margin-left:auto;cursor:pointer;padding:0 2px}#flGuide .flg-x:hover{color:#ef4444}
+#flGuide .flg-top{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);margin-bottom:8px}
+#flGuide .flg-count{font-weight:700;font-size:12px;color:var(--text);min-width:52px;text-align:center}
+#flGuide .flg-nav{border:none;background:var(--hover,rgba(0,0,0,.06));color:var(--text);width:24px;height:24px;border-radius:7px;font-size:17px;line-height:1;cursor:pointer;padding:0}
+#flGuide .flg-nav:disabled{opacity:.28;cursor:default}
+#flGuide .flg-tools{margin-left:auto;display:flex;gap:10px;font-size:13px}
+#flGuide .flg-x{cursor:pointer;padding:0 2px}#flGuide .flg-x:hover{color:var(--text)}
 #flGuide .flg-route{display:flex;align-items:center;justify-content:center;gap:12px;font-size:30px;font-weight:800;letter-spacing:1px;line-height:1.1}
 #flGuide .flg-route i{font-style:normal;font-weight:400;font-size:20px;color:var(--muted)}
 #flGuide .flg-when{text-align:center;font-size:12px;font-weight:600;margin:6px 0 12px}
 #flGuide .flg-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#flGuide .flg-btns:has(.flg-ghost){grid-template-columns:1fr 1fr}
 #flGuide .flg-btns button{font:inherit;font-size:12px;font-weight:700;padding:8px 6px;border-radius:9px;cursor:pointer;border:1px solid transparent}
 #flGuide .flg-ok{background:#16a34a;color:#fff}#flGuide .flg-ok:hover{background:#15803d}
 #flGuide .flg-no{background:rgba(220,38,38,.1);color:#dc2626;border-color:rgba(220,38,38,.35)!important}#flGuide .flg-no:hover{background:#dc2626;color:#fff}
 #flGuide .flg-ghost{background:transparent;color:var(--muted);border-color:var(--border,rgba(0,0,0,.18))!important;font-weight:600!important}#flGuide .flg-ghost:hover{color:var(--text)}
-#flGuide .flg-meta{margin-top:12px;padding-top:9px;border-top:1px solid var(--border,rgba(0,0,0,.1));font-size:10.5px;color:var(--muted);line-height:1.5}
+#flGuide .flg-meta{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:9px;border-top:1px solid var(--border,rgba(0,0,0,.1));font-size:11px;color:var(--muted)}
+#flGuide .flg-meta b{color:var(--text);font-weight:800;letter-spacing:.5px}
 #flGuide .flg-edit{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
 #flGuide label{display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--muted)}
 #flGuide input{font:inherit;font-size:12px;padding:4px 6px;border:1px solid var(--border,rgba(0,0,0,.2));border-radius:6px;background:transparent;color:var(--text);min-width:0}

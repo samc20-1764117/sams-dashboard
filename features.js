@@ -9088,7 +9088,7 @@ function _flStart(){
   _flGuideShow();
 }
 let _flWatch=null;
-function _flGuideEnd(){clearInterval(_flWatch);_flWatch=null;const g=document.getElementById('flGuide');if(g)g.remove();document.querySelectorAll('.fl-focus').forEach(x=>x.classList.remove('fl-focus'));_flBadge();}
+function _flGuideEnd(){clearInterval(_flWatch);_flWatch=null;document.removeEventListener('mousedown',_flOutside,true);document.removeEventListener('keydown',_flKey,true);const g=document.getElementById('flGuide');if(g)g.remove();document.querySelectorAll('.fl-focus').forEach(x=>x.classList.remove('fl-focus'));_flBadge();}
 function _flGoto(f){
   const ds=String(f.depart_local).slice(0,10),yr=+ds.slice(0,4);
   if(yr!==_moNavYear&&typeof jumpMoYear==='function'){jumpMoYear(yr);}
@@ -9102,36 +9102,43 @@ function _flGoto(f){
       if(n!==mg)y=cell.offsetTop-mg.offsetTop;
       const sep=mg.querySelector('.mo-sep');
       mg.scrollTo({top:y-22-(sep?sep.offsetHeight:34)-3,behavior:'smooth'});
-      if(!mg._flScroll){mg._flScroll=1;mg.addEventListener('scroll',()=>requestAnimationFrame(_flPlace),{passive:true});}
     }
-    _flPlace();setTimeout(_flPlace,350);
+    // Card is placed ONCE per flight (after the scroll settles) and then stays put while you scroll
+    setTimeout(_flPlace,500);
   },yr!==_moNavYear?120:30);
 }
-// Keep the review card docked beside the flight chip being reviewed (follows it while scrolling)
 function _flPlace(){
   const g=document.getElementById('flGuide');if(!g)return;
   const chip=document.querySelector('#mCells .mcell-t.fl-focus'),mg=document.querySelector('#mModal .mgrid');
   const gw=g.offsetWidth,gh=g.offsetHeight,vw=innerWidth,vh=innerHeight;
   if(!chip||!mg){g.style.left=Math.max(10,(vw-gw)/2)+'px';g.style.top=Math.max(10,(vh-gh)/2)+'px';g.classList.remove('flg-l','flg-r');return;}
   const r=chip.getBoundingClientRect(),mr=mg.getBoundingClientRect();
-  const vis=r.bottom>mr.top&&r.top<mr.bottom;
   let side='r',left=r.right+12;
   if(left+gw>vw-10){side='l';left=r.left-gw-12;}
   left=Math.max(10,Math.min(left,vw-gw-10));
   const cy=Math.max(mr.top+8,Math.min(r.top+r.height/2,mr.bottom-8));
-  let top=Math.max(10,Math.min(cy-48,vh-gh-10));
+  const top=Math.max(10,Math.min(cy-48,vh-gh-10));
   g.style.left=left+'px';g.style.top=top+'px';
-  g.classList.toggle('flg-r',vis&&side==='r');g.classList.toggle('flg-l',vis&&side==='l');
+  g.classList.toggle('flg-r',side==='r');g.classList.toggle('flg-l',side==='l');
   g.style.setProperty('--ay',Math.max(16,Math.min(cy-top-6,gh-28))+'px');
+}
+function _flNav(d){const n=_flQi+d;if(n<0||n>=_flQ.length)return;_flQi=n;_flEditing=false;_flGuideShow();}
+function _flOutside(e){const g=document.getElementById('flGuide');if(g&&!g.contains(e.target)&&!(e.target.closest&&e.target.closest('#flBtn')))_flGuideEnd();}
+function _flKey(e){
+  const t=e.target,typing=t&&/INPUT|TEXTAREA|SELECT/.test(t.tagName);
+  if(e.key==='Enter'&&!typing&&!(t&&t.tagName==='BUTTON')){e.preventDefault();_flGuideEnd();}
+  else if(!typing&&!_flEditing&&e.key==='ArrowLeft'){e.preventDefault();_flNav(-1);}
+  else if(!typing&&!_flEditing&&e.key==='ArrowRight'){e.preventDefault();_flNav(1);}
 }
 function _flGuideShow(){
   _flQ=_flQ.filter(id=>(st.flights||[]).some(f=>f.id===id&&f.review_state==='pending'));
   if(!_flQ.length){_flGuideEnd();return;}
-  if(_flQi>=_flQ.length)_flQi=0;
+  if(_flQi>=_flQ.length)_flQi=_flQ.length-1;
   const f=st.flights.find(x=>x.id===_flQ[_flQi]);
   let g=document.getElementById('flGuide');
   if(!g){g=document.createElement('div');g.id='flGuide';document.body.appendChild(g);
-    _flWatch=setInterval(()=>{const m=document.getElementById('mModal');if(!m||!m.classList.contains('open'))_flGuideEnd();},500);}
+    _flWatch=setInterval(()=>{const m=document.getElementById('mModal');if(!m||!m.classList.contains('open'))_flGuideEnd();},500);
+    setTimeout(()=>{document.addEventListener('mousedown',_flOutside,true);document.addEventListener('keydown',_flKey,true);},0);}
   if(_flEditing){
     const d=String(f.depart_local),a=f.arrive_local?String(f.arrive_local):'';
     g.innerHTML=`<div class="flg-top"><b>Edit flight</b><span class="flg-x" onclick="_flEditing=false;_flGuideShow()" title="Cancel">✕</span></div>
@@ -9143,16 +9150,18 @@ function _flGuideShow(){
       <div class="flg-btns"><button class="flg-ok" onclick="_flEditSave()">Save</button><button class="flg-ghost" onclick="_flEditing=false;_flGuideShow()">Cancel</button></div>`;
     _flPlace();return;
   }
-  const meta=[f.flight_number,f.seat?'Seat '+f.seat:'',f.cabin||'',f.passenger||'',f.confirmation_code||''].filter(Boolean).join(' · ');
-  g.innerHTML=`<div class="flg-top"><span>✈ ${_flQi+1} of ${_flQ.length} to review</span><span class="flg-x" onclick="_flGuideEnd()" title="Close">✕</span></div>
+  const n=_flQ.length;
+  g.innerHTML=`<div class="flg-top">
+      <button class="flg-nav" ${_flQi===0?'disabled':''} onclick="_flNav(-1)" title="Previous (←)">‹</button>
+      <span class="flg-count">${_flQi+1} of ${n}</span>
+      <button class="flg-nav" ${_flQi===n-1?'disabled':''} onclick="_flNav(1)" title="Next (→)">›</button>
+      <span class="flg-tools"><span class="flg-x" onclick="_flEditing=true;_flGuideShow()" title="Edit flight">✎</span><span class="flg-x" onclick="_flGuideEnd()" title="Close">✕</span></span></div>
     <div class="flg-route"><span>${f.origin}</span><i>→</i><span>${f.destination}</span></div>
     <div class="flg-when">${_flFmt(f)}</div>
     <div class="flg-btns">
       <button class="flg-ok" onclick="_flGuideAct('accepted')">✓ Approve</button>
-      <button class="flg-no" onclick="_flGuideAct('ignored')">✕ Reject</button>
-      <button class="flg-ghost" onclick="_flEditing=true;_flGuideShow()">✎ Edit</button>
-      ${_flQ.length>1?'<button class="flg-ghost" onclick="_flQi++;_flGuideShow()">Skip →</button>':''}</div>
-    <div class="flg-meta">${meta}</div>`;
+      <button class="flg-no" onclick="_flGuideAct('ignored')">✕ Reject</button></div>
+    <div class="flg-meta"><b>${f.confirmation_code||''}</b><span>${f.seat?'Seat '+f.seat:''}</span><span>${f.flight_number}</span></div>`;
   _flGoto(f);
 }
 async function _flGuideAct(state){
