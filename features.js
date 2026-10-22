@@ -1576,7 +1576,7 @@ function mkMCell(date,om,today,altMo){
       chip.appendChild(dx);
     }else if(t._flPending){
       // Pending flight: striped chip, hover shows ✓ approve / ✕ deny
-      chip.classList.add('fl-pend');
+      chip.classList.add('fl-pend');chip.style.setProperty('--fl-c',s.d);chip.dataset.flid=t._srcId;
       const ok=document.createElement('button');ok.className='chip-del fl-ok';ok.textContent='✓';ok.title='Approve flight';
       ok.addEventListener('click',e2=>{e2.stopPropagation();_flSetState(t._srcId,'accepted');});
       const no=document.createElement('button');no.className='chip-del';no.textContent='✕';no.title='Deny flight';
@@ -8997,7 +8997,7 @@ async function _flReload(){
 }
 function _flBadge(){
   const n=(st.flights||[]).filter(f=>f.review_state==='pending').length;
-  const b=document.getElementById('flBtn');if(b){b.textContent=(n?'✈ '+n:'✈')+(window._flErr?' ⚠':'');b.classList.toggle('fl-has',n>0);b.title=window._flErr?'Gmail needs reconnecting':n?n+' new flight'+(n>1?'s':'')+' to review':'Flights';}
+  const b=document.getElementById('flBtn');if(b){b.textContent=(n?'✈ '+n:'✈')+(window._flErr?' ⚠':'');b.classList.toggle('fl-has',n>0);b.style.display=(n>0||window._flErr)?'':'none';b.title=window._flErr?'Gmail needs reconnecting':n?n+' new flight'+(n>1?'s':'')+' to review':'Flights';}
 }
 function _flFmt(f){
   const d=new Date(String(f.depart_local).slice(0,16));
@@ -9075,3 +9075,62 @@ setTimeout(function _flAuto(){
     _flApi('status').then(s=>{window._flErr=!!(s&&(s.lastError||s.connected===false));_flBadge();}).catch(()=>{});
   }catch(e){}
 },8000);
+
+// ── Guided flight review: ✈ button → month view + step-through bar (Approve / Reject / Edit / Skip) ──
+let _flQ=[],_flQi=0,_flEditing=false;
+function _flStart(){
+  const pend=(st.flights||[]).filter(f=>f.review_state==='pending').sort((a,b)=>String(a.depart_local).localeCompare(String(b.depart_local)));
+  if(!pend.length){openFlightsModal();return;}
+  _flQ=pend.map(f=>f.id);_flQi=0;_flEditing=false;
+  const m=document.getElementById('mModal');
+  if(!m.classList.contains('open'))openMModal();
+  _flGuideShow();
+}
+function _flGuideEnd(){const g=document.getElementById('flGuide');if(g)g.remove();document.querySelectorAll('.fl-focus').forEach(x=>x.classList.remove('fl-focus'));_flBadge();}
+function _flGoto(f){
+  const ds=String(f.depart_local).slice(0,10),yr=+ds.slice(0,4);
+  if(yr!==_moNavYear&&typeof jumpMoYear==='function'){jumpMoYear(yr);}
+  setTimeout(()=>{
+    const cell=document.querySelector('#mCells .mcell[data-ds="'+ds+'"]'),mg=document.querySelector('#mModal .mgrid');
+    if(cell&&mg)mg.scrollTop+=cell.getBoundingClientRect().top-mg.getBoundingClientRect().top-80;
+    document.querySelectorAll('.fl-focus').forEach(x=>x.classList.remove('fl-focus'));
+    const chip=document.querySelector('#mCells .mcell-t[data-flid="'+f.id+'"]');if(chip)chip.classList.add('fl-focus');
+  },yr!==_moNavYear?120:40);
+}
+function _flGuideShow(){
+  _flQ=_flQ.filter(id=>(st.flights||[]).some(f=>f.id===id&&f.review_state==='pending'));
+  if(!_flQ.length){_flGuideEnd();return;}
+  if(_flQi>=_flQ.length)_flQi=0;
+  const f=st.flights.find(x=>x.id===_flQ[_flQi]);
+  let g=document.getElementById('flGuide');
+  if(!g){g=document.createElement('div');g.id='flGuide';document.body.appendChild(g);}
+  const bt=(c,l,fn)=>`<button class="btn btn-xs ${c}" onclick="${fn}">${l}</button>`;
+  if(_flEditing){
+    const d=String(f.depart_local),a=f.arrive_local?String(f.arrive_local):'';
+    g.innerHTML=`<div class="flg-top"><b>Edit flight</b></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+      <label>Flight<input id="flE_no" value="${f.flight_number}"></label><label>From<input id="flE_o" value="${f.origin}"></label><label>To<input id="flE_d" value="${f.destination}"></label>
+      <label>Date<input id="flE_dt" type="date" value="${d.slice(0,10)}"></label><label>Departs<input id="flE_t1" type="time" value="${d.slice(11,16)}"></label><label>Arrives<input id="flE_t2" type="time" value="${a.slice(11,16)}"></label></div>
+      <div class="flg-btns">${bt('','Save','_flEditSave()')}${bt('btn-ghost','Cancel','_flEditing=false;_flGuideShow()')}</div>`;
+    return;
+  }
+  g.innerHTML=`<div class="flg-top"><span>✈ Flight ${_flQi+1} of ${_flQ.length} to review</span><span style="margin-left:auto;cursor:pointer" onclick="_flGuideEnd()" title="Close">✕</span></div>
+    <div class="flg-main">${f.flight_number} · ${f.origin} → ${f.destination}</div>
+    <div class="flg-sub">${_flFmt(f)}${f.seat?' · seat '+f.seat:''}${f.passenger?' · '+f.passenger:''}${f.confirmation_code?' · '+f.confirmation_code:''}</div>
+    <div class="flg-btns">${bt('','✓ Approve',"_flGuideAct('accepted')")}${bt('btn-ghost','✕ Reject',"_flGuideAct('ignored')")}${bt('btn-ghost','✎ Edit','_flEditing=true;_flGuideShow()')}${_flQ.length>1?bt('btn-ghost','Skip →','_flQi++;_flGuideShow()'):''}</div>`;
+  _flGoto(f);
+}
+async function _flGuideAct(state){
+  const id=_flQ[_flQi];await _flSetState(id,state);   // removes it from the pending queue
+  _flGuideShow();
+}
+async function _flEditSave(){
+  const f=st.flights.find(x=>x.id===_flQ[_flQi]);if(!f)return;
+  const v=i=>document.getElementById(i).value.trim();
+  const dt=v('flE_dt'),t1=v('flE_t1'),t2=v('flE_t2');
+  if(!v('flE_no')||!dt||!t1)return;
+  const p={flight_number:v('flE_no').toUpperCase(),origin:v('flE_o').toUpperCase(),destination:v('flE_d').toUpperCase(),depart_local:dt+'T'+t1+':00',arrive_local:t2?dt+'T'+t2+':00':f.arrive_local,user_edited:true,updated_at:new Date().toISOString()};
+  Object.assign(f,p);
+  await sbReqSilent('PATCH','flights',p,recQs(f.id));
+  _flEditing=false;renderAll();_flGuideShow();
+}

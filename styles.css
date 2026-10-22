@@ -2256,10 +2256,17 @@ body.dark .delbtn{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 body.theme-modern .cat-sel-trigger span:last-child{font-size:0;display:inline-block;width:10px;height:10px;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
 body.theme-modern.dark .cat-sel-trigger span:last-child{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
 
-/* Pending flights: striped until approved; ✓/✕ appear on hover */
-.fl-pend{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.65) 0 4px,transparent 4px 8px)!important;border-style:dashed!important}
-body.dark .fl-pend{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 4px,transparent 4px 8px)!important}
+/* Pending flights: dashed accent border + soft tinted stripes until approved; ✓/✕ appear on hover */
+.fl-pend{--fl-c:#0ea5e9;border:1.5px dashed var(--fl-c)!important;background-image:repeating-linear-gradient(135deg,color-mix(in srgb,var(--fl-c) 26%,transparent) 0 3px,transparent 3px 9px)!important;box-shadow:none!important}
 .chip-del.fl-ok:hover{color:#16a34a!important}
 .fl-acts{display:none;margin-left:auto;gap:4px;flex-shrink:0}.ti:hover .fl-acts{display:inline-flex}
 .fl-acts button{border:none;background:none;cursor:pointer;font-size:11px;padding:0 3px;color:inherit}.fl-acts .fl-ok:hover{color:#16a34a}.fl-acts button:hover{color:#ef4444}
 #flBtn.fl-has{color:var(--accent);font-weight:700}
+.mcell-t.fl-focus{outline:2px solid var(--accent,#7c3aed);outline-offset:1px;animation:flpulse 1.3s ease-in-out infinite}
+@keyframes flpulse{50%{outline-offset:3px;outline-color:transparent}}
+#flGuide{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:720;background:var(--bg,#fff);color:var(--text);border:1px solid var(--border,rgba(0,0,0,.15));border-radius:14px;box-shadow:0 10px 36px rgba(0,0,0,.28);padding:12px 14px;width:min(560px,94vw);font-size:13px}
+#flGuide .flg-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;color:var(--muted)}
+#flGuide .flg-main{font-weight:700;font-size:15px}
+#flGuide .flg-sub{font-size:12px;color:var(--muted);margin:2px 0 10px}
+#flGuide .flg-btns{display:flex;gap:6px;flex-wrap:wrap}
+#flGuide input{font:inherit;font-size:12px;padding:3px 5px;border:1px solid var(--border,rgba(0,0,0,.2));border-radius:6px;background:transparent;color:inherit}

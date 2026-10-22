@@ -7729,7 +7729,7 @@ function tRowExtra(t){
   const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
   const _bdDone=isBd&&t.done;
   const _pastGrey=(isBd&&!_bdDone&&t.due_date&&t.due_date<tod())||(isHd&&t.due_date&&t.due_date<tod());
-  return`<div class="ti ti-${sl}${_bdDone?' done':''}${t._flPending?' fl-pend':''}" style="background:${s.bg}${isTv?`;border-color:${s.b}`:''}${_bdDone||_pastGrey?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
+  return`<div class="ti ti-${sl}${_bdDone?' done':''}${t._flPending?' fl-pend':''}" style="${t._flPending?`--fl-c:${s.d};`:''}background:${s.bg}${isTv?`;border-color:${s.b}`:''}${_bdDone||_pastGrey?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
     ${isTv?`<button class="pack-icon-btn pack-seg" style="border:1px solid ${s.b};border-right-width:2px" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list">${_PACK_SVG}</button>`:''}
     <span class="tn" style="color:${s.t}${_bdDone||_pastGrey?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
     ${isTv||isBd||isHd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
