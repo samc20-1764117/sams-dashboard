@@ -3,6 +3,7 @@
 // review_state='pending'. Gmail is read-only and only touched on a button press / once-a-day
 // auto check; a KV `fresh` marker + error `cooldown` (same pattern as yt.js) stop it looping.
 const SB_URL = 'https://gtirvyrqfuuuxkkqaeap.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0aXJ2eXJxZnV1dXhra3FhZWFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwODY3NjAsImV4cCI6MjA4ODY2Mjc2MH0.6rtA0WeUUAcuV_sNVrxAbaaviPxPwNakh_bk7uylAOo'; // public anon key (same one shipped in core.js); the cron RPCs are guarded by a secret, not this key
 const ORIGINS = ['https://sams-dashboard.pages.dev', 'https://dev.sams-dashboard.pages.dev'];
 const REDIRECT = 'https://sams-dashboard.pages.dev/api/flights?mode=auth-callback';
 const LABEL_MATCH = /travel/i;            // the "✈️ Travel" label
@@ -75,6 +76,49 @@ function parseSouthwest(t, subject) {
   return legs;
 }
 
+// Reads new mail from the Travel label and returns today-forward legs (shared by the manual
+// button and the 6am cron). Throws on any Gmail/token error; callers set their own cooldown.
+async function scanGmail(KV, cid, csec, refresh, today) {
+    const tr = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ client_id: cid, client_secret: csec, refresh_token: refresh, grant_type: 'refresh_token' }),
+    });
+    const tk = await tr.json();
+    if (!tk.access_token) throw new Error('token: ' + (tk.error || 'unknown'));
+    const G = p => fetch('https://gmail.googleapis.com/gmail/v1/users/me/' + p, { headers: { Authorization: 'Bearer ' + tk.access_token } }).then(r => { if (!r.ok) throw new Error('gmail ' + r.status); return r.json(); });
+
+    // Resolve + cache the label id (one labels.list call ever, not per sync)
+    let labelId = await KV.get('fl-label');
+    if (!labelId) {
+      const ls = (await G('labels')).labels || [];
+      const l = ls.find(x => LABEL_MATCH.test(x.name));
+      if (!l) throw new Error('Travel label not found');
+      labelId = l.id; await KV.put('fl-label', labelId);
+    }
+    // Only mail newer than the last check (first run: a year back — flights are booked ahead)
+    const last = await KV.get('fl-last');
+    const since = last ? new Date(new Date(last).getTime() - 2 * 86400000) : new Date(Date.now() - 365 * 86400000);
+    const q = `${FROM_Q} after:${since.getUTCFullYear()}/${pad(since.getUTCMonth() + 1)}/${pad(since.getUTCDate())}`;
+    const list = await G(`messages?labelIds=${encodeURIComponent(labelId)}&q=${encodeURIComponent(q)}&maxResults=${MAX_MSGS}`);
+
+    const legs = []; let unreadable = 0;
+    for (const { id } of (list.messages || [])) {
+      const m = await G(`messages/${id}?format=full`);
+      const hdr = n => ((m.payload.headers || []).find(h => h.name.toLowerCase() === n) || {}).value || '';
+      const subject = hdr('subject'), from = hdr('from').toLowerCase();
+      const text = bodyText(m.payload);
+      const got = from.includes('united.com') ? parseUnited(text, subject) : from.includes('southwest.com') ? parseSouthwest(text, subject) : [];
+      if (!got.length) { if (/confirmation|itinerary|booking|going to/i.test(subject) && !/seat|credit|check.?in/i.test(subject)) unreadable++; continue; }
+      got.forEach(l => legs.push({ ...l, _msg: id }));
+    }
+
+    // Today-forward by FLIGHT date (not email date)
+    const fresh = legs.filter(l => l.depart_local.slice(0, 10) >= today);
+    for (const l of fresh) { l.depart_tz = TZ[l.origin] || null; l.arrive_tz = TZ[l.destination] || null; }
+
+  return { fresh, scanned: (list.messages || []).length, unreadable };
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const origin = request.headers.get('Origin');
@@ -115,6 +159,34 @@ export async function onRequest(context) {
     return new Response('<h2>Gmail connected</h2><p>Taking you back to the dashboard…</p><script>setTimeout(()=>{location.href="/"},1200)</script>', { headers: { 'Content-Type': 'text/html' } });
   }
 
+  // ── Daily cron (GitHub Actions, 6am Central) ── no user session, so it is guarded by a shared
+  // secret checked INSIDE Supabase (flights_cron_ok); rows are written via the SECURITY DEFINER
+  // RPC flights_cron_apply. Same Gmail scope/label/sender limits as the manual path.
+  if (mode === 'cron') {
+    const secret = request.headers.get('X-Cron-Secret') || '';
+    const rpc = (fn, args) => fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' }, body: JSON.stringify(args) }).then(r => r.json());
+    if (!secret || (await rpc('flights_cron_ok', { p_secret: secret })) !== true) return json({ error: 'unauthorized' }, cors, 401);
+    if (!KV) return json({ error: 'KV not bound' }, cors, 500);
+    if (await KV.get('fl-cron-cool')) return json({ skipped: 'cooldown' }, cors);
+    const refresh = await KV.get('gmail-oauth-refresh');
+    if (!refresh) { await KV.put('fl-err', 'not_connected'); return json({ error: 'not_connected' }, cors, 409); }
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+    try {
+      const { cid, csec } = await creds();
+      const r = await scanGmail(KV, cid, csec, refresh, today);
+      const res = await rpc('flights_cron_apply', { p_secret: secret, p_legs: r.fresh });
+      if (res && res.message) throw new Error('apply: ' + res.message);
+      await KV.put('fl-last', new Date().toISOString());
+      await KV.delete('fl-err');
+      await KV.put('fl-cron-cool', '1', { expirationTtl: 3600 }); // never twice within an hour
+      return json({ ...res, scanned: r.scanned, unreadable: r.unreadable }, cors);
+    } catch (e) {
+      await KV.put('fl-err', String(e.message || e).slice(0, 120));
+      await KV.put('fl-cron-cool', '1', { expirationTtl: 600 });
+      return json({ error: String(e.message || e) }, cors, 500);
+    }
+  }
+
   // Everything below requires a signed-in dashboard user (Supabase JWT) — this endpoint can read
   // the inbox, so it must never be callable anonymously.
   const auth = request.headers.get('Authorization') || '';
@@ -123,7 +195,7 @@ export async function onRequest(context) {
   if (!who || !who.ok) return json({ error: 'unauthorized' }, cors, 401);
 
   if (mode === 'status') {
-    return json({ connected: !!(KV && await KV.get('gmail-oauth-refresh')), lastSync: KV ? await KV.get('fl-last') : null }, cors);
+    return json({ connected: !!(KV && await KV.get('gmail-oauth-refresh')), lastSync: KV ? await KV.get('fl-last') : null, lastError: KV ? await KV.get('fl-err') : null }, cors);
   }
   if (mode !== 'sync' || request.method !== 'POST') return json({ error: 'bad request' }, cors, 400);
   if (!KV) return json({ error: 'KV not bound' }, cors, 500);
@@ -137,42 +209,7 @@ export async function onRequest(context) {
 
   try {
     const { cid, csec } = await creds();
-    const tr = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ client_id: cid, client_secret: csec, refresh_token: refresh, grant_type: 'refresh_token' }),
-    });
-    const tk = await tr.json();
-    if (!tk.access_token) throw new Error('token: ' + (tk.error || 'unknown'));
-    const G = p => fetch('https://gmail.googleapis.com/gmail/v1/users/me/' + p, { headers: { Authorization: 'Bearer ' + tk.access_token } }).then(r => { if (!r.ok) throw new Error('gmail ' + r.status); return r.json(); });
-
-    // Resolve + cache the label id (one labels.list call ever, not per sync)
-    let labelId = await KV.get('fl-label');
-    if (!labelId) {
-      const ls = (await G('labels')).labels || [];
-      const l = ls.find(x => LABEL_MATCH.test(x.name));
-      if (!l) throw new Error('Travel label not found');
-      labelId = l.id; await KV.put('fl-label', labelId);
-    }
-    // Only mail newer than the last check (first run: a year back — flights are booked ahead)
-    const last = await KV.get('fl-last');
-    const since = last ? new Date(new Date(last).getTime() - 2 * 86400000) : new Date(Date.now() - 365 * 86400000);
-    const q = `${FROM_Q} after:${since.getUTCFullYear()}/${pad(since.getUTCMonth() + 1)}/${pad(since.getUTCDate())}`;
-    const list = await G(`messages?labelIds=${encodeURIComponent(labelId)}&q=${encodeURIComponent(q)}&maxResults=${MAX_MSGS}`);
-
-    const legs = []; let unreadable = 0;
-    for (const { id } of (list.messages || [])) {
-      const m = await G(`messages/${id}?format=full`);
-      const hdr = n => ((m.payload.headers || []).find(h => h.name.toLowerCase() === n) || {}).value || '';
-      const subject = hdr('subject'), from = hdr('from').toLowerCase();
-      const text = bodyText(m.payload);
-      const got = from.includes('united.com') ? parseUnited(text, subject) : from.includes('southwest.com') ? parseSouthwest(text, subject) : [];
-      if (!got.length) { if (/confirmation|itinerary|booking|going to/i.test(subject) && !/seat|credit|check.?in/i.test(subject)) unreadable++; continue; }
-      got.forEach(l => legs.push({ ...l, _msg: id }));
-    }
-
-    // Today-forward by FLIGHT date (not email date)
-    const fresh = legs.filter(l => l.depart_local.slice(0, 10) >= today);
-    for (const l of fresh) { l.depart_tz = TZ[l.origin] || null; l.arrive_tz = TZ[l.destination] || null; }
+    const { fresh, scanned, unreadable } = await scanGmail(KV, cid, csec, refresh, today);
 
     // Upsert by (code, flight, depart date, passenger) — repeat emails update, never duplicate
     const H = { Authorization: auth, apikey, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
@@ -196,9 +233,10 @@ export async function onRequest(context) {
       }
     }
     await KV.put('fl-last', new Date().toISOString());
+    await KV.delete('fl-err');
     await KV.put('fl-fresh', '1', { expirationTtl: 20 * 3600 });
     await KV.put('fl-cool', '1', { expirationTtl: 120 }); // min 2 min between manual presses
-    return json({ added, updated, unreadable, scanned: (list.messages || []).length }, cors);
+    return json({ added, updated, unreadable, scanned }, cors);
   } catch (e) {
     await KV.put('fl-cool', '1', { expirationTtl: 600 }); // error cooldown — never retry in a loop
     return json({ error: String(e.message || e) }, cors, 500);

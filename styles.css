@@ -2255,3 +2255,11 @@ body.dark .delbtn{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 #recList .delbtn,#shopOv .delbtn{width:12px;height:12px;background-size:9px}
 body.theme-modern .cat-sel-trigger span:last-child{font-size:0;display:inline-block;width:10px;height:10px;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
 body.theme-modern.dark .cat-sel-trigger span:last-child{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")}
+
+/* Pending flights: striped until approved; ✓/✕ appear on hover */
+.fl-pend{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.65) 0 4px,transparent 4px 8px)!important;border-style:dashed!important}
+body.dark .fl-pend{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 4px,transparent 4px 8px)!important}
+.chip-del.fl-ok:hover{color:#16a34a!important}
+.fl-acts{display:none;margin-left:auto;gap:4px;flex-shrink:0}.ti:hover .fl-acts{display:inline-flex}
+.fl-acts button{border:none;background:none;cursor:pointer;font-size:11px;padding:0 3px;color:inherit}.fl-acts .fl-ok:hover{color:#16a34a}.fl-acts button:hover{color:#ef4444}
+#flBtn.fl-has{color:var(--accent);font-weight:700}

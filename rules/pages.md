@@ -286,3 +286,9 @@ Table: `recipes` (columns include `sort_order int4`). Do NOT reference: protein,
 - **Shortcut**: `L` (single press, toggle back to overview). `renderGuidePage()` in features.js.
 - **Layout**: narrow left column (task color cards + special states), right 2-col grid (keyboard shortcuts, multi-select & drag).
 - **Must stay in sync**: when updating colors, shortcuts, or multi-select behavior, also update `renderGuidePage()`.
+
+## Flights (Gmail import, added 2026-10-21)
+- Table `flights` (migration 018) = one row per leg; `review_state` pending|accepted|ignored. Pending = striped (`.fl-pend`) holiday-type chips (top of lists like travel); hover ✓ approve / ✕ deny in month view + list rows; accepted = normal Travel-colored chip. ✈ button (`#flBtn`, weekly-cal header next to Month) shows pending count, opens review modal (`openFlightsModal`).
+- Import: `functions/api/flights.js`. Gmail `gmail.readonly`, only the "✈️ Travel" label + United/Southwest senders; stores extracted fields + msg ids only, never bodies. Parsers: `parseUnited`/`parseSouthwest` (add American/BA/Delta by adding a parser + sender to `FROM_Q`).
+- Daily 6am: GitHub Actions `.github/workflows/flights-cron.yml` (11:00 UTC = 6am CDT / 5am CST) → `POST /api/flights?mode=cron` with `X-Cron-Secret` (GitHub secret `FLIGHTS_CRON_SECRET`; only its sha256 lives in Supabase `flight_cron`, migration 019, checked by RPC `flights_cron_ok`/`flights_cron_apply`). Manual "Check for flights" button still works. Errors → KV `fl-err` → ✈ shows ⚠ (reconnect Gmail).
+- Google OAuth app is in Testing → refresh token expires every 7 days → reconnect via ✈ → Connect Gmail (or publish the OAuth app). Connect link must stay same-window (DockClock can't open new windows).

@@ -1,0 +1,16 @@
+# Daily flights check (6am Central during daylight time; 5am in winter). Calls the production
+# endpoint, which reads the Gmail Travel label and stores new flights as "pending" for review.
+name: flights-cron
+on:
+  schedule:
+    - cron: '0 11 * * *'
+  workflow_dispatch: {}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Gmail for new flights
+        run: |
+          out=$(curl -sS -m 60 -X POST -H "X-Cron-Secret: ${{ secrets.FLIGHTS_CRON_SECRET }}" "https://sams-dashboard.pages.dev/api/flights?mode=cron")
+          echo "$out"
+          echo "$out" | grep -q '"error"' && exit 1 || exit 0

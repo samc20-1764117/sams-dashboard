@@ -7729,12 +7729,13 @@ function tRowExtra(t){
   const bdDrag=isBd?`draggable="true" ondragstart="dStart(event,'bday::${t._srcId}::${t.due_date}')" ondragend="dEnd(event)"`:'';
   const _bdDone=isBd&&t.done;
   const _pastGrey=(isBd&&!_bdDone&&t.due_date&&t.due_date<tod())||(isHd&&t.due_date&&t.due_date<tod());
-  return`<div class="ti ti-${sl}${_bdDone?' done':''}" style="background:${s.bg}${isTv?`;border-color:${s.b}`:''}${_bdDone||_pastGrey?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
+  return`<div class="ti ti-${sl}${_bdDone?' done':''}${t._flPending?' fl-pend':''}" style="background:${s.bg}${isTv?`;border-color:${s.b}`:''}${_bdDone||_pastGrey?';opacity:.45':''}" id="ti-${t.id}" ${bdDrag} onclick="selTask(event,'${t.id}')">
     ${isTv?`<button class="pack-icon-btn pack-seg" style="border:1px solid ${s.b};border-right-width:2px" onclick="event.stopPropagation();openPackingModal('${t._srcId}')" title="Packing list">${_PACK_SVG}</button>`:''}
     <span class="tn" style="color:${s.t}${_bdDone||_pastGrey?';text-decoration:line-through':''}">${modeIcon}${isBd?t.name.replace('🎂','<span class="bday-emoji">🎂</span>'):t.name}</span>
     ${isTv||isBd||isHd?'':`<svg class="cat-dot" width="9" height="9" viewBox="0 0 9 9"><circle cx="4.5" cy="4.5" r="3" fill="${s.bg}" stroke="${s.d}" stroke-opacity="0.4" stroke-width="1"/></svg>`}
     ${isBd||isHd?'':`<span class="dlbl" style="${isTv?`margin-left:auto;color:${_dk()?'var(--muted)':'#475569'}`:''}">${fmtD(t.due_date)}${sub}</span>`}
     ${isTv?`<button class="delbtn" onclick="event.stopPropagation();delTravel('${t._srcId}')">✕</button>`:''}
+    ${t._flPending?`<span class="fl-acts"><button class="fl-ok" title="Approve flight" onclick="event.stopPropagation();_flSetState('${t._srcId}','accepted')">✓</button><button title="Deny flight" onclick="event.stopPropagation();_flSetState('${t._srcId}','ignored')">✕</button></span>`:''}
   </div>`;
 }
 

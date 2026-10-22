@@ -908,9 +908,9 @@ function mkFlightTask(f){
   const ds=String(f.depart_local).slice(0,10);
   const tm=new Date(String(f.depart_local).slice(0,16)).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   return{id:'fl-'+f.id,name:`✈ ${f.flight_number} ${f.origin}→${f.destination} ${tm}`,category:'Travel',
-    due_date:ds,done:false,_srcId:f.id,_virtual:true,_type:'holiday',_flight:true};
+    due_date:ds,done:false,_srcId:f.id,_virtual:true,_type:'holiday',_flight:true,_flPending:f.review_state==='pending'};
 }
-function _flightsShown(){return(st.flights||[]).filter(f=>f.review_state==='accepted'&&f.status!=='cancelled');}
+function _flightsShown(){return(st.flights||[]).filter(f=>(f.review_state==='accepted'||f.review_state==='pending')&&f.status!=='cancelled');}
 function getFlightTasks(ds){return _flightsShown().filter(f=>String(f.depart_local).slice(0,10)===ds).map(mkFlightTask);}
 function getFlightsInRange(a,b){return _flightsShown().filter(f=>{const d=String(f.depart_local).slice(0,10);return d>=a&&d<=b;}).map(mkFlightTask);}
 // Get all virtual extras for a given date string

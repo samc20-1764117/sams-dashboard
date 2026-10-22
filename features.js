@@ -1574,6 +1574,14 @@ function mkMCell(date,om,today,altMo){
       dx.style.cssText='margin-right:2px';
       dx.addEventListener('click',e2=>{e2.stopPropagation();delTravel(t._srcId);});
       chip.appendChild(dx);
+    }else if(t._flPending){
+      // Pending flight: striped chip, hover shows ✓ approve / ✕ deny
+      chip.classList.add('fl-pend');
+      const ok=document.createElement('button');ok.className='chip-del fl-ok';ok.textContent='✓';ok.title='Approve flight';
+      ok.addEventListener('click',e2=>{e2.stopPropagation();_flSetState(t._srcId,'accepted');});
+      const no=document.createElement('button');no.className='chip-del';no.textContent='✕';no.title='Deny flight';
+      no.addEventListener('click',e2=>{e2.stopPropagation();_flSetState(t._srcId,'ignored');});
+      chip.appendChild(ok);chip.appendChild(no);
     }else{
       const dx=document.createElement('button');dx.className='chip-del';dx.textContent='✕';
       dx.addEventListener('click',e2=>{e2.stopPropagation();moChipDel(t,ds,e2);});
@@ -8989,7 +8997,7 @@ async function _flReload(){
 }
 function _flBadge(){
   const n=(st.flights||[]).filter(f=>f.review_state==='pending').length;
-  const b=document.getElementById('flBtn');if(b)b.textContent=n?'✈ '+n:'✈';
+  const b=document.getElementById('flBtn');if(b){b.textContent=(n?'✈ '+n:'✈')+(window._flErr?' ⚠':'');b.classList.toggle('fl-has',n>0);b.title=window._flErr?'Gmail needs reconnecting':n?n+' new flight'+(n>1?'s':'')+' to review':'Flights';}
 }
 function _flFmt(f){
   const d=new Date(String(f.depart_local).slice(0,16));
@@ -9055,12 +9063,15 @@ async function _flCheck(manual){
   }catch(e){_flRender('Check failed: '+e.message);}
   finally{const b=document.getElementById('flCheckBtn');if(b){b.disabled=false;b.textContent='Check for flights';}}
 }
-// Once-a-day automatic check (server also enforces a 20h freshness marker + error cooldown).
+// The 6am cron (GitHub Actions → /api/flights?mode=cron) does the Gmail check; the dashboard only
+// shows the result. Once a day it asks the server whether the last cron run hit an error (e.g. the
+// Gmail connection expired) so the ✈ button can show ⚠.
 setTimeout(function _flAuto(){
   try{
     if(typeof _firstSyncDone==='undefined'||!_firstSyncDone){setTimeout(_flAuto,5000);return;}
     _flBadge();
-    if(localStorage._flAutoDay===tod())return;
-    _flCheck(false);
+    if(localStorage._flStatDay===tod())return;
+    localStorage._flStatDay=tod();
+    _flApi('status').then(s=>{window._flErr=!!(s&&(s.lastError||s.connected===false));_flBadge();}).catch(()=>{});
   }catch(e){}
 },8000);
