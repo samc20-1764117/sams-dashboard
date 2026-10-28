@@ -740,8 +740,11 @@ function mSortDayTasks(tasks, ds) {
 }
 
 // ── Gather today's tasks ──────────────────────────────────────────────────────
-function mGetTodayTasks() {
-  const ds = _mTodayOffset === 0 ? d2s(getDayDate(0)) : _mTodayDateStr();
+function mGetTodayTasks(forceToday) {
+  // forceToday: build REAL today's list regardless of which day the Today tab is viewing —
+  // Week's today column uses this so it always matches Today exactly (carried-over WR/overdue items included).
+  const _isTV = forceToday || _isTV;
+  const ds = _isTV ? d2s(getDayDate(0)) : _mTodayDateStr();
   // Week offset of the day being viewed (0 = this week, +N = N weeks ahead) — matches desktop's
   // _wkHi (overview.js) so swiping the Today tab forward into a future week still finds
   // recurring/WR items pinned there instead of only ever looking at week 0 and back.
@@ -753,7 +756,7 @@ function mGetTodayTasks() {
     if (!t.due_date || t.category === 'Weekly Goals') return false;
     const tds = t.due_date.split('T')[0];
     if (tds === ds) return true;
-    if (_mTodayOffset === 0 && isOv(t.due_date) && !t.done) return true;
+    if (_isTV && isOv(t.due_date) && !t.done) return true;
     return false;
   });
 
@@ -794,7 +797,7 @@ function mGetTodayTasks() {
         r._dateOverrides && r._dateOverrides[_wkKey] &&
         r._dateOverrides[_wkKey] !== '__skip__' &&
         !(st.wrOverrides || []).some(o => String(o.rule_id) === String(r.id) && o.wk_key === _wkKey && (o.override_type === 'skip' || o.override_type === 'move')) &&
-        (r._dateOverrides[_wkKey] === ds || (_mTodayOffset === 0 && r._dateOverrides[_wkKey] < ds && r._dateOverrides[_wkKey] >= getWkKey(0) && !(r._doneByWk && r._doneByWk[_wkKey]))) &&
+        (r._dateOverrides[_wkKey] === ds || (_isTV && r._dateOverrides[_wkKey] < ds && r._dateOverrides[_wkKey] >= getWkKey(0) && !(r._doneByWk && r._doneByWk[_wkKey]))) &&
         !_wrecSeen.has(r.id + '::' + _wkKey)
       )
       .forEach(r => {
@@ -814,7 +817,7 @@ function mGetTodayTasks() {
         r._dateOverrides && r._dateOverrides[_wkKey] &&
         r._dateOverrides[_wkKey] !== '__skip__' &&
         !(st.wrOverrides || []).some(o => String(o.rule_id) === String(r.id) && o.wk_key === _wkKey && (o.override_type === 'skip' || o.override_type === 'move')) &&
-        (r._dateOverrides[_wkKey] === ds || (_mTodayOffset === 0 && r._dateOverrides[_wkKey] < ds && r._dateOverrides[_wkKey] >= getWkKey(0) && !isDoneWRRule(r.id, _wkKey))) &&
+        (r._dateOverrides[_wkKey] === ds || (_isTV && r._dateOverrides[_wkKey] < ds && r._dateOverrides[_wkKey] >= getWkKey(0) && !isDoneWRRule(r.id, _wkKey))) &&
         !_wrRulesSeen.has(r.id + '::' + _wkKey)
       )
       .forEach(r => {
@@ -829,7 +832,7 @@ function mGetTodayTasks() {
   // through, instead of vanishing); only undone items carry forward as "overdue" onto
   // today's list from a past day.
   const shopToday = st.shopping
-    .filter(s => s.due_date && (s.due_date === ds || (_mTodayOffset === 0 && isOv(s.due_date) && !s.done)))
+    .filter(s => s.due_date && (s.due_date === ds || (_isTV && isOv(s.due_date) && !s.done)))
     .map(s => ({id: 'shop-cal-' + s.id, name: s.name, category: 'Shopping', due_date: s.due_date, done: !!s.done, _shopId: s.id, _virtual: true, _type: 'shop'}));
 
   const pupSessToday = (st.pupSessions || [])
@@ -858,11 +861,11 @@ function mGetTodayTasks() {
   }).map(v => ({id: 'vid-ov-' + v.id, name: v.topic || v.title, category: 'Videos', due_date: ds, done: false, _vidId: v.id, _virtual: true, _type: 'vid'}));
 
   // Subscription-cancel reminders (features.js)
-  const finCancelToday = typeof _finCancelTasksForDate === 'function' ? _finCancelTasksForDate(ds).filter(t => t.due_date === ds || (_mTodayOffset === 0 && isOv(t.due_date) && !t.done)) : [];
+  const finCancelToday = typeof _finCancelTasksForDate === 'function' ? _finCancelTasksForDate(ds).filter(t => t.due_date === ds || (_isTV && isOv(t.due_date) && !t.done)) : [];
 
   const all = [
     ...ts,
-    ...allRecVirt.filter(v => v.due_date === ds || (_mTodayOffset === 0 && isOv(v.due_date) && !v.done)),
+    ...allRecVirt.filter(v => v.due_date === ds || (_isTV && isOv(v.due_date) && !v.done)),
     ...wrecToday,
     ...wrRulesToday,
     ...shopToday,
@@ -885,7 +888,7 @@ function mGetTodayTasks() {
     seenName.add(nameKey);
     return true;
   });
-  return mSortToday(deduped);
+  return mSortDayTasks(deduped, ds);
 }
 
 // ── Task row ──────────────────────────────────────────────────────────────────
@@ -946,6 +949,7 @@ function mTaskRow(t) {
   const ruleId = t._isWrRule ? t._ruleId : t._recId;
   const extraAttrs = [
     rtype === 'shop' ? ` data-shopid="${t._shopId}"` : '',
+    rtype === 'pup' && t._pupSessId !== undefined ? ` data-pupid="${t._pupSessId}"` : '',
     (rtype === 'wrec' || rtype === 'wrrule' || rtype === 'rec') && ruleId !== undefined ? ` data-ruleid="${ruleId}" data-wkkey="${t._wkKey || ''}"` : '',
     rtype === 'vid' && t._vidId !== undefined ? ` data-vidid="${t._vidId}"` : '',
     rtype === 'vidstep' && t._vidId !== undefined ? ` data-vidid="${t._vidId}" data-vidstep="${t._vidStep}" data-day="${t.due_date}"` : ''
@@ -2159,7 +2163,7 @@ function _mRowTap(outer) {
 const _M_DRAG_ARM_MS = 220, _M_MENU_HOLD_MS = 400;
 function _mTodBeginDrag(list, outer, t0) {
   _mTodDrag = {el: outer, origOrder: [...list.querySelectorAll('.m-row-outer[data-rid]')].map(r => r.dataset.rid),
-    tid: outer.dataset.tid || null, x: t0.clientX, y: t0.clientY, startX: t0.clientX, ready: false, dir: 0};
+    tid: outer.dataset.tid || null, moveArgs: _mWkMoveArgs(outer), x: t0.clientX, y: t0.clientY, startX: t0.clientX, ready: false, dir: 0};
   _mDdBuild(_mTodDrag);
   _mTodDragBlock = Infinity; // keep #mMain's own day-swipe from also firing on this same horizontal drag
 }
@@ -2320,12 +2324,12 @@ function _mDdBuild(D) {
   layer.append(strip, clone);
   document.body.appendChild(layer);
   D.layer = layer; D.strip = strip; D.clone = clone; D.grabY = D.y - r.top; D.left = r.left;
-  D.lblPrev = D.tid ? _mDdDayLabel(-1) : ''; D.lblNext = D.tid ? _mDdDayLabel(1) : '';
+  D.lblPrev = D.moveArgs ? _mDdDayLabel(-1) : ''; D.lblNext = D.moveArgs ? _mDdDayLabel(1) : '';
   D.el.classList.add('m-dd-ghost');
   navigator.vibrate?.(8);
 }
 function _mDdUpdate(D) {
-  const dxRaw = D.tid ? D.x - D.startX : 0;
+  const dxRaw = D.moveArgs ? D.x - D.startX : 0;
   const a = Math.abs(dxRaw), sgn = dxRaw < 0 ? -1 : 1;
   // Rubber-band past the threshold so the row feels anchored instead of flying free.
   const vis = sgn * (a <= _M_DD_THRESH ? a : _M_DD_THRESH + (a - _M_DD_THRESH) * 0.35);
@@ -2354,10 +2358,32 @@ function _mDdCleanup(D) {
   D.el.classList.remove('m-dd-ghost');
 }
 
+// Non-task rows (recurring, weekly reset, shopping, pup, video, video step): same fly-off, then
+// the exact per-type "move" logic (mMoveToToday with a target day) — its own undo toast.
+function _mTodDragDayShiftOther(D, dir) {
+  const fromDs = _mQuickAddTargetDsToday();
+  const d = new Date(fromDs + 'T12:00:00'); d.setDate(d.getDate() + dir);
+  const toDs = d2s(d);
+  const args = D.moveArgs;
+  document.removeEventListener('touchmove', _mTodDragMove);
+  _mTodDrag = null;
+  _mTodDragBlock = Date.now() + 600;
+  D.clone.style.transition = 'transform .28s cubic-bezier(.5,0,.9,.5), opacity .28s ease';
+  D.clone.style.transform = `translateX(${dir * (window.innerWidth + 40)}px) scale(1.03)`;
+  D.clone.style.opacity = '0';
+  D.strip.classList.add('ready');
+  setTimeout(() => {
+    _mDdCleanup(D);
+    mMoveToToday(args[0], args[1], args[2], toDs);
+    mRenderToday();
+  }, 270);
+}
+
 // Release past the threshold: the clone flies off in that direction, then the due date changes.
 function _mTodDragDayShift(dir) {
   const D = _mTodDrag;
-  if (!D || !D.tid) return;
+  if (!D || !D.moveArgs) return;
+  if (!D.tid) { _mTodDragDayShiftOther(D, dir); return; }
   const t = st.tasks.find(x => String(x.id) === String(D.tid));
   if (!t) { _mTodDragEnd(true); return; }
   const tid = D.tid;
@@ -2410,7 +2436,7 @@ function _mTodDragEnd(cancelled) {
   const D = _mTodDrag;
   const {el, origOrder} = D;
   document.removeEventListener('touchmove', _mTodDragMove);
-  if (!cancelled && D.tid && Math.abs(D.x - D.startX) >= _M_DD_THRESH) { _mTodDragDayShift(D.x < D.startX ? -1 : 1); return; }
+  if (!cancelled && D.moveArgs && Math.abs(D.x - D.startX) >= _M_DD_THRESH) { _mTodDragDayShift(D.x < D.startX ? -1 : 1); return; }
   _mTodDrag = null;
   _mTodDragBlock = Date.now() + 400;
   if (cancelled) { _mDdCleanup(D); mRenderToday(); return; }
@@ -3666,6 +3692,7 @@ function _mWkGetWeekOff(ds) {
 function mGetDayTasks(ds, weekOff) {
   const today = d2s(getDayDate(0));
   const isToday = ds === today;
+  if (isToday) return mGetTodayTasks(true); // one source of truth for today's list (was missing carried-over items like HEB)
 
   const regular = st.tasks.filter(t => {
     if (!t.due_date || t.category === 'Weekly Goals') return false;
