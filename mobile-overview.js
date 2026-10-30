@@ -743,7 +743,7 @@ function mSortDayTasks(tasks, ds) {
 function mGetTodayTasks(forceToday) {
   // forceToday: build REAL today's list regardless of which day the Today tab is viewing —
   // Week's today column uses this so it always matches Today exactly (carried-over WR/overdue items included).
-  const _isTV = forceToday || _isTV;
+  const _isTV = forceToday || _mTodayOffset === 0;
   const ds = _isTV ? d2s(getDayDate(0)) : _mTodayDateStr();
   // Week offset of the day being viewed (0 = this week, +N = N weeks ahead) — matches desktop's
   // _wkHi (overview.js) so swiping the Today tab forward into a future week still finds
