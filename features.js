@@ -1587,7 +1587,7 @@ function mkMCell(date,om,today,altMo){
       dx.addEventListener('click',e2=>{e2.stopPropagation();moChipDel(t,ds,e2);});
       chip.appendChild(dx);
     }
-    chip.addEventListener('dragstart',e=>{e.stopPropagation();if(isTravel){dragId='travel::'+t._srcId+'::0';e.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');}else{dStart(e,t.id);chip.style.opacity='.4';}});
+    chip.addEventListener('dragstart',e=>{e.stopPropagation();if(isTravel){dragId='travel::'+t._srcId+'::0';e.dataTransfer.effectAllowed='move';document.body.classList.add('body-dragging');}else{dStart(e,t.id);if(t._virtual&&t._recId&&!t._isWrec&&!t._isWrRule&&t.id!==undefined&&String(t.id).startsWith('rec-'))dragId='rec::'+t._recId+'::'+t.due_date+'::'+(t._wkKey||'');chip.style.opacity='.4';}});
     chip.addEventListener('dragend',()=>{document.body.classList.remove('body-dragging');if(isTravel){if(dragId&&dragId.startsWith('travel::'))dragId=null;}else chip.style.opacity='1';});
     chip.addEventListener('click',e=>{if(e.target.closest('.chip-del,.chk-wrap'))return;if(isTravel){e.stopPropagation();const tvSid='tv-'+t._srcId;selectedTasks.clear();selectedTasks.add(tvSid);lastSelectedId=tvSid;applySelHighlight();return;}const sid=chip.dataset.tid;if(!sid)return;selTask(e,sid);});
     chip.addEventListener('dblclick',e=>{e.stopPropagation();if(isTravel){openTravelModal(t._srcId);}else if(t._type==='shop')tiDblShop(e,t._shopId);else if(t._type==='vid'){if(typeof openVidEdit==='function')openVidEdit(t._vidId);}else if(t._type==='pup'){openPupEditModal(t._skillId);}else if(!t._virtual)tiDbl(e,t.id);else tiDblRec(e,t._recId);});
@@ -1615,6 +1615,34 @@ function mkMCell(date,om,today,altMo){
       const r=st.recurring.find(x=>String(x.id)===String(recId));
       if(r){if(!r._dateOverrides)r._dateOverrides={};const wkKey=_moWeSrcWk||getWkKey(0);const prev=r._dateOverrides[wkKey];r._dateOverrides[wkKey]=ds;save();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));pushUndo(()=>{if(prev)r._dateOverrides[wkKey]=prev;else delete r._dateOverrides[wkKey];save();renderAll();renderMoCal();sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));},'Pinned weekly task');}
       dragId=null;renderAll();renderMoCal();return;
+    }
+    if(dragId&&dragId.startsWith('rec::')){
+      // Non-WR recurring (e.g. Oil change) dragged onto a month day — same this-time / all-future split as the week view
+      const [,recId,origDate,srcWk]=dragId.split('::');
+      const r=st.recurring.find(x=>String(x.id)===String(recId));
+      if(r&&ds!==origDate){
+        const wkKey=srcWk||dsToWkKey(origDate);
+        const doThisTime=()=>{
+          if(!r._dateOverrides)r._dateOverrides={};
+          const prevOv=r._dateOverrides[wkKey];
+          const savedBlocks=st.blocks.filter(b=>b.recId&&String(b.recId)===String(r.id)&&b.ds===origDate).map(b=>({...b}));
+          r._dateOverrides[wkKey]=ds;
+          removeTBBlocksForDate(ds,{recId:r.id,oldDs:origDate});
+          save();renderAll();renderMoCal();
+          sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+          pushUndo(()=>{
+            if(prevOv!==undefined)r._dateOverrides[wkKey]=prevOv;else delete r._dateOverrides[wkKey];
+            st.blocks=st.blocks.filter(b=>!(b.recId&&String(b.recId)===String(r.id)&&b.ds===ds));
+            savedBlocks.forEach(b=>{st.blocks.push(b);sbSaveBlock(b);});
+            save();renderAll();renderMoCal();
+            sbReq('PATCH','wr_recurring_rules',{date_overrides:r._dateOverrides},recQs(r.id));
+          },'Moved recurring task');
+        };
+        dragId=null;
+        if(['monthly','quarterly','biannual','annual'].includes(r.cadence))showWrScopePicker(e,'⊘  This time only','↻  All future',doThisTime,()=>_recMoveAllFuture(r,wkKey,ds,()=>renderMoCal()));
+        else doThisTime();
+      }
+      dragId=null;return;
     }
     if(dragId&&dragId.startsWith('shop::')){
       const shopId=dragId.split('::')[1];
