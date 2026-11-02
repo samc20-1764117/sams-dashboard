@@ -9076,7 +9076,8 @@ async function openFlightsModal(){
   _flRender();
   try{
     const s=await _flApi('status');
-    if(s&&s.connected===false)_flRender(`Gmail isn't connected yet. <a href="#" onclick="_flConnect();return false" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);
+    if(s&&s.connected&&s.lastError)_flRender(`Gmail needs reconnecting. <a href="#" onclick="_flConnect();return false" style="color:var(--accent)">Reconnect Gmail (read-only)</a>${(st.flights||[]).some(f=>f.review_state==='pending')?' · <a href="#" onclick="closeFlightsModal();_flStart();return false" style="color:var(--accent)">Review flights</a>':''}`);
+    else if(s&&s.connected===false)_flRender(`Gmail isn't connected yet. <a href="#" onclick="_flConnect();return false" style="color:var(--accent)">Connect Gmail (read-only)</a>, then press "Check for flights".`);
   }catch(e){}
 }
 async function _flCheck(manual){
@@ -9109,7 +9110,7 @@ setTimeout(function _flAuto(){
 let _flQ=[],_flQi=0,_flEditing=false;
 function _flStart(){
   const pend=(st.flights||[]).filter(f=>f.review_state==='pending').sort((a,b)=>String(a.depart_local).localeCompare(String(b.depart_local)));
-  if(!pend.length){openFlightsModal();return;}
+  if(!pend.length||(window._flErr&&!window._flSkipErr)){window._flSkipErr=1;openFlightsModal();return;}
   _flQ=pend.map(f=>f.id);_flQi=0;_flEditing=false;
   const m=document.getElementById('mModal');
   if(!m.classList.contains('open'))openMModal();
