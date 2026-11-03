@@ -9096,6 +9096,8 @@ async function _flCheck(manual){
 // The 6am cron (GitHub Actions → /api/flights?mode=cron) does the Gmail check; the dashboard only
 // shows the result. Once a day it asks the server whether the last cron run hit an error (e.g. the
 // Gmail connection expired) so the ✈ button can show ⚠.
+// Paint the ✈ badge from the locally cached flights right away (don't wait for the first server sync).
+(function _flEarly(n){try{if(document.getElementById('flBtn')&&(st.flights||[]).length){_flBadge();return;}}catch(e){}if(n<40)setTimeout(()=>_flEarly(n+1),150);})(0);
 setTimeout(function _flAuto(){
   try{
     if(typeof _firstSyncDone==='undefined'||!_firstSyncDone){setTimeout(_flAuto,5000);return;}
