@@ -89,7 +89,7 @@ async function scanGmail(KV, cid, csec, refresh, today, full) {
     const G = p => fetch('https://gmail.googleapis.com/gmail/v1/users/me/' + p, { headers: { Authorization: 'Bearer ' + tk.access_token } }).then(r => { if (!r.ok) throw new Error('gmail ' + r.status); return r.json(); });
 
     // Resolve + cache the label id (one labels.list call ever, not per sync)
-    let labelId = await KV.get('fl-label');
+    let labelId = full ? null : await KV.get('fl-label'); // full rescan always re-resolves (stale id → 0 emails)
     if (!labelId) {
       const ls = (await G('labels')).labels || [];
       const l = ls.find(x => LABEL_MATCH.test(x.name));
@@ -154,6 +154,7 @@ export async function onRequest(context) {
     const td = await tr.json();
     if (!td.refresh_token) return new Response('<h2>No refresh token returned</h2><p>Try again from the dashboard.</p>', { headers: { 'Content-Type': 'text/html' } });
     await KV.put('gmail-oauth-refresh', td.refresh_token);
+    for (const k of ['fl-label', 'fl-last', 'fl-fresh', 'fl-cool', 'fl-cron-cool', 'fl-err']) await KV.delete(k); // new connection = start clean
     await KV.delete('fl-err'); await KV.delete('fl-cron-cool');
     return new Response('<h2>Gmail connected</h2><p>Taking you back to the dashboard…</p><script>setTimeout(()=>{location.href="/"},1200)</script>', { headers: { 'Content-Type': 'text/html' } });
   }
