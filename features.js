@@ -7207,7 +7207,11 @@ document.addEventListener('keydown',async e=>{
       // let me move to tomorrow"). Falls back to the viewed week if no chip/stash is found (e.g.
       // selection came from somewhere that isn't a rendered weekly-cal chip).
       const _wkKeyForSid=sid=>{
-        const chip=document.querySelector('.chip[data-tid="'+CSS.escape(sid)+'"]');
+        // Two chips can share one sid (e.g. HEB carried from last week + this week's own Sunday HEB) —
+        // prefer the instance the user last clicked (_lastChipClick), else the first match.
+        const all=[...document.querySelectorAll('.chip[data-tid="'+CSS.escape(sid)+'"]')];
+        const lc=window._lastChipClick;
+        const chip=(lc&&lc.sid===sid&&all.find(c=>c.dataset.wkkey===lc.wk))||all[0];
         return (chip&&chip.dataset.wkkey)||getWkKey(wkOff);
       };
       const undos=[];
@@ -9209,3 +9213,6 @@ async function _flEditSave(){
   await sbReqSilent('PATCH','flights',p,recQs(f.id));
   _flEditing=false;renderAll();_flGuideShow();
 }
+
+// Remember which instance of a recurring chip was clicked last (shared-sid chips, e.g. HEB carried across weeks).
+document.addEventListener('click',e=>{const c=e.target.closest&&e.target.closest('.chip[data-wkkey]');window._lastChipClick=c?{sid:c.dataset.tid,wk:c.dataset.wkkey}:null;},true);
