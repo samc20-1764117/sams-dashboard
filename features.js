@@ -9030,7 +9030,17 @@ async function _flReload(){
 }
 function _flBadge(){
   const n=(st.flights||[]).filter(f=>f.review_state==='pending').length;
-  const b=document.getElementById('flBtn');if(b){b.textContent=(n?'✈ '+n:'✈')+(window._flErr?' ⚠':'');b.classList.toggle('fl-has',n>0);b.style.display=(n>0||window._flErr)?'':'none';b.title=window._flErr?'Gmail needs reconnecting':n?n+' new flight'+(n>1?'s':'')+' to review':'Flights';}
+  const b=document.getElementById('flBtn');if(b){b.textContent=(n?'✈ '+n:'✈')+(window._flErr?' ⚠':'');b.classList.toggle('fl-has',n>0);b.style.display=(n>0||window._flErr)?'':'none';{const sb=document.getElementById('flSetBtn');if(sb)sb.textContent='✈ Flights: '+(window._flErr?'⚠ reconnect Gmail':'connect / reconnect Gmail');}b.title=window._flErr?'Gmail needs reconnecting':n?n+' new flight'+(n>1?'s':'')+' to review':'Flights';}
+}
+// Right-click ✈ → small menu with Reconnect Gmail (click still opens the guided review). Also in Settings.
+function _flMenu(e){
+  e.preventDefault();const o=document.getElementById('flCtx');if(o)o.remove();
+  const m=document.createElement('div');m.id='flCtx';
+  m.style.cssText='position:fixed;z-index:900;left:'+Math.min(e.clientX,innerWidth-190)+'px;top:'+e.clientY+'px;background:var(--bg);color:var(--text);border:1px solid var(--border,rgba(0,0,0,.15));border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);padding:4px;font-size:12px;min-width:170px';
+  m.innerHTML='<div style="padding:6px 10px;cursor:pointer;border-radius:5px" onmouseover="this.style.background=\'rgba(128,128,128,.15)\'" onmouseout="this.style.background=\'\'" onclick="_flConnect()">🔑 Sign in / reconnect Gmail</div>'+
+    '<div style="padding:6px 10px;cursor:pointer;border-radius:5px" onmouseover="this.style.background=\'rgba(128,128,128,.15)\'" onmouseout="this.style.background=\'\'" onclick="document.getElementById(\'flCtx\').remove();openFlightsModal()">✈ Flight details / status</div>';
+  document.body.appendChild(m);
+  setTimeout(()=>document.addEventListener('mousedown',function f(ev){if(!m.contains(ev.target)){m.remove();}document.removeEventListener('mousedown',f);},true),0);
 }
 function _flFmt(f){
   const d=new Date(String(f.depart_local).slice(0,16));
@@ -9116,7 +9126,7 @@ setTimeout(function _flAuto(){
 let _flQ=[],_flQi=0,_flEditing=false;
 function _flStart(){
   const pend=(st.flights||[]).filter(f=>f.review_state==='pending').sort((a,b)=>String(a.depart_local).localeCompare(String(b.depart_local)));
-  if(!pend.length||(window._flErr&&!window._flSkipErr)){window._flSkipErr=1;openFlightsModal();return;}
+  if(!pend.length){openFlightsModal();return;}
   _flQ=pend.map(f=>f.id);_flQi=0;_flEditing=false;
   const m=document.getElementById('mModal');
   if(!m.classList.contains('open'))openMModal();
