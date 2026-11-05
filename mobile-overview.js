@@ -4053,8 +4053,10 @@ function mInitWrTray() {
   el.addEventListener('touchstart', e => {
     const row = e.target.closest('.m-wrt-row');
     if (!row || row.dataset.done === '1' || e.target.closest('.m-chk-wrap')) return;
-    press = {row, grip: !!e.target.closest('.m-wrt-grip'), x: e.touches[0].clientX, y: e.touches[0].clientY};
-  }, {passive: true});
+    const grip = !!e.target.closest('.m-wrt-grip');
+    if (grip) e.preventDefault(); // claim the touch up front so iOS never starts a page scroll from the handle
+    press = {row, grip, x: e.touches[0].clientX, y: e.touches[0].clientY};
+  }, {passive: false});
 
   el.addEventListener('touchmove', e => {
     const t = e.touches[0];
@@ -4062,14 +4064,15 @@ function mInitWrTray() {
     if (!press) return;
     const dist = Math.max(Math.abs(t.clientX - press.x), Math.abs(t.clientY - press.y));
     if (press.grip) {
-      if (dist > 4) { e.preventDefault(); const r = press.row; press = null; _mWrDragStart(r, t.clientX, t.clientY); }
+      e.preventDefault();
+      if (dist > 4) { const r = press.row; press = null; _mWrDragStart(r, t.clientX, t.clientY); }
     } else if (dist > 8) press = null; // it's a scroll, not a tap
   }, {passive: false});
 
   el.addEventListener('touchend', () => {
     if (_mWrT.drag) { _mWrDragEnd(false); return; }
     const p = press; press = null;
-    if (p && !p.grip) {
+    if (p) {
       const id = p.row.dataset.ruleid;
       if (_mWrT.sel.has(id)) _mWrT.sel.delete(id); else _mWrT.sel.add(id);
       mWrTrayRender();

@@ -936,3 +936,9 @@ input,textarea,select,[contenteditable="true"],[contenteditable=""]{-webkit-user
 /* Panel v3: grip handle on the right (drag), row-body tap selects, no counts/hints */
 .m-wrt-grip{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:34px;height:34px;margin:-6px -6px -6px 0;color:var(--text-muted,#888);touch-action:none;-webkit-user-select:none;user-select:none}
 .m-wrt-row.is-sel{background:rgba(120,120,255,.14);box-shadow:inset 3px 0 0 var(--accent)}
+
+/* compact WR panel rows (2026-11-04) */
+.m-wrt-row{padding:4px 6px 4px 8px;gap:6px;min-height:34px}
+.m-wrt-row .m-chk-wrap{width:22px;height:22px}
+.m-wrt-row .m-wk-task-name{font-size:12.5px;line-height:1.2}
+.m-wrt-grip{width:40px;height:34px;margin:-4px -6px -4px 0}
