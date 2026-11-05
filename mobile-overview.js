@@ -4090,7 +4090,7 @@ function _mWrDragStart(row, x, y) {
   const name = row.querySelector('.m-wk-task-name')?.textContent || '';
   ghost.innerHTML = `${escHtml(name)}${ids.length > 1 ? `<b>+${ids.length - 1}</b>` : ''}`;
   document.body.appendChild(ghost);
-  _mWrT.drag = {ids, ghost, x, y, raf: 0, target: null};
+  _mWrT.drag = {ids, ghost, x, y, x0: x, y0: y, armed: false, raf: 0, target: null};
   document.querySelector('.m-wrt-inline.open')?.classList.add('dragging'); // dims the panel while dragging
   _mWrDragMove(x, y);
   _mWrDragScroll();
@@ -4121,7 +4121,9 @@ function _mWrDragScroll() {
   const topLimit = Math.max(hdr ? hdr.getBoundingClientRect().bottom : 0, pnl ? pnl.getBoundingClientRect().bottom : 0, 0);
   const botLimit = window.innerHeight - 80, EDGE = 56, MAXSPD = 16;
   let v = 0;
-  if (d.y > botLimit - EDGE) { const f = Math.min(1, (d.y - (botLimit - EDGE)) / EDGE); v = f * f * MAXSPD; }
+  if (!d.armed && Math.hypot(d.x - d.x0, d.y - d.y0) > 30) d.armed = true; // no edge-scroll while the finger is still on the handle
+  if (!d.armed) v = 0;
+  else if (d.y > botLimit - EDGE) { const f = Math.min(1, (d.y - (botLimit - EDGE)) / EDGE); v = f * f * MAXSPD; }
   else if (d.y < topLimit + EDGE) { const f = Math.min(1, ((topLimit + EDGE) - d.y) / EDGE); v = -f * f * MAXSPD; }
   if (v) { sc.scrollTop += v; _mWrDragHit(); }
   d.raf = requestAnimationFrame(() => { if (_mWrT.drag) _mWrDragScroll(); });
@@ -5091,6 +5093,7 @@ function mOpenMonth() {
   _mRenderMonthWeeks(true);
   _mRenderMonthDetail(_mMonthSelectedDs);
   mInitMonthScroll();
+  _mMoScrollToMonthStart();
   requestAnimationFrame(() => { _mSyncMonthScrollHeight(); requestAnimationFrame(() => _mMoScrollToMonthStart()); });
 }
 
@@ -5379,7 +5382,24 @@ function _mMonthDayBadge(tasks) {
 // Weeks far from today render as cheap shells (badges filled in later by an IntersectionObserver
 // as they approach the viewport) — that lets a big range (2 years back) exist up front, so
 // scrolling back never has to prepend rows and correct scrollTop mid-fling (the upward glitch).
-const _M_MO_EAGER = 6;
+const _M_MO_EAGER = 12;
+// Fill badges for lazy rows near the viewport right now instead of waiting on the
+// IntersectionObserver's async callback (it made Month look empty for a few seconds on open).
+function _mMoHydrateNear() {
+  const sc = document.getElementById('mMonthScroll');
+  if (!sc) return;
+  const r = sc.getBoundingClientRect(), lo = r.top - 1500, hi = r.bottom + 1500;
+  sc.querySelectorAll('.m-mo-week[data-lazy]').forEach(row => {
+    const b = row.getBoundingClientRect();
+    if (b.bottom < lo || b.top > hi) return;
+    const wk = parseInt(row.dataset.wk, 10);
+    row.querySelectorAll('.m-mo-day[data-ds]').forEach(c => {
+      const slot = c.querySelector('.m-mo-badge-slot');
+      if (slot && !slot.firstChild) slot.innerHTML = _mMonthDayBadge(mGetDayTasks(c.dataset.ds, wk));
+    });
+    delete row.dataset.lazy;
+  });
+}
 let _mMoLazyIO = null;
 function _mMoObserveLazy() {
   const scroller = document.getElementById('mMonthScroll');
@@ -5719,6 +5739,7 @@ function _mMoScrollToMonthStart(attempt) {
     // the way (e.g. the document itself), which can visually shift the sticky header
     // relative to content. Setting scrollTop directly only ever touches this element.
     scroller.scrollTop += row.getBoundingClientRect().top - scroller.getBoundingClientRect().top - _mMoStickyH(scroller);
+    _mMoHydrateNear();
   }
   _mUpdateMonthTitle();
 }
